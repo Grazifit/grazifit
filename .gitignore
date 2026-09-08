@@ -1,0 +1,106 @@
+# ============================================================
+# GraziFit — raiz do monorepo
+# ============================================================
+
+# ------------------------------------------------------------
+# SEGREDOS — nada aqui pode chegar ao repositorio
+# ------------------------------------------------------------
+
+# Ambiente. O modelo versionado e .env.example, sem valor real.
+.env
+.env.*
+!.env.example
+
+# Chaves privadas e certificados
+*.pem
+*.key
+*.p12
+*.pfx
+*.asc
+*.gpg
+id_rsa
+id_ed25519
+*.ppk
+
+# Assinatura Android — expor a keystore permite publicar app falso
+# assinado como se fosse o oficial.
+*.jks
+*.keystore
+key.properties
+keystore.properties
+google-services.json
+GoogleService-Info.plist
+
+# Credenciais de servico e nuvem
+credentials.json
+*credentials*.json
+service-account*.json
+*serviceaccount*.json
+.aws/
+.gcloud/
+gha-creds-*.json
+
+# Arquivos de segredo por convencao de nome
+secrets.*
+*.secret
+*.secrets
+*_secret.*
+*_secrets.*
+.netrc
+.pgpass
+.htpasswd
+
+# ------------------------------------------------------------
+# DADOS — dump de banco carrega dado pessoal real (LGPD)
+#
+# ATENCAO: nao use "*.sql" aqui. O schema em database/schema/ e as
+# migrations em database/migrations/ SAO versionados de proposito —
+# sao a fonte de verdade do projeto (D58).
+# ------------------------------------------------------------
+*.dump
+*.dumpfile
+*.bak
+*.sql.gz
+*.sql.zip
+*.sql.tar
+dump*.sql
+backup*.sql
+*_dump.sql
+*_backup.sql
+/backups/
+/dumps/
+
+# ------------------------------------------------------------
+# Prompts de fase — material de processo, nao de produto
+# ------------------------------------------------------------
+prompt-*.md
+
+# ------------------------------------------------------------
+# Dart / Flutter
+# ------------------------------------------------------------
+.dart_tool/
+.packages
+build/
+*.iml
+.idea/
+.vscode/
+
+# ------------------------------------------------------------
+# Log e temporario — log de aplicacao costuma vazar query,
+# token e dado de usuario.
+# ------------------------------------------------------------
+*.log
+*.tmp
+/logs/
+
+# ------------------------------------------------------------
+# Sistema operacional
+# ------------------------------------------------------------
+Thumbs.db
+.DS_Store
+
+# ============================================================
+# ATENCAO: *.g.dart NAO entra nesta lista.
+# O codigo gerado pelo Drift e VERSIONADO de proposito, para que o
+# CI nao dependa de rodar build_runner. Ver prompt-fase-2 secao 6.
+# ============================================================
