@@ -4,6 +4,8 @@
 
 Este documento não decide nada. Ele registra decisões já tomadas em `docs/arquitetura.md` e no prompt de implementação, expandidas com os caminhos reais criados na Fase 1. Se algo aqui divergir do schema ou de `docs/arquitetura.md`, **eles vencem** — e a divergência é para ser reportada, não interpretada.
 
+**Subir o banco, baixar dependências, rodar e testar: §11.**
+
 ## Ordem de autoridade
 
 1. Instrução explícita do usuário
@@ -186,6 +188,90 @@ Pare imediatamente, em vez de decidir, se:
 - parecer necessário antecipar uma fase para que a estrutura "funcione"
 
 O projeto tem 67 decisões registradas justamente para que nenhuma seja tomada dentro do código. Pergunta sem resposta registrada é **escopo novo** — e escopo novo não se resolve implementando. Toda alteração estrutural nasce como change em `openspec/changes/`, com `proposal.md`, `design.md` e `tasks.md`; decisões novas continuam a numeração a partir de **D68**.
+
+---
+
+## 11. Comandos do dia a dia
+
+Não há npm, Makefile nem gerenciador de SDK neste repositório. Dependências de Dart e Flutter são baixadas exclusivamente pelo **`pub`**, e cada pacote resolve as suas: `backend/` com `dart pub`, `app/` com `flutter pub`. `shared/` ainda não tem `pubspec.yaml` — é da Fase 3.
+
+Os comandos abaixo são os que funcionam **hoje**. Comando de fase futura está marcado como tal e não deve ser inventado antes da hora.
+
+### 11.1 Preparar o repositório do zero
+
+| # | Comando | O que faz |
+|---|---|---|
+| 1 | `cp .env.example .env` | Cria o ambiente local. Preencher **`POSTGRES_PASSWORD`** e **`DATABASE_URL`** — nenhuma das duas tem default (**D65**) |
+| 2 | `docker compose up -d` | Sobe o PostgreSQL 18 (serviço `banco`, container `grazifit-db`) |
+| 3 | `bash database/aplicar.sh` | Aplica schema e migrations, em ordem e de forma idempotente |
+| 4 | `cd backend && dart pub get` | Baixa as dependências do backend |
+| 5 | `cd app && flutter pub get` | Baixa as dependências do app |
+
+**Porta ocupada.** Se a máquina já tiver um PostgreSQL nativo na 5432, o container não sobe — ou pior, o Dart conecta no servidor errado e o erro aparece como corrupção de protocolo. Defina `POSTGRES_PORT=5433` no `.env` e reflita a mesma porta na `DATABASE_URL`. Dentro da rede do compose a porta continua sendo 5432.
+
+**Windows.** `database/aplicar.sh` é bash — rode pelo Git Bash. Sem `psql` no host, o script usa o `psql` de dentro do próprio container automaticamente.
+
+### 11.2 Dependências
+
+| Comando | Onde | O que faz |
+|---|---|---|
+| `dart pub get` | `backend/` | Instala o que está no `pubspec.lock` |
+| `flutter pub get` | `app/` | Idem, para o app |
+| `dart pub outdated` | `backend/` | Lista o que tem versão mais nova — **só relata, não altera** |
+| `flutter pub outdated` | `app/` | Idem |
+| `dart pub deps` | qualquer um | Mostra a árvore de dependências resolvida |
+
+**`pub upgrade` não é rotina aqui.** As dependências do backend estão **fixadas em versão exata** de propósito (`drift 2.34.4`, `drift_postgres 1.3.1`, `postgres 3.5.12`, `drift_dev 2.34.6`), verificadas contra este schema em PostgreSQL 18 — `dart pub upgrade` não move nenhuma delas, e é assim que deve ser. Acrescentar, remover ou trocar dependência em qualquer `pubspec.yaml` é **alteração estrutural**: propõe-se antes, não se executa (§10). Se o resolvedor trouxer algo diferente e quebrar, **reporte antes de contornar**.
+
+### 11.3 Código gerado pelo Drift
+
+`backend/lib/database/database.g.dart` é gerado a partir do schema. Regere sempre que `database.dart` ou o SQL mudar:
+
+```bash
+cd backend
+dart run build_runner build --delete-conflicting-outputs
+```
+
+`dart run build_runner watch` regenera continuamente durante uma sessão de trabalho. O gerado nunca se edita à mão — o arquivo em `database/schema/` é a fonte de verdade (**D58**).
+
+### 11.4 Rodar
+
+| Alvo | Comando | Estado |
+|---|---|---|
+| Banco | `docker compose up -d` | Disponível |
+| Banco — logs | `docker compose logs -f banco` | Disponível |
+| Banco — parar | `docker compose down` | Disponível |
+| App no Chrome | `cd app && flutter run -d chrome` | Disponível |
+| App no Android | `cd app && flutter run -d <id>` (`flutter devices` lista os ids) | Disponível |
+| Servidor backend | `dart run bin/server.dart` | **Fase 3** — `backend/bin/` só tem `.gitkeep`; o servidor, o `shelf` e o serviço de backend no compose ainda não existem |
+
+**`docker compose down -v` apaga o volume `grazifit-data`** e com ele todos os dados. Depois disso, `bash database/aplicar.sh` precisa rodar de novo. Use apenas quando o objetivo for justamente zerar o banco.
+
+### 11.5 Testar e analisar
+
+| Comando | Onde | Observação |
+|---|---|---|
+| `dart test` | `backend/` | Exige o banco **de pé** e `DATABASE_URL` **no ambiente do processo** — o Dart não lê o `.env` enquanto o `config.dart` da Fase 3 não existir (**D65**) |
+| `flutter test` | `app/` | Não depende do banco |
+| `dart analyze` / `flutter analyze` | respectivo | Lints de `analysis_options.yaml` |
+| `dart format .` | qualquer um | Formatação padrão do Dart |
+
+No Git Bash, a variável vai na frente do comando:
+
+```bash
+cd backend
+DATABASE_URL='postgresql://usuario:senha@localhost:5433/grazifit?sslmode=disable' dart test
+```
+
+No PowerShell, define-se antes:
+
+```powershell
+cd backend
+$env:DATABASE_URL = 'postgresql://usuario:senha@localhost:5433/grazifit?sslmode=disable'
+dart test
+```
+
+Caractere especial na senha precisa ser percent-encoded: `@` vira `%40`, `:` vira `%3A`, `/` vira `%2F`.
 
 ---
 
