@@ -1,0 +1,12 @@
+name: shared
+description: Código compartilhado entre backend e app do GraziFit.
+version: 1.0.0
+publish_to: 'none'
+
+environment:
+  sdk: ^3.13.0
+
+dependencies:
+
+dev_dependencies:
+  lints: ^6.0.0
