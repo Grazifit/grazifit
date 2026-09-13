@@ -7,6 +7,7 @@
 # ------------------------------------------------------------
 
 # Ambiente. O modelo versionado e .env.example, sem valor real.
+run-dev.ps1
 .env
 .env.*
 !.env.example
