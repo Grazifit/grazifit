@@ -339,8 +339,11 @@ Envelope `{ codigo, mensagem, campo? }`, com `codigo` legível por máquina. Um 
 | `uq_vinculo_aluno_ativo` | `23505` | `VINCULO_JA_ATIVO` | F-17 (DoD S2) |
 | `uq_avaliacao_aluno_data` | `23505` | `AVALIACAO_JA_REGISTRADA` | F-15 (**D6**) |
 | `uq_aluno_cpf` / `uq_aluno_email` | `23505` | `CPF_EM_USO` / `EMAIL_EM_USO` | F-16 (DoD S2) |
+| `ck_aluno_nascimento` | `23514` | `DATA_NASCIMENTO_INVALIDA` | F-16 (DoD S2) |
 
 Violação de constraint chega com SQLSTATE `23505` e **nome da constraint** — o nome é a chave do mapeamento, e é estável.
+
+A última linha não estava nas nove originais: `ck_aluno_nascimento` (`data_nascimento < CURRENT_DATE`) existe no schema desde o início, mas não tinha código. Acrescentada durante a fatia de `aluno` (F-16), porque o `AlunoService` verifica a data **antes** do insert — mesmo padrão de §7.4 — e precisava de um código para o envelope.
 
 ### 7.2 Os triggers precisavam de `ERRCODE` próprio
 

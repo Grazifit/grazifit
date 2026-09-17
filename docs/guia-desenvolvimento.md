@@ -279,6 +279,7 @@ O layout de pasta de cada lado — e a razão de o backend ser flat enquanto o a
 - **REST sobre HTTPS, JSON.** O contrato é sempre um DTO de `shared/`. Nenhum lado serializa mapa solto: se o app precisa de um campo, ele nasce no DTO.
 - **Endpoints derivam das jornadas**, não de CRUD genérico, e pertencem à feature dona da tabela. A lista de endpoints **ainda não está especificada** — proponha por feature e submeta antes de implementar.
 - **Erro:** toda resposta de erro usa `{ codigo, mensagem, campo? }`. O app escolhe o texto **pelo código**, jamais pela mensagem.
+- **Data:** coluna `DATE` trafega como string **`AAAA-MM-DD`**, estrita — sem hora, sem fuso, sem forma compacta, nas duas direções (**D68**). Data civil não tem instante: aceitar offset permite que a data gravada difira da enviada, e `DateTime.parse` ainda faz *rollover* silencioso (`2025-02-30` vira 2 de março). Valide a forma **e** a existência da data antes do service. Colunas `TIMESTAMPTZ` ainda não têm formato definido — nenhum endpoint as expõe.
 - **Autorização:** o app **nunca** decide permissão. Pode ocultar o que o papel não usa, mas quem nega é o backend. Tela que some não é segurança.
 - **Estado:** toda chamada devolve `AsyncState`. Nenhuma tela sem os cinco estados — RNF-04 vale para as 60.
 - **Sem persistência local.** O app é 100% online (Restr. 3). Não introduza cache em disco nem banco local.
