@@ -10,6 +10,9 @@ import 'package:grazifit_backend/features/pessoas/admin/admin_repository.dart';
 import 'package:grazifit_backend/features/pessoas/aluno/aluno_controller.dart';
 import 'package:grazifit_backend/features/pessoas/aluno/aluno_repository.dart';
 import 'package:grazifit_backend/features/pessoas/aluno/aluno_service.dart';
+import 'package:grazifit_backend/features/pessoas/professor/professor_controller.dart';
+import 'package:grazifit_backend/features/pessoas/professor/professor_repository.dart';
+import 'package:grazifit_backend/features/pessoas/professor/professor_service.dart';
 
 void main() async {
   final db = GraziDatabase.doAmbiente();
@@ -23,11 +26,16 @@ void main() async {
   final alunoService = AlunoService(alunoRepository);
   final alunoController = AlunoController(alunoService);
 
+    final professorRepository = ProfessorRepository(db);
+  final professorService = ProfessorService(professorRepository);
+  final professorController = ProfessorController(professorService);
+
   // Montagem provisoria. A arvore de rotas das 10 features e de
   // `lib/router.dart` (Fase 3), que ainda nao existe.
   final rootRouter = Router()
     ..mount('/', adminHandler.router.call)
-    ..mount('/', alunoController.router.call);
+    ..mount('/', alunoController.router.call)
+    ..mount('/', professorController.router.call);
 
   final handler = const Pipeline()
       .addMiddleware(logRequests())

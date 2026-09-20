@@ -1272,16 +1272,710 @@ class AlunoCompanion extends UpdateCompanion<AlunoData> {
   }
 }
 
+class $ProfessorTable extends Professor
+    with TableInfo<$ProfessorTable, ProfessorData> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $ProfessorTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idProfessorMeta = const VerificationMeta(
+    'idProfessor',
+  );
+  @override
+  late final GeneratedColumn<int> idProfessor = GeneratedColumn<int>(
+    'id_professor',
+    aliasedName,
+    false,
+    hasAutoIncrement: true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'PRIMARY KEY AUTOINCREMENT',
+    ),
+  );
+  static const VerificationMeta _idAdminCriadorMeta = const VerificationMeta(
+    'idAdminCriador',
+  );
+  @override
+  late final GeneratedColumn<int> idAdminCriador = GeneratedColumn<int>(
+    'id_admin_criador',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _idEnderecoMeta = const VerificationMeta(
+    'idEndereco',
+  );
+  @override
+  late final GeneratedColumn<int> idEndereco = GeneratedColumn<int>(
+    'id_endereco',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _cpfMeta = const VerificationMeta('cpf');
+  @override
+  late final GeneratedColumn<String> cpf = GeneratedColumn<String>(
+    'cpf',
+    aliasedName,
+    false,
+    additionalChecks: GeneratedColumn.checkTextLength(
+      minTextLength: 11,
+      maxTextLength: 11,
+    ),
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways('UNIQUE'),
+  );
+  static const VerificationMeta _senhaHashMeta = const VerificationMeta(
+    'senhaHash',
+  );
+  @override
+  late final GeneratedColumn<String> senhaHash = GeneratedColumn<String>(
+    'senha_hash',
+    aliasedName,
+    false,
+    additionalChecks: GeneratedColumn.checkTextLength(maxTextLength: 255),
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _nomeMeta = const VerificationMeta('nome');
+  @override
+  late final GeneratedColumn<String> nome = GeneratedColumn<String>(
+    'nome',
+    aliasedName,
+    false,
+    additionalChecks: GeneratedColumn.checkTextLength(
+      minTextLength: 1,
+      maxTextLength: 150,
+    ),
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _telefoneMeta = const VerificationMeta(
+    'telefone',
+  );
+  @override
+  late final GeneratedColumn<String> telefone = GeneratedColumn<String>(
+    'telefone',
+    aliasedName,
+    false,
+    additionalChecks: GeneratedColumn.checkTextLength(maxTextLength: 20),
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _emailMeta = const VerificationMeta('email');
+  @override
+  late final GeneratedColumn<String> email = GeneratedColumn<String>(
+    'email',
+    aliasedName,
+    false,
+    additionalChecks: GeneratedColumn.checkTextLength(maxTextLength: 255),
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways('UNIQUE'),
+  );
+  static const VerificationMeta _statusMeta = const VerificationMeta('status');
+  @override
+  late final GeneratedColumn<bool> status = GeneratedColumn<bool>(
+    'status',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("status" IN (0, 1))',
+    ),
+    defaultValue: const Constant(true),
+  );
+  static const VerificationMeta _dataCadastroMeta = const VerificationMeta(
+    'dataCadastro',
+  );
+  @override
+  late final GeneratedColumn<PgDate> dataCadastro = GeneratedColumn<PgDate>(
+    'data_cadastro',
+    aliasedName,
+    false,
+    type: PgTypes.date,
+    requiredDuringInsert: false,
+    defaultValue: const CustomExpression<PgDate>('CURRENT_DATE'),
+  );
+  static const VerificationMeta _dataUltimoAcessoMeta = const VerificationMeta(
+    'dataUltimoAcesso',
+  );
+  @override
+  late final GeneratedColumn<PgDateTime> dataUltimoAcesso =
+      GeneratedColumn<PgDateTime>(
+        'data_ultimo_acesso',
+        aliasedName,
+        true,
+        type: PgTypes.timestampWithTimezone,
+        requiredDuringInsert: false,
+      );
+  @override
+  List<GeneratedColumn> get $columns => [
+    idProfessor,
+    idAdminCriador,
+    idEndereco,
+    cpf,
+    senhaHash,
+    nome,
+    telefone,
+    email,
+    status,
+    dataCadastro,
+    dataUltimoAcesso,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'professor';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<ProfessorData> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id_professor')) {
+      context.handle(
+        _idProfessorMeta,
+        idProfessor.isAcceptableOrUnknown(
+          data['id_professor']!,
+          _idProfessorMeta,
+        ),
+      );
+    }
+    if (data.containsKey('id_admin_criador')) {
+      context.handle(
+        _idAdminCriadorMeta,
+        idAdminCriador.isAcceptableOrUnknown(
+          data['id_admin_criador']!,
+          _idAdminCriadorMeta,
+        ),
+      );
+    }
+    if (data.containsKey('id_endereco')) {
+      context.handle(
+        _idEnderecoMeta,
+        idEndereco.isAcceptableOrUnknown(data['id_endereco']!, _idEnderecoMeta),
+      );
+    }
+    if (data.containsKey('cpf')) {
+      context.handle(
+        _cpfMeta,
+        cpf.isAcceptableOrUnknown(data['cpf']!, _cpfMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_cpfMeta);
+    }
+    if (data.containsKey('senha_hash')) {
+      context.handle(
+        _senhaHashMeta,
+        senhaHash.isAcceptableOrUnknown(data['senha_hash']!, _senhaHashMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_senhaHashMeta);
+    }
+    if (data.containsKey('nome')) {
+      context.handle(
+        _nomeMeta,
+        nome.isAcceptableOrUnknown(data['nome']!, _nomeMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_nomeMeta);
+    }
+    if (data.containsKey('telefone')) {
+      context.handle(
+        _telefoneMeta,
+        telefone.isAcceptableOrUnknown(data['telefone']!, _telefoneMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_telefoneMeta);
+    }
+    if (data.containsKey('email')) {
+      context.handle(
+        _emailMeta,
+        email.isAcceptableOrUnknown(data['email']!, _emailMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_emailMeta);
+    }
+    if (data.containsKey('status')) {
+      context.handle(
+        _statusMeta,
+        status.isAcceptableOrUnknown(data['status']!, _statusMeta),
+      );
+    }
+    if (data.containsKey('data_cadastro')) {
+      context.handle(
+        _dataCadastroMeta,
+        dataCadastro.isAcceptableOrUnknown(
+          data['data_cadastro']!,
+          _dataCadastroMeta,
+        ),
+      );
+    }
+    if (data.containsKey('data_ultimo_acesso')) {
+      context.handle(
+        _dataUltimoAcessoMeta,
+        dataUltimoAcesso.isAcceptableOrUnknown(
+          data['data_ultimo_acesso']!,
+          _dataUltimoAcessoMeta,
+        ),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {idProfessor};
+  @override
+  ProfessorData map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return ProfessorData(
+      idProfessor: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}id_professor'],
+      )!,
+      idAdminCriador: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}id_admin_criador'],
+      ),
+      idEndereco: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}id_endereco'],
+      ),
+      cpf: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}cpf'],
+      )!,
+      senhaHash: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}senha_hash'],
+      )!,
+      nome: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}nome'],
+      )!,
+      telefone: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}telefone'],
+      )!,
+      email: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}email'],
+      )!,
+      status: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}status'],
+      )!,
+      dataCadastro: attachedDatabase.typeMapping.read(
+        PgTypes.date,
+        data['${effectivePrefix}data_cadastro'],
+      )!,
+      dataUltimoAcesso: attachedDatabase.typeMapping.read(
+        PgTypes.timestampWithTimezone,
+        data['${effectivePrefix}data_ultimo_acesso'],
+      ),
+    );
+  }
+
+  @override
+  $ProfessorTable createAlias(String alias) {
+    return $ProfessorTable(attachedDatabase, alias);
+  }
+}
+
+class ProfessorData extends DataClass implements Insertable<ProfessorData> {
+  final int idProfessor;
+  final int? idAdminCriador;
+  final int? idEndereco;
+  final String cpf;
+  final String senhaHash;
+  final String nome;
+  final String telefone;
+  final String email;
+  final bool status;
+  final PgDate dataCadastro;
+  final PgDateTime? dataUltimoAcesso;
+  const ProfessorData({
+    required this.idProfessor,
+    this.idAdminCriador,
+    this.idEndereco,
+    required this.cpf,
+    required this.senhaHash,
+    required this.nome,
+    required this.telefone,
+    required this.email,
+    required this.status,
+    required this.dataCadastro,
+    this.dataUltimoAcesso,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id_professor'] = Variable<int>(idProfessor);
+    if (!nullToAbsent || idAdminCriador != null) {
+      map['id_admin_criador'] = Variable<int>(idAdminCriador);
+    }
+    if (!nullToAbsent || idEndereco != null) {
+      map['id_endereco'] = Variable<int>(idEndereco);
+    }
+    map['cpf'] = Variable<String>(cpf);
+    map['senha_hash'] = Variable<String>(senhaHash);
+    map['nome'] = Variable<String>(nome);
+    map['telefone'] = Variable<String>(telefone);
+    map['email'] = Variable<String>(email);
+    map['status'] = Variable<bool>(status);
+    map['data_cadastro'] = Variable<PgDate>(dataCadastro, PgTypes.date);
+    if (!nullToAbsent || dataUltimoAcesso != null) {
+      map['data_ultimo_acesso'] = Variable<PgDateTime>(
+        dataUltimoAcesso,
+        PgTypes.timestampWithTimezone,
+      );
+    }
+    return map;
+  }
+
+  ProfessorCompanion toCompanion(bool nullToAbsent) {
+    return ProfessorCompanion(
+      idProfessor: Value(idProfessor),
+      idAdminCriador: idAdminCriador == null && nullToAbsent
+          ? const Value.absent()
+          : Value(idAdminCriador),
+      idEndereco: idEndereco == null && nullToAbsent
+          ? const Value.absent()
+          : Value(idEndereco),
+      cpf: Value(cpf),
+      senhaHash: Value(senhaHash),
+      nome: Value(nome),
+      telefone: Value(telefone),
+      email: Value(email),
+      status: Value(status),
+      dataCadastro: Value(dataCadastro),
+      dataUltimoAcesso: dataUltimoAcesso == null && nullToAbsent
+          ? const Value.absent()
+          : Value(dataUltimoAcesso),
+    );
+  }
+
+  factory ProfessorData.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return ProfessorData(
+      idProfessor: serializer.fromJson<int>(json['idProfessor']),
+      idAdminCriador: serializer.fromJson<int?>(json['idAdminCriador']),
+      idEndereco: serializer.fromJson<int?>(json['idEndereco']),
+      cpf: serializer.fromJson<String>(json['cpf']),
+      senhaHash: serializer.fromJson<String>(json['senhaHash']),
+      nome: serializer.fromJson<String>(json['nome']),
+      telefone: serializer.fromJson<String>(json['telefone']),
+      email: serializer.fromJson<String>(json['email']),
+      status: serializer.fromJson<bool>(json['status']),
+      dataCadastro: serializer.fromJson<PgDate>(json['dataCadastro']),
+      dataUltimoAcesso: serializer.fromJson<PgDateTime?>(
+        json['dataUltimoAcesso'],
+      ),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'idProfessor': serializer.toJson<int>(idProfessor),
+      'idAdminCriador': serializer.toJson<int?>(idAdminCriador),
+      'idEndereco': serializer.toJson<int?>(idEndereco),
+      'cpf': serializer.toJson<String>(cpf),
+      'senhaHash': serializer.toJson<String>(senhaHash),
+      'nome': serializer.toJson<String>(nome),
+      'telefone': serializer.toJson<String>(telefone),
+      'email': serializer.toJson<String>(email),
+      'status': serializer.toJson<bool>(status),
+      'dataCadastro': serializer.toJson<PgDate>(dataCadastro),
+      'dataUltimoAcesso': serializer.toJson<PgDateTime?>(dataUltimoAcesso),
+    };
+  }
+
+  ProfessorData copyWith({
+    int? idProfessor,
+    Value<int?> idAdminCriador = const Value.absent(),
+    Value<int?> idEndereco = const Value.absent(),
+    String? cpf,
+    String? senhaHash,
+    String? nome,
+    String? telefone,
+    String? email,
+    bool? status,
+    PgDate? dataCadastro,
+    Value<PgDateTime?> dataUltimoAcesso = const Value.absent(),
+  }) => ProfessorData(
+    idProfessor: idProfessor ?? this.idProfessor,
+    idAdminCriador: idAdminCriador.present
+        ? idAdminCriador.value
+        : this.idAdminCriador,
+    idEndereco: idEndereco.present ? idEndereco.value : this.idEndereco,
+    cpf: cpf ?? this.cpf,
+    senhaHash: senhaHash ?? this.senhaHash,
+    nome: nome ?? this.nome,
+    telefone: telefone ?? this.telefone,
+    email: email ?? this.email,
+    status: status ?? this.status,
+    dataCadastro: dataCadastro ?? this.dataCadastro,
+    dataUltimoAcesso: dataUltimoAcesso.present
+        ? dataUltimoAcesso.value
+        : this.dataUltimoAcesso,
+  );
+  ProfessorData copyWithCompanion(ProfessorCompanion data) {
+    return ProfessorData(
+      idProfessor: data.idProfessor.present
+          ? data.idProfessor.value
+          : this.idProfessor,
+      idAdminCriador: data.idAdminCriador.present
+          ? data.idAdminCriador.value
+          : this.idAdminCriador,
+      idEndereco: data.idEndereco.present
+          ? data.idEndereco.value
+          : this.idEndereco,
+      cpf: data.cpf.present ? data.cpf.value : this.cpf,
+      senhaHash: data.senhaHash.present ? data.senhaHash.value : this.senhaHash,
+      nome: data.nome.present ? data.nome.value : this.nome,
+      telefone: data.telefone.present ? data.telefone.value : this.telefone,
+      email: data.email.present ? data.email.value : this.email,
+      status: data.status.present ? data.status.value : this.status,
+      dataCadastro: data.dataCadastro.present
+          ? data.dataCadastro.value
+          : this.dataCadastro,
+      dataUltimoAcesso: data.dataUltimoAcesso.present
+          ? data.dataUltimoAcesso.value
+          : this.dataUltimoAcesso,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ProfessorData(')
+          ..write('idProfessor: $idProfessor, ')
+          ..write('idAdminCriador: $idAdminCriador, ')
+          ..write('idEndereco: $idEndereco, ')
+          ..write('cpf: $cpf, ')
+          ..write('senhaHash: $senhaHash, ')
+          ..write('nome: $nome, ')
+          ..write('telefone: $telefone, ')
+          ..write('email: $email, ')
+          ..write('status: $status, ')
+          ..write('dataCadastro: $dataCadastro, ')
+          ..write('dataUltimoAcesso: $dataUltimoAcesso')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    idProfessor,
+    idAdminCriador,
+    idEndereco,
+    cpf,
+    senhaHash,
+    nome,
+    telefone,
+    email,
+    status,
+    dataCadastro,
+    dataUltimoAcesso,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is ProfessorData &&
+          other.idProfessor == this.idProfessor &&
+          other.idAdminCriador == this.idAdminCriador &&
+          other.idEndereco == this.idEndereco &&
+          other.cpf == this.cpf &&
+          other.senhaHash == this.senhaHash &&
+          other.nome == this.nome &&
+          other.telefone == this.telefone &&
+          other.email == this.email &&
+          other.status == this.status &&
+          other.dataCadastro == this.dataCadastro &&
+          other.dataUltimoAcesso == this.dataUltimoAcesso);
+}
+
+class ProfessorCompanion extends UpdateCompanion<ProfessorData> {
+  final Value<int> idProfessor;
+  final Value<int?> idAdminCriador;
+  final Value<int?> idEndereco;
+  final Value<String> cpf;
+  final Value<String> senhaHash;
+  final Value<String> nome;
+  final Value<String> telefone;
+  final Value<String> email;
+  final Value<bool> status;
+  final Value<PgDate> dataCadastro;
+  final Value<PgDateTime?> dataUltimoAcesso;
+  const ProfessorCompanion({
+    this.idProfessor = const Value.absent(),
+    this.idAdminCriador = const Value.absent(),
+    this.idEndereco = const Value.absent(),
+    this.cpf = const Value.absent(),
+    this.senhaHash = const Value.absent(),
+    this.nome = const Value.absent(),
+    this.telefone = const Value.absent(),
+    this.email = const Value.absent(),
+    this.status = const Value.absent(),
+    this.dataCadastro = const Value.absent(),
+    this.dataUltimoAcesso = const Value.absent(),
+  });
+  ProfessorCompanion.insert({
+    this.idProfessor = const Value.absent(),
+    this.idAdminCriador = const Value.absent(),
+    this.idEndereco = const Value.absent(),
+    required String cpf,
+    required String senhaHash,
+    required String nome,
+    required String telefone,
+    required String email,
+    this.status = const Value.absent(),
+    this.dataCadastro = const Value.absent(),
+    this.dataUltimoAcesso = const Value.absent(),
+  }) : cpf = Value(cpf),
+       senhaHash = Value(senhaHash),
+       nome = Value(nome),
+       telefone = Value(telefone),
+       email = Value(email);
+  static Insertable<ProfessorData> custom({
+    Expression<int>? idProfessor,
+    Expression<int>? idAdminCriador,
+    Expression<int>? idEndereco,
+    Expression<String>? cpf,
+    Expression<String>? senhaHash,
+    Expression<String>? nome,
+    Expression<String>? telefone,
+    Expression<String>? email,
+    Expression<bool>? status,
+    Expression<PgDate>? dataCadastro,
+    Expression<PgDateTime>? dataUltimoAcesso,
+  }) {
+    return RawValuesInsertable({
+      if (idProfessor != null) 'id_professor': idProfessor,
+      if (idAdminCriador != null) 'id_admin_criador': idAdminCriador,
+      if (idEndereco != null) 'id_endereco': idEndereco,
+      if (cpf != null) 'cpf': cpf,
+      if (senhaHash != null) 'senha_hash': senhaHash,
+      if (nome != null) 'nome': nome,
+      if (telefone != null) 'telefone': telefone,
+      if (email != null) 'email': email,
+      if (status != null) 'status': status,
+      if (dataCadastro != null) 'data_cadastro': dataCadastro,
+      if (dataUltimoAcesso != null) 'data_ultimo_acesso': dataUltimoAcesso,
+    });
+  }
+
+  ProfessorCompanion copyWith({
+    Value<int>? idProfessor,
+    Value<int?>? idAdminCriador,
+    Value<int?>? idEndereco,
+    Value<String>? cpf,
+    Value<String>? senhaHash,
+    Value<String>? nome,
+    Value<String>? telefone,
+    Value<String>? email,
+    Value<bool>? status,
+    Value<PgDate>? dataCadastro,
+    Value<PgDateTime?>? dataUltimoAcesso,
+  }) {
+    return ProfessorCompanion(
+      idProfessor: idProfessor ?? this.idProfessor,
+      idAdminCriador: idAdminCriador ?? this.idAdminCriador,
+      idEndereco: idEndereco ?? this.idEndereco,
+      cpf: cpf ?? this.cpf,
+      senhaHash: senhaHash ?? this.senhaHash,
+      nome: nome ?? this.nome,
+      telefone: telefone ?? this.telefone,
+      email: email ?? this.email,
+      status: status ?? this.status,
+      dataCadastro: dataCadastro ?? this.dataCadastro,
+      dataUltimoAcesso: dataUltimoAcesso ?? this.dataUltimoAcesso,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (idProfessor.present) {
+      map['id_professor'] = Variable<int>(idProfessor.value);
+    }
+    if (idAdminCriador.present) {
+      map['id_admin_criador'] = Variable<int>(idAdminCriador.value);
+    }
+    if (idEndereco.present) {
+      map['id_endereco'] = Variable<int>(idEndereco.value);
+    }
+    if (cpf.present) {
+      map['cpf'] = Variable<String>(cpf.value);
+    }
+    if (senhaHash.present) {
+      map['senha_hash'] = Variable<String>(senhaHash.value);
+    }
+    if (nome.present) {
+      map['nome'] = Variable<String>(nome.value);
+    }
+    if (telefone.present) {
+      map['telefone'] = Variable<String>(telefone.value);
+    }
+    if (email.present) {
+      map['email'] = Variable<String>(email.value);
+    }
+    if (status.present) {
+      map['status'] = Variable<bool>(status.value);
+    }
+    if (dataCadastro.present) {
+      map['data_cadastro'] = Variable<PgDate>(dataCadastro.value, PgTypes.date);
+    }
+    if (dataUltimoAcesso.present) {
+      map['data_ultimo_acesso'] = Variable<PgDateTime>(
+        dataUltimoAcesso.value,
+        PgTypes.timestampWithTimezone,
+      );
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ProfessorCompanion(')
+          ..write('idProfessor: $idProfessor, ')
+          ..write('idAdminCriador: $idAdminCriador, ')
+          ..write('idEndereco: $idEndereco, ')
+          ..write('cpf: $cpf, ')
+          ..write('senhaHash: $senhaHash, ')
+          ..write('nome: $nome, ')
+          ..write('telefone: $telefone, ')
+          ..write('email: $email, ')
+          ..write('status: $status, ')
+          ..write('dataCadastro: $dataCadastro, ')
+          ..write('dataUltimoAcesso: $dataUltimoAcesso')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$GraziDatabase extends GeneratedDatabase {
   _$GraziDatabase(QueryExecutor e) : super(e);
   $GraziDatabaseManager get managers => $GraziDatabaseManager(this);
   late final $AdminTable admin = $AdminTable(this);
   late final $AlunoTable aluno = $AlunoTable(this);
+  late final $ProfessorTable professor = $ProfessorTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
   @override
-  List<DatabaseSchemaEntity> get allSchemaEntities => [admin, aluno];
+  List<DatabaseSchemaEntity> get allSchemaEntities => [admin, aluno, professor];
 }
 
 typedef $$AdminTableCreateCompanionBuilder = AdminCompanion Function({
@@ -1878,6 +2572,331 @@ typedef $$AlunoTableProcessedTableManager =
       AlunoData,
       PrefetchHooks Function()
     >;
+typedef $$ProfessorTableCreateCompanionBuilder = ProfessorCompanion Function({
+  Value<int> idProfessor,
+  Value<int?> idAdminCriador,
+  Value<int?> idEndereco,
+  required String cpf,
+  required String senhaHash,
+  required String nome,
+  required String telefone,
+  required String email,
+  Value<bool> status,
+  Value<PgDate> dataCadastro,
+  Value<PgDateTime?> dataUltimoAcesso,
+});
+typedef $$ProfessorTableUpdateCompanionBuilder = ProfessorCompanion Function({
+  Value<int> idProfessor,
+  Value<int?> idAdminCriador,
+  Value<int?> idEndereco,
+  Value<String> cpf,
+  Value<String> senhaHash,
+  Value<String> nome,
+  Value<String> telefone,
+  Value<String> email,
+  Value<bool> status,
+  Value<PgDate> dataCadastro,
+  Value<PgDateTime?> dataUltimoAcesso,
+});
+
+class $$ProfessorTableFilterComposer
+    extends Composer<_$GraziDatabase, $ProfessorTable> {
+  $$ProfessorTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get idProfessor => $composableBuilder(
+    column: $table.idProfessor,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get idAdminCriador => $composableBuilder(
+    column: $table.idAdminCriador,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get idEndereco => $composableBuilder(
+    column: $table.idEndereco,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get cpf => $composableBuilder(
+    column: $table.cpf,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get senhaHash => $composableBuilder(
+    column: $table.senhaHash,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get nome => $composableBuilder(
+    column: $table.nome,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get telefone => $composableBuilder(
+    column: $table.telefone,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get email => $composableBuilder(
+    column: $table.email,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get status => $composableBuilder(
+    column: $table.status,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<PgDate> get dataCadastro => $composableBuilder(
+    column: $table.dataCadastro,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<PgDateTime> get dataUltimoAcesso => $composableBuilder(
+    column: $table.dataUltimoAcesso,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$ProfessorTableOrderingComposer
+    extends Composer<_$GraziDatabase, $ProfessorTable> {
+  $$ProfessorTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get idProfessor => $composableBuilder(
+    column: $table.idProfessor,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get idAdminCriador => $composableBuilder(
+    column: $table.idAdminCriador,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get idEndereco => $composableBuilder(
+    column: $table.idEndereco,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get cpf => $composableBuilder(
+    column: $table.cpf,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get senhaHash => $composableBuilder(
+    column: $table.senhaHash,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get nome => $composableBuilder(
+    column: $table.nome,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get telefone => $composableBuilder(
+    column: $table.telefone,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get email => $composableBuilder(
+    column: $table.email,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get status => $composableBuilder(
+    column: $table.status,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<PgDate> get dataCadastro => $composableBuilder(
+    column: $table.dataCadastro,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<PgDateTime> get dataUltimoAcesso => $composableBuilder(
+    column: $table.dataUltimoAcesso,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$ProfessorTableAnnotationComposer
+    extends Composer<_$GraziDatabase, $ProfessorTable> {
+  $$ProfessorTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get idProfessor => $composableBuilder(
+    column: $table.idProfessor,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get idAdminCriador => $composableBuilder(
+    column: $table.idAdminCriador,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get idEndereco => $composableBuilder(
+    column: $table.idEndereco,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get cpf =>
+      $composableBuilder(column: $table.cpf, builder: (column) => column);
+
+  GeneratedColumn<String> get senhaHash =>
+      $composableBuilder(column: $table.senhaHash, builder: (column) => column);
+
+  GeneratedColumn<String> get nome =>
+      $composableBuilder(column: $table.nome, builder: (column) => column);
+
+  GeneratedColumn<String> get telefone =>
+      $composableBuilder(column: $table.telefone, builder: (column) => column);
+
+  GeneratedColumn<String> get email =>
+      $composableBuilder(column: $table.email, builder: (column) => column);
+
+  GeneratedColumn<bool> get status =>
+      $composableBuilder(column: $table.status, builder: (column) => column);
+
+  GeneratedColumn<PgDate> get dataCadastro => $composableBuilder(
+    column: $table.dataCadastro,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<PgDateTime> get dataUltimoAcesso => $composableBuilder(
+    column: $table.dataUltimoAcesso,
+    builder: (column) => column,
+  );
+}
+
+class $$ProfessorTableTableManager
+    extends
+        RootTableManager<
+          _$GraziDatabase,
+          $ProfessorTable,
+          ProfessorData,
+          $$ProfessorTableFilterComposer,
+          $$ProfessorTableOrderingComposer,
+          $$ProfessorTableAnnotationComposer,
+          $$ProfessorTableCreateCompanionBuilder,
+          $$ProfessorTableUpdateCompanionBuilder,
+          (
+            ProfessorData,
+            BaseReferences<_$GraziDatabase, $ProfessorTable, ProfessorData>,
+          ),
+          ProfessorData,
+          PrefetchHooks Function()
+        > {
+  $$ProfessorTableTableManager(_$GraziDatabase db, $ProfessorTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$ProfessorTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$ProfessorTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$ProfessorTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<int> idProfessor = const Value.absent(),
+                Value<int?> idAdminCriador = const Value.absent(),
+                Value<int?> idEndereco = const Value.absent(),
+                Value<String> cpf = const Value.absent(),
+                Value<String> senhaHash = const Value.absent(),
+                Value<String> nome = const Value.absent(),
+                Value<String> telefone = const Value.absent(),
+                Value<String> email = const Value.absent(),
+                Value<bool> status = const Value.absent(),
+                Value<PgDate> dataCadastro = const Value.absent(),
+                Value<PgDateTime?> dataUltimoAcesso = const Value.absent(),
+              }) => ProfessorCompanion(
+                idProfessor: idProfessor,
+                idAdminCriador: idAdminCriador,
+                idEndereco: idEndereco,
+                cpf: cpf,
+                senhaHash: senhaHash,
+                nome: nome,
+                telefone: telefone,
+                email: email,
+                status: status,
+                dataCadastro: dataCadastro,
+                dataUltimoAcesso: dataUltimoAcesso,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> idProfessor = const Value.absent(),
+                Value<int?> idAdminCriador = const Value.absent(),
+                Value<int?> idEndereco = const Value.absent(),
+                required String cpf,
+                required String senhaHash,
+                required String nome,
+                required String telefone,
+                required String email,
+                Value<bool> status = const Value.absent(),
+                Value<PgDate> dataCadastro = const Value.absent(),
+                Value<PgDateTime?> dataUltimoAcesso = const Value.absent(),
+              }) => ProfessorCompanion.insert(
+                idProfessor: idProfessor,
+                idAdminCriador: idAdminCriador,
+                idEndereco: idEndereco,
+                cpf: cpf,
+                senhaHash: senhaHash,
+                nome: nome,
+                telefone: telefone,
+                email: email,
+                status: status,
+                dataCadastro: dataCadastro,
+                dataUltimoAcesso: dataUltimoAcesso,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<$ProfessorTable, ProfessorData>(table),
+                  BaseReferences<
+                    _$GraziDatabase,
+                    $ProfessorTable,
+                    ProfessorData
+                  >(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$ProfessorTableProcessedTableManager =
+    ProcessedTableManager<
+      _$GraziDatabase,
+      $ProfessorTable,
+      ProfessorData,
+      $$ProfessorTableFilterComposer,
+      $$ProfessorTableOrderingComposer,
+      $$ProfessorTableAnnotationComposer,
+      $$ProfessorTableCreateCompanionBuilder,
+      $$ProfessorTableUpdateCompanionBuilder,
+      (
+        ProfessorData,
+        BaseReferences<_$GraziDatabase, $ProfessorTable, ProfessorData>,
+      ),
+      ProfessorData,
+      PrefetchHooks Function()
+    >;
 
 class $GraziDatabaseManager {
   final _$GraziDatabase _db;
@@ -1886,4 +2905,6 @@ class $GraziDatabaseManager {
       $$AdminTableTableManager(_db, _db.admin);
   $$AlunoTableTableManager get aluno =>
       $$AlunoTableTableManager(_db, _db.aluno);
+  $$ProfessorTableTableManager get professor =>
+      $$ProfessorTableTableManager(_db, _db.professor);
 }

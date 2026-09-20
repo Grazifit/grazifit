@@ -5,6 +5,7 @@ import 'package:drift_postgres/drift_postgres.dart';
 import 'package:postgres/postgres.dart' as pg;
 import '../features/pessoas/admin/admin_tables.dart';
 import '../features/pessoas/aluno/aluno_tables.dart';
+import '../features/pessoas/professor/professor_tables.dart';
 
 part 'database.g.dart';
 
@@ -71,7 +72,7 @@ part 'database.g.dart';
 /// para consultas tipadas. Elas nunca definem o banco.
 ///
 /// Ver docs/arquitetura.md secao 1 (D58) e secao 4.
-@DriftDatabase(tables: [Admin, Aluno])
+@DriftDatabase(tables: [Admin, Aluno, Professor])
 class GraziDatabase extends _$GraziDatabase {
   GraziDatabase(super.executor);
 
