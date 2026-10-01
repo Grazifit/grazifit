@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:drift/drift.dart';
 import 'package:drift_postgres/drift_postgres.dart';
 import 'package:postgres/postgres.dart' as pg;
+
 import '../features/pessoas/admin/admin_tables.dart';
 import '../features/pessoas/aluno/aluno_tables.dart';
 
@@ -44,10 +45,10 @@ part 'database.g.dart';
     'require' => pg.SslMode.require,
     null => pg.SslMode.require,
     final outro => throw ArgumentError.value(
-        outro,
-        'sslmode',
-        'valor nao suportado: use disable ou require',
-      ),
+      outro,
+      'sslmode',
+      'valor nao suportado: use disable ou require',
+    ),
   };
 
   return (
@@ -96,6 +97,11 @@ class GraziDatabase extends _$GraziDatabase {
       );
     }
 
+    return GraziDatabase.fromUrl(url);
+  }
+
+  /// Usa a URL ja validada pela configuracao da aplicacao.
+  factory GraziDatabase.fromUrl(String url) {
     final conexao = _daUrl(url);
 
     return GraziDatabase(
@@ -145,7 +151,7 @@ class GraziDatabase extends _$GraziDatabase {
   /// Ver docs/arquitetura.md secao 1 e prompt-fase-2 secao 9.2.
   @override
   MigrationStrategy get migration => MigrationStrategy(
-        onCreate: (m) async {},
-        onUpgrade: (m, from, to) async {},
-      );
+    onCreate: (m) async {},
+    onUpgrade: (m, from, to) async {},
+  );
 }
