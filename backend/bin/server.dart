@@ -14,11 +14,12 @@ import 'package:grazifit_backend/features/pessoas/aluno/aluno_service.dart';
 
 void main() async {
   final config = Config.doAmbiente();
-  configurarCriptografia(SenhaHasher(pepperBase64: config.senhaPepper));
+  final senhaHasher = SenhaHasher(pepperBase64: config.senhaPepper);
+  configurarCriptografia(senhaHasher);
   final db = GraziDatabase.fromUrl(config.databaseUrl);
 
   final adminRepository = AdminRepository(db);
-  final adminService = AdminService(adminRepository);
+  final adminService = AdminService(adminRepository, senhaHasher);
   final adminController = AdminController(adminService);
 
   final alunoRepository = AlunoRepository(db);
