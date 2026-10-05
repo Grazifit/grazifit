@@ -3,6 +3,7 @@ import 'package:grazifit_backend/database/database.dart';
 import 'package:grazifit_backend/features/pessoas/aluno/aluno_exception.dart';
 import 'package:grazifit_backend/features/pessoas/aluno/aluno_repository.dart';
 import 'package:grazifit_backend/features/pessoas/aluno/aluno_service.dart';
+import 'package:grazifit_backend/shared/autorizacao/identidade.dart';
 import 'package:shared/erros/codigo_erro.dart';
 import 'package:test/test.dart';
 
@@ -97,6 +98,7 @@ Future<AlunoData> _criar(
   String? observacaoSaude,
 }) {
   return service.criar(
+    identidade: const Identidade(id: 1, papel: Papel.admin),
     cpf: cpf,
     senha: senha,
     nome: nome,
@@ -126,6 +128,25 @@ Matcher _recusa<T extends AlunoException>(CodigoErro codigo, String campo) {
 }
 
 void main() {
+  test('somente admin pode cadastrar aluno', () async {
+    final repo = _RepositorioFalso();
+    final service = AlunoService(repo, hash: _hashFalso);
+
+    await expectLater(
+      () => service.criar(
+        identidade: const Identidade(id: 2, papel: Papel.professor),
+        cpf: cpfValido,
+        senha: 'senhaboa1',
+        nome: 'Fulano de Tal',
+        dataNascimento: DateTime(1995, 3, 20),
+        telefone: '11999998888',
+        email: 'fulano@exemplo.com',
+      ),
+      throwsA(isA<AcessoNegado>()),
+    );
+    expect(repo.recebido, isNull);
+  });
+
   group('AlunoService.criar — recusa antes de tocar o banco', () {
     test('CPF com digito verificador errado', () {
       final repo = _RepositorioFalso();

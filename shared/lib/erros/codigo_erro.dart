@@ -10,10 +10,8 @@
 /// traduz a falha do banco para um destes valores, e
 /// `app/lib/core/network/`, que escolhe o texto da tela a partir dele.
 ///
-/// **Fonte:** docs/arquitetura.md secao 7.1 (a tabela de nove linhas) e
-/// secao 7.3 (`CPF_INVALIDO` e `EMAIL_INVALIDO`, que estao fora da tabela).
-/// Nenhum codigo aqui foi inventado: todos sao transcricao daquelas duas
-/// secoes. Codigo novo nasce la primeiro, nunca aqui.
+/// **Fonte:** docs/arquitetura.md secao 7, incluindo os erros HTTP da F-01.
+/// Codigo novo nasce no contrato documentado, nunca apenas neste enum.
 enum CodigoErro {
   // --- Triggers, com ERRCODE proprio (arquitetura secao 7.2) ---
   aulaSemVagas('AULA_SEM_VAGAS'),
@@ -32,7 +30,15 @@ enum CodigoErro {
   cpfInvalido('CPF_INVALIDO'),
   emailInvalido('EMAIL_INVALIDO'),
 
-  dataNascimentoInvalida('DATA_NASCIMENTO_INVALIDA');
+  dataNascimentoInvalida('DATA_NASCIMENTO_INVALIDA'),
+
+  // Jornada F-01 e autenticacao das chamadas subsequentes.
+  requisicaoInvalida('REQUISICAO_INVALIDA'),
+  credenciaisInvalidas('CREDENCIAIS_INVALIDAS'),
+  muitasTentativas('MUITAS_TENTATIVAS'),
+  tokenInvalido('TOKEN_INVALIDO'),
+  acessoNegado('ACESSO_NEGADO'),
+  erroInterno('ERRO_INTERNO');
 
   const CodigoErro(this.valor);
 

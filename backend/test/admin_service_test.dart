@@ -4,6 +4,7 @@ import 'package:grazifit_backend/database/database.dart';
 import 'package:grazifit_backend/features/auth/criptografia.dart';
 import 'package:grazifit_backend/features/pessoas/admin/admin_repository.dart';
 import 'package:grazifit_backend/features/pessoas/admin/admin_service.dart';
+import 'package:grazifit_backend/shared/autorizacao/identidade.dart';
 import 'package:test/test.dart';
 
 class _AdminRepositoryFalso implements AdminRepository {
@@ -54,6 +55,8 @@ class _AdminRepositoryFalso implements AdminRepository {
 }
 
 void main() {
+  const admin = Identidade(id: 1, papel: Papel.admin);
+  const aluno = Identidade(id: 2, papel: Papel.aluno);
   test('criacao e troca de senha do admin usam o mesmo hasher PHC', () async {
     final pepper = base64Encode(List<int>.generate(32, (i) => i));
     final hasher = SenhaHasher(pepperBase64: pepper);
@@ -61,6 +64,7 @@ void main() {
     final service = AdminService(repository, hasher);
 
     final criado = await service.criar(
+      identidade: admin,
       cpf: '52998224725',
       senha: 'senhaInicial123',
       nome: 'Admin Teste',
@@ -77,6 +81,7 @@ void main() {
     );
 
     final atualizado = await service.atualizar(
+      identidade: admin,
       idAdmin: criado.idAdmin,
       senha: 'senhaNova123',
     );
@@ -89,5 +94,23 @@ void main() {
       ),
       isTrue,
     );
+  });
+
+  test('aluno nao cria administrador', () async {
+    final pepper = base64Encode(List<int>.generate(32, (i) => i));
+    final repository = _AdminRepositoryFalso();
+    final service = AdminService(repository, SenhaHasher(pepperBase64: pepper));
+
+    await expectLater(
+      () => service.criar(
+        identidade: aluno,
+        cpf: '52998224725',
+        senha: 'senhaInicial123',
+        nome: 'Admin Teste',
+        email: 'admin@exemplo.com',
+      ),
+      throwsA(isA<AcessoNegado>()),
+    );
+    expect(repository.registro, isNull);
   });
 }

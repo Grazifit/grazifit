@@ -1,6 +1,7 @@
 import 'package:shared/erros/codigo_erro.dart';
 
 import '../../../database/database.dart' show AlunoData;
+import '../../../shared/autorizacao/identidade.dart';
 import '../../auth/criptografia.dart';
 import '../../auth/validacoes.dart';
 import 'aluno_exception.dart';
@@ -14,6 +15,7 @@ class AlunoService {
   AlunoService(this._repository, {this.hash = hashPassword});
 
   Future<AlunoData> criar({
+    required Identidade identidade,
     required String cpf,
     required String senha,
     required String nome,
@@ -25,6 +27,7 @@ class AlunoService {
     String? restricaoMedica,
     String? observacaoSaude,
   }) async {
+    exigirAdmin(identidade);
 
     final cpfNormalizado = cpf.replaceAll(RegExp(r'[^0-9]'), '');
     final emailNormalizado = email.trim().toLowerCase();

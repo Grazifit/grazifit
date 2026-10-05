@@ -4,6 +4,8 @@ import 'package:drift_postgres/drift_postgres.dart' show PgDate;
 import 'package:grazifit_backend/database/database.dart';
 import 'package:grazifit_backend/features/pessoas/aluno/aluno_controller.dart';
 import 'package:grazifit_backend/features/pessoas/aluno/aluno_service.dart';
+import 'package:grazifit_backend/shared/autorizacao/identidade.dart';
+import 'package:grazifit_backend/shared/middleware/identidade_middleware.dart';
 import 'package:shelf/shelf.dart';
 import 'package:test/test.dart';
 
@@ -23,6 +25,7 @@ class _ServicoFalso implements AlunoService {
 
   @override
   Future<AlunoData> criar({
+    required Identidade identidade,
     required String cpf,
     required String senha,
     required String nome,
@@ -72,6 +75,9 @@ Future<Response> _post(AlunoController controller, String corpo) {
       Uri.parse('http://localhost/aluno'),
       body: corpo,
       headers: {'Content-Type': 'application/json'},
+      context: {
+        chaveIdentidadeContexto: const Identidade(id: 1, papel: Papel.admin),
+      },
     ),
   );
 }

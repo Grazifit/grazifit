@@ -7,6 +7,8 @@ import 'package:shelf/shelf.dart';
 import 'package:shelf_router/shelf_router.dart';
 
 import '../../../shared/erros/tradutor_erro_banco.dart';
+import '../../../shared/autorizacao/identidade.dart';
+import '../../../shared/middleware/identidade_middleware.dart';
 import 'aluno_exception.dart';
 import 'aluno_service.dart';
 
@@ -27,6 +29,10 @@ class AlunoController {
   }
 
   Future<Response> _createAluno(Request request) async {
+    final identidade = identidadeDaRequisicao(request);
+    if (identidade == null) {
+      return _envelope(401, CodigoErro.tokenInvalido);
+    }
     final Map<String, dynamic> payload;
     try {
       payload =
@@ -75,13 +81,14 @@ class AlunoController {
 
     try {
       final aluno = await _service.criar(
+        identidade: identidade,
         cpf: cpf!,
         senha: senha,
         nome: nome,
         dataNascimento: dataNascimento,
         telefone: telefone,
         email: email!,
-        idAdminCriador: null,
+        idAdminCriador: identidade.id,
         idEndereco: _inteiro(payload['id_endereco']),
         restricaoMedica: _texto(payload['restricao_medica']),
         observacaoSaude: _texto(payload['observacao_saude']),
@@ -96,12 +103,13 @@ class AlunoController {
           telefone: aluno.telefone,
         ),
       );
+    } on AcessoNegado {
+      return _envelope(403, CodigoErro.acessoNegado);
     } on AlunoValidationException catch (e) {
       return _envelope(400, e.codigo, campo: e.campo);
     } on AlunoConflictException catch (e) {
       return _envelope(409, e.codigo, campo: e.campo);
     } on pg.ServerException catch (e, stackTrace) {
-
       final codigo = traduzirErroBanco(e);
       if (codigo == null) {
         return _erroInterno(e, stackTrace);
@@ -148,6 +156,8 @@ class AlunoController {
     CodigoErro.emailEmUso => 'E-mail ja cadastrado.',
     CodigoErro.dataNascimentoInvalida =>
       'Data de nascimento deve ser anterior a hoje.',
+    CodigoErro.tokenInvalido => 'Autenticacao necessaria.',
+    CodigoErro.acessoNegado => 'Acesso negado.',
     _ => 'Cadastro rejeitado.',
   };
 

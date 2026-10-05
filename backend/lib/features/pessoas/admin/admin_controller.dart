@@ -1,9 +1,14 @@
 import 'dart:convert';
+
 import 'package:shelf/shelf.dart';
 import 'package:shelf_router/shelf_router.dart';
+import 'package:shared/erros/codigo_erro.dart';
 
 import '../../../database/database.dart';
+import '../../../shared/autorizacao/identidade.dart';
+import '../../../shared/middleware/identidade_middleware.dart';
 import 'admin_service.dart';
+
 import 'package:grazifit_backend/shared/erros/admin_exceptions.dart';
 import 'package:shared/dtos/admin_serializer.dart';
 
@@ -29,19 +34,27 @@ class AdminController {
     );
   }
 
-Map<String, dynamic> _paraJson(AdminData admin) {
-  return adminToPublicJson(
-    idAdmin: admin.idAdmin,
-    nome: admin.nome,
-    email: admin.email,
-    telefone: admin.telefone,
-  );
-}
+  Response _acesso(int status, CodigoErro codigo, String mensagem) =>
+      _jsonResponse(status, {'codigo': codigo.valor, 'mensagem': mensagem});
+
+  Map<String, dynamic> _paraJson(AdminData admin) {
+    return adminToPublicJson(
+      idAdmin: admin.idAdmin,
+      nome: admin.nome,
+      email: admin.email,
+      telefone: admin.telefone,
+    );
+  }
 
   Future<Response> _criar(Request request) async {
+    final identidade = identidadeDaRequisicao(request);
+    if (identidade == null) {
+      return _acesso(401, CodigoErro.tokenInvalido, 'Autenticacao necessaria.');
+    }
     final Map<String, dynamic> payload;
     try {
-      payload = jsonDecode(await request.readAsString()) as Map<String, dynamic>;
+      payload =
+          jsonDecode(await request.readAsString()) as Map<String, dynamic>;
     } catch (_) {
       return _jsonResponse(400, {'erro': 'JSON inválido.'});
     }
@@ -58,6 +71,7 @@ Map<String, dynamic> _paraJson(AdminData admin) {
 
     try {
       final admin = await _service.criar(
+        identidade: identidade,
         cpf: cpf,
         senha: senha,
         nome: nome,
@@ -65,6 +79,8 @@ Map<String, dynamic> _paraJson(AdminData admin) {
         telefone: telefone,
       );
       return _jsonResponse(201, _paraJson(admin));
+    } on AcessoNegado {
+      return _acesso(403, CodigoErro.acessoNegado, 'Acesso negado.');
     } on ValidationException catch (e) {
       return _jsonResponse(400, {'erro': e.message});
     } on ConflictException catch (e) {
@@ -75,14 +91,20 @@ Map<String, dynamic> _paraJson(AdminData admin) {
   }
 
   Future<Response> _buscarPorId(Request request, String id) async {
+    final identidade = identidadeDaRequisicao(request);
+    if (identidade == null) {
+      return _acesso(401, CodigoErro.tokenInvalido, 'Autenticacao necessaria.');
+    }
     final idAdmin = int.tryParse(id);
     if (idAdmin == null) {
       return _jsonResponse(400, {'erro': 'Id inválido.'});
     }
 
     try {
-      final admin = await _service.buscarPorId(idAdmin);
+      final admin = await _service.buscarPorId(identidade, idAdmin);
       return _jsonResponse(200, _paraJson(admin));
+    } on AcessoNegado {
+      return _acesso(403, CodigoErro.acessoNegado, 'Acesso negado.');
     } on NotFoundException catch (e) {
       return _jsonResponse(404, {'erro': e.message});
     } catch (e) {
@@ -91,6 +113,10 @@ Map<String, dynamic> _paraJson(AdminData admin) {
   }
 
   Future<Response> _atualizar(Request request, String id) async {
+    final identidade = identidadeDaRequisicao(request);
+    if (identidade == null) {
+      return _acesso(401, CodigoErro.tokenInvalido, 'Autenticacao necessaria.');
+    }
     final idAdmin = int.tryParse(id);
     if (idAdmin == null) {
       return _jsonResponse(400, {'erro': 'Id inválido.'});
@@ -98,13 +124,15 @@ Map<String, dynamic> _paraJson(AdminData admin) {
 
     final Map<String, dynamic> payload;
     try {
-      payload = jsonDecode(await request.readAsString()) as Map<String, dynamic>;
+      payload =
+          jsonDecode(await request.readAsString()) as Map<String, dynamic>;
     } catch (_) {
       return _jsonResponse(400, {'erro': 'JSON inválido.'});
     }
 
     try {
       final admin = await _service.atualizar(
+        identidade: identidade,
         idAdmin: idAdmin,
         nome: payload['nome'] as String?,
         email: payload['email'] as String?,
@@ -112,6 +140,8 @@ Map<String, dynamic> _paraJson(AdminData admin) {
         senha: payload['senha'] as String?,
       );
       return _jsonResponse(200, _paraJson(admin));
+    } on AcessoNegado {
+      return _acesso(403, CodigoErro.acessoNegado, 'Acesso negado.');
     } on ValidationException catch (e) {
       return _jsonResponse(400, {'erro': e.message});
     } on ConflictException catch (e) {
@@ -124,14 +154,20 @@ Map<String, dynamic> _paraJson(AdminData admin) {
   }
 
   Future<Response> _deletar(Request request, String id) async {
+    final identidade = identidadeDaRequisicao(request);
+    if (identidade == null) {
+      return _acesso(401, CodigoErro.tokenInvalido, 'Autenticacao necessaria.');
+    }
     final idAdmin = int.tryParse(id);
     if (idAdmin == null) {
       return _jsonResponse(400, {'erro': 'Id inválido.'});
     }
 
     try {
-      await _service.deletar(idAdmin);
+      await _service.deletar(identidade, idAdmin);
       return Response(204);
+    } on AcessoNegado {
+      return _acesso(403, CodigoErro.acessoNegado, 'Acesso negado.');
     } on NotFoundException catch (e) {
       return _jsonResponse(404, {'erro': e.message});
     } catch (e) {
