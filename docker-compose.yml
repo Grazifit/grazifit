@@ -1,0 +1,52 @@
+# ============================================================
+# UM servico: PostgreSQL 18.
+#
+# O servico de backend e o seed one-shot do admin sao da Fase 3
+# (ver docs/arquitetura.md secao 10 e prompt-fase-2 secao 4.2).
+# Nao acrescente nenhum dos dois aqui antes daquela fase.
+# ============================================================
+
+services:
+  banco:
+    image: postgres:18
+    container_name: grazifit-db
+    restart: unless-stopped
+
+    # Nomes ditados pela imagem oficial — nao renomeie.
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-grazifit}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?defina POSTGRES_PASSWORD no .env (veja .env.example)}
+      POSTGRES_DB: ${POSTGRES_DB:-grazifit}
+      # Evita divergencia de ordenacao entre maquinas.
+      POSTGRES_INITDB_ARGS: "--encoding=UTF8 --locale=C"
+
+    # Porta publicada configuravel. Dentro da rede do compose a
+    # porta continua sendo 5432.
+    #
+    # Publica SOMENTE em loopback (127.0.0.1). Sem o prefixo, a forma
+    # curta "PORTA:PORTA" publica em 0.0.0.0 — todas as interfaces,
+    # inclusive a placa de rede —, deixando o banco alcancavel por
+    # qualquer host da rede local. O backend (via localhost) e o
+    # aplicar.sh (via psql dentro do container) nao usam a placa de
+    # rede, entao nada legitimo depende dela.
+    ports:
+      - "127.0.0.1:${POSTGRES_PORT:-5432}:5432"
+
+    volumes:
+      - grazifit-data:/var/lib/postgresql
+
+    # ATENCAO (prompt-fase-2 secao 5): durante o initdb a imagem sobe um
+    # servidor temporario e o derruba antes do definitivo. O pg_isready
+    # responde "pronto" nesse temporario. Este healthcheck serve ao
+    # orquestrador; nenhum script deve confiar no primeiro pg_isready —
+    # database/aplicar.sh tenta a conexao real em laco por isso.
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+volumes:
+  grazifit-data:
+    name: grazifit-data
