@@ -32,6 +32,10 @@ enum CodigoErro {
   cpfInvalido('CPF_INVALIDO'),
   emailInvalido('EMAIL_INVALIDO'),
 
+  // --- Professor ---
+  professorEmUso('PROFESSOR_EM_USO'),
+  professorNaoEncontrado('PROFESSOR_NAO_ENCONTRADO'),
+
   dataNascimentoInvalida('DATA_NASCIMENTO_INVALIDA');
 
   const CodigoErro(this.valor);
