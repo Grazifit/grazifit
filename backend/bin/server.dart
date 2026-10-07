@@ -18,6 +18,9 @@ import 'package:grazifit_backend/features/pessoas/aluno/aluno_service.dart';
 import 'package:grazifit_backend/shared/middleware/error_handler.dart';
 import 'package:grazifit_backend/shared/middleware/identidade_middleware.dart';
 import 'package:grazifit_backend/shared/middleware/registro_requisicoes.dart';
+import 'package:grazifit_backend/features/pessoas/professor/professor_controller.dart';
+import 'package:grazifit_backend/features/pessoas/professor/professor_repository.dart';
+import 'package:grazifit_backend/features/pessoas/professor/professor_service.dart';
 
 void main() async {
   final config = Config.doAmbiente();
@@ -38,10 +41,15 @@ void main() async {
   final alunoService = AlunoService(alunoRepository);
   final alunoController = AlunoController(alunoService);
 
+  final professorRepository = ProfessorRepository(db);
+  final professorService = ProfessorService(professorRepository, senhaHasher);
+  final professorController = ProfessorController(professorService);
+
   final rootRouter = Router()
     ..mount('/', authController.router.call)
     ..mount('/', adminController.router.call)
-    ..mount('/', alunoController.router.call);
+    ..mount('/', alunoController.router.call)
+    ..mount('/', professorController.router.call);
 
   final handler = const Pipeline()
       .addMiddleware(registroRequisicoes())

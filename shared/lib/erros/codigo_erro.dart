@@ -32,6 +32,10 @@ enum CodigoErro {
 
   dataNascimentoInvalida('DATA_NASCIMENTO_INVALIDA'),
 
+  // --- Professor ---
+  professorEmUso('PROFESSOR_EM_USO'),
+  professorNaoEncontrado('PROFESSOR_NAO_ENCONTRADO'),
+
   // Jornada F-01 e autenticacao das chamadas subsequentes.
   requisicaoInvalida('REQUISICAO_INVALIDA'),
   credenciaisInvalidas('CREDENCIAIS_INVALIDAS'),
