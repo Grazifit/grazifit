@@ -19,22 +19,24 @@ class ProfessorRepository {
     required String email,
     int? idAdminCriador,
   }) {
-    return _db.into(_db.professor).insertReturning(
-      ProfessorCompanion.insert(
-        cpf: cpf,
-        senhaHash: senhaHash,
-        nome: nome,
-        telefone: telefone,
-        email: email,
-        idAdminCriador: Value(idAdminCriador),
-      ),
-    );
+    return _db
+        .into(_db.professor)
+        .insertReturning(
+          ProfessorCompanion.insert(
+            cpf: cpf,
+            senhaHash: senhaHash,
+            nome: nome,
+            telefone: telefone,
+            email: email,
+            idAdminCriador: Value(idAdminCriador),
+          ),
+        );
   }
 
   Future<ProfessorData?> buscarPorId(int idProfessor) {
-    return (_db.select(_db.professor)
-          ..where((t) => t.idProfessor.equals(idProfessor)))
-        .getSingleOrNull();
+    return (_db.select(
+      _db.professor,
+    )..where((t) => t.idProfessor.equals(idProfessor))).getSingleOrNull();
   }
 
   /// Devolve `null` se o id não existe.
@@ -46,17 +48,20 @@ class ProfessorRepository {
     String? senhaHash,
     bool? status,
   }) async {
-    final linhas = await (_db.update(_db.professor)
-          ..where((t) => t.idProfessor.equals(idProfessor)))
-        .write(
-      ProfessorCompanion(
-        nome: nome != null ? Value(nome) : const Value.absent(),
-        email: email != null ? Value(email) : const Value.absent(),
-        telefone: telefone != null ? Value(telefone) : const Value.absent(),
-        senhaHash: senhaHash != null ? Value(senhaHash) : const Value.absent(),
-        status: status != null ? Value(status) : const Value.absent(),
-      ),
-    );
+    final linhas =
+        await (_db.update(
+          _db.professor,
+        )..where((t) => t.idProfessor.equals(idProfessor))).write(
+          ProfessorCompanion(
+            nome: nome != null ? Value(nome) : const Value.absent(),
+            email: email != null ? Value(email) : const Value.absent(),
+            telefone: telefone != null ? Value(telefone) : const Value.absent(),
+            senhaHash: senhaHash != null
+                ? Value(senhaHash)
+                : const Value.absent(),
+            status: status != null ? Value(status) : const Value.absent(),
+          ),
+        );
 
     if (linhas == 0) return null;
     return buscarPorId(idProfessor);
@@ -64,9 +69,9 @@ class ProfessorRepository {
 
   /// Devolve `false` se o id não existe.
   Future<bool> deletar(int idProfessor) async {
-    final linhas = await (_db.delete(_db.professor)
-          ..where((t) => t.idProfessor.equals(idProfessor)))
-        .go();
+    final linhas = await (_db.delete(
+      _db.professor,
+    )..where((t) => t.idProfessor.equals(idProfessor))).go();
     return linhas > 0;
   }
 

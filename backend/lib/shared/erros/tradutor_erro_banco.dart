@@ -38,7 +38,7 @@ const Map<String, CodigoErro> _porConstraint = <String, CodigoErro>{
   'uq_aluno_cpf': CodigoErro.cpfEmUso,
   'uq_aluno_email': CodigoErro.emailEmUso,
 
-// --- Professor ---
+  // --- Professor ---
   'uq_professor_cpf': CodigoErro.cpfEmUso,
   'uq_professor_email': CodigoErro.emailEmUso,
   'fk_vinculo_professor': CodigoErro.professorEmUso,
