@@ -19,7 +19,10 @@ class _RepositorioFalso implements AlunoRepository {
   Future<bool> cpfEmUso(String cpf) async => cpfJaExiste;
 
   @override
-  Future<bool> emailEmUso(String email) async => emailJaExiste;
+  Future<bool> emailEmUso(String email, {int? excetoIdAluno}) async {
+    emailChecadoExceto = excetoIdAluno;
+    return emailJaExiste;
+  }
 
   @override
   Future<AlunoData> create({
@@ -59,7 +62,74 @@ class _RepositorioFalso implements AlunoRepository {
       dataCadastro: PgDate.fromDateTime(DateTime.now()),
     );
   }
+
+  /// Alunos que o banco falso "possui", por id.
+  final Map<int, AlunoData> existentes = {};
+
+  /// Quantas vezes a busca por id chegou ao repositorio.
+  int buscasPorId = 0;
+
+  @override
+  Future<AlunoData?> buscarAlunoPorId(int idAluno) async {
+    buscasPorId++;
+    return existentes[idAluno];
+  }
+
+  @override
+  Future<List<AlunoData>> buscarAlunos({
+    required int limit,
+    required int offset,
+  }) async => existentes.values.skip(offset).take(limit).toList();
+
+  @override
+  Future<int> countAlunos() async => existentes.length;
+
+  /// O `excetoIdAluno` que o service passou na ultima checagem de e-mail.
+  int? emailChecadoExceto;
+
+  /// O que o service passou para `atualizar`, para inspecao depois.
+  Map<String, Object?>? atualizacaoRecebida;
+
+  @override
+  Future<AlunoData?> atualizar(
+    int idAluno, {
+    String? nome,
+    String? telefone,
+    String? email,
+  }) async {
+    atualizacaoRecebida = {'nome': nome, 'telefone': telefone, 'email': email};
+    final atual = existentes[idAluno];
+    if (atual == null) return null;
+    return existentes[idAluno] = atual.copyWith(
+      nome: nome ?? atual.nome,
+      telefone: telefone ?? atual.telefone,
+      email: email ?? atual.email,
+    );
+  }
+
+  @override
+  Future<bool> alterarStatus(int idAluno, {required bool status}) async {
+    final atual = existentes[idAluno];
+    if (atual == null) return false;
+    existentes[idAluno] = atual.copyWith(status: status);
+    return true;
+  }
+
+  @override
+  Future<bool> excluir(int idAluno) async => existentes.remove(idAluno) != null;
 }
+
+AlunoData _alunoExistente(int idAluno) => AlunoData(
+  idAluno: idAluno,
+  cpf: cpfValido,
+  senhaHash: 'hash',
+  nome: 'Aluno $idAluno',
+  dataNascimento: PgDate.fromDateTime(DateTime(1995, 3, 20)),
+  telefone: '11999998888',
+  email: 'aluno$idAluno@exemplo.com',
+  status: true,
+  dataCadastro: PgDate.fromDateTime(DateTime.now()),
+);
 
 /// Variante que so registra se alguma consulta de unicidade aconteceu.
 class _ContaConsultas extends _RepositorioFalso {
@@ -74,7 +144,7 @@ class _ContaConsultas extends _RepositorioFalso {
   }
 
   @override
-  Future<bool> emailEmUso(String email) async {
+  Future<bool> emailEmUso(String email, {int? excetoIdAluno}) async {
     aoConsultar();
     return false;
   }
@@ -268,5 +338,225 @@ void main() {
       // Formato de `hashPassword`: iteracoes:memoria:lanes:salt:hash
       expect(hash.split(':'), hasLength(5));
     });
+  });
+
+  group('AlunoService.buscarAlunos', () {
+    test('devolve a pagina pedida e o total da colecao', () async {
+      final repo = _RepositorioFalso();
+      for (var id = 1; id <= 5; id++) {
+        repo.existentes[id] = _alunoExistente(id);
+      }
+
+      final pagina = await AlunoService(
+        repo,
+        hash: _hashFalso,
+      ).buscarAlunos(limit: 2, offset: 2);
+
+      expect(pagina.itens.map((a) => a.idAluno), [3, 4]);
+      expect(pagina.total, 5);
+    });
+
+    test('offset alem do fim devolve pagina vazia, total intacto', () async {
+      final repo = _RepositorioFalso()..existentes[1] = _alunoExistente(1);
+
+      final pagina = await AlunoService(
+        repo,
+        hash: _hashFalso,
+      ).buscarAlunos(limit: 20, offset: 40);
+
+      expect(pagina.itens, isEmpty);
+      expect(pagina.total, 1);
+    });
+  });
+
+  group('AlunoService.buscarAlunoPorId', () {
+    final naoEncontrado = throwsA(
+      isA<AlunoNotFoundException>().having(
+        (e) => e.codigo,
+        'codigo',
+        CodigoErro.registroNaoEncontrado,
+      ),
+    );
+
+    test('devolve o aluno quando ele existe', () async {
+      final repo = _RepositorioFalso()..existentes[7] = _alunoExistente(7);
+
+      final aluno = await AlunoService(
+        repo,
+        hash: _hashFalso,
+      ).buscarAlunoPorId(7);
+
+      expect(aluno.idAluno, 7);
+    });
+
+    test('repositorio devolve null -> REGISTRO_NAO_ENCONTRADO', () {
+      final repo = _RepositorioFalso();
+
+      expect(
+        () => AlunoService(repo, hash: _hashFalso).buscarAlunoPorId(99),
+        naoEncontrado,
+      );
+    });
+
+    for (final idImpossivel in const [0, -1]) {
+      test('id $idImpossivel nem chega ao repositorio', () async {
+        final repo = _RepositorioFalso();
+
+        await expectLater(
+          () => AlunoService(
+            repo,
+            hash: _hashFalso,
+          ).buscarAlunoPorId(idImpossivel),
+          naoEncontrado,
+        );
+        expect(repo.buscasPorId, 0);
+      });
+    }
+  });
+
+  group('AlunoService.atualizar', () {
+    test('altera so o que veio e normaliza o e-mail', () async {
+      final repo = _RepositorioFalso()..existentes[1] = _alunoExistente(1);
+
+      final aluno = await AlunoService(
+        repo,
+        hash: _hashFalso,
+      ).atualizar(1, email: '  Novo@Exemplo.COM ');
+
+      expect(aluno.email, 'novo@exemplo.com');
+      expect(aluno.nome, 'Aluno 1', reason: 'nome nao veio, nao muda');
+      expect(repo.atualizacaoRecebida, {
+        'nome': null,
+        'telefone': null,
+        'email': 'novo@exemplo.com',
+      });
+    });
+
+    test('tira os espacos das pontas de nome e telefone', () async {
+      final repo = _RepositorioFalso()..existentes[1] = _alunoExistente(1);
+
+      await AlunoService(
+        repo,
+        hash: _hashFalso,
+      ).atualizar(1, nome: '  Novo Nome  ', telefone: ' 11911112222 ');
+
+      expect(repo.atualizacaoRecebida, {
+        'nome': 'Novo Nome',
+        'telefone': '11911112222',
+        'email': null,
+      });
+    });
+
+    test('id inexistente e 404 mesmo com e-mail de outra pessoa', () async {
+      // Existencia antes da unicidade: senao viria 409 EMAIL_EM_USO.
+      final repo = _RepositorioFalso(emailJaExiste: true);
+
+      await expectLater(
+        () => AlunoService(
+          repo,
+          hash: _hashFalso,
+        ).atualizar(99, email: 'outro@exemplo.com'),
+        throwsA(isA<AlunoNotFoundException>()),
+      );
+    });
+
+    test('checa unicidade do e-mail excluindo o proprio aluno', () async {
+      final repo = _RepositorioFalso()..existentes[1] = _alunoExistente(1);
+
+      await AlunoService(
+        repo,
+        hash: _hashFalso,
+      ).atualizar(1, email: 'aluno1@exemplo.com');
+
+      expect(repo.emailChecadoExceto, 1);
+    });
+
+    test('e-mail de outra pessoa -> EMAIL_EM_USO, sem gravar', () async {
+      final repo = _RepositorioFalso(emailJaExiste: true)
+        ..existentes[1] = _alunoExistente(1);
+
+      await expectLater(
+        () => AlunoService(
+          repo,
+          hash: _hashFalso,
+        ).atualizar(1, email: 'outro@exemplo.com'),
+        _recusa<AlunoConflictException>(CodigoErro.emailEmUso, 'email'),
+      );
+      expect(repo.atualizacaoRecebida, isNull);
+    });
+
+    test('e-mail fora do formato -> EMAIL_INVALIDO, sem gravar', () async {
+      final repo = _RepositorioFalso()..existentes[1] = _alunoExistente(1);
+
+      await expectLater(
+        () => AlunoService(
+          repo,
+          hash: _hashFalso,
+        ).atualizar(1, email: 'sem-arroba'),
+        _recusa<AlunoValidationException>(CodigoErro.emailInvalido, 'email'),
+      );
+      expect(repo.atualizacaoRecebida, isNull);
+    });
+
+    test('aluno inexistente -> REGISTRO_NAO_ENCONTRADO', () {
+      expect(
+        () => AlunoService(
+          _RepositorioFalso(),
+          hash: _hashFalso,
+        ).atualizar(99, nome: 'X'),
+        throwsA(isA<AlunoNotFoundException>()),
+      );
+    });
+  });
+
+  group('AlunoService.alterarStatus', () {
+    test('inativa sem apagar', () async {
+      final repo = _RepositorioFalso()..existentes[1] = _alunoExistente(1);
+
+      await AlunoService(
+        repo,
+        hash: _hashFalso,
+      ).alterarStatus(1, status: false);
+
+      expect(repo.existentes[1]!.status, isFalse);
+    });
+
+    test('reativa', () async {
+      final repo = _RepositorioFalso()
+        ..existentes[1] = _alunoExistente(1).copyWith(status: false);
+
+      await AlunoService(repo, hash: _hashFalso).alterarStatus(1, status: true);
+
+      expect(repo.existentes[1]!.status, isTrue);
+    });
+
+    test('aluno inexistente -> REGISTRO_NAO_ENCONTRADO', () {
+      expect(
+        () => AlunoService(
+          _RepositorioFalso(),
+          hash: _hashFalso,
+        ).alterarStatus(99, status: false),
+        throwsA(isA<AlunoNotFoundException>()),
+      );
+    });
+  });
+
+  group('AlunoService.excluir', () {
+    test('remove o aluno', () async {
+      final repo = _RepositorioFalso()..existentes[1] = _alunoExistente(1);
+
+      await AlunoService(repo, hash: _hashFalso).excluir(1);
+
+      expect(repo.existentes, isEmpty);
+    });
+
+    for (final id in const [99, 0, -1]) {
+      test('id $id -> REGISTRO_NAO_ENCONTRADO', () {
+        expect(
+          () => AlunoService(_RepositorioFalso(), hash: _hashFalso).excluir(id),
+          throwsA(isA<AlunoNotFoundException>()),
+        );
+      });
+    }
   });
 }
