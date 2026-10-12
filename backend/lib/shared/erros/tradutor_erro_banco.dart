@@ -24,20 +24,27 @@ const Map<String, CodigoErro> _porConstraint = <String, CodigoErro>{
   'uq_avaliacao_aluno_data': CodigoErro.avaliacaoJaRegistrada,
   'uq_aluno_cpf': CodigoErro.cpfEmUso,
   'uq_aluno_email': CodigoErro.emailEmUso,
+  'uq_professor_cpf': CodigoErro.cpfEmUso,
+  'uq_professor_email': CodigoErro.emailEmUso,
   'dom_cpf_check': CodigoErro.cpfInvalido,
   'dom_email_check': CodigoErro.emailInvalido,
   'ck_aluno_nascimento': CodigoErro.dataNascimentoInvalida,
 };
 
-/// FKs `ON DELETE RESTRICT` que apontam para `aluno` — so com `23001`.
+/// FKs `ON DELETE RESTRICT` que apontam para `aluno` e `professor` — so com
+/// `23001`.
 ///
-/// A mesma FK tambem falha com `23503` num INSERT que referencia aluno
+/// A mesma FK tambem falha com `23503` num INSERT que referencia registro
 /// inexistente; isso nao e "registro em uso" e fica sem codigo.
 const Map<String, CodigoErro> _porRestricao = <String, CodigoErro>{
   'fk_avaliacao_aluno': CodigoErro.registroEmUso,
   'fk_vinculo_aluno': CodigoErro.registroEmUso,
   'fk_agendamento_aluno': CodigoErro.registroEmUso,
   'fk_historico_aluno': CodigoErro.registroEmUso,
+  'fk_vinculo_professor': CodigoErro.registroEmUso,
+  'fk_cronograma_professor': CodigoErro.registroEmUso,
+  'fk_aula_professor': CodigoErro.registroEmUso,
+  'fk_treino_professor': CodigoErro.registroEmUso,
 };
 
 /// Traduz a partir dos dois campos crus do erro.

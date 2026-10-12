@@ -10,7 +10,7 @@ import 'package:shelf_router/shelf_router.dart';
 import '../../../database/database.dart' show AlunoData;
 import '../../../shared/erros/status_http.dart';
 import '../../../shared/erros/tradutor_erro_banco.dart';
-import 'aluno_exception.dart';
+import '../../../shared/erros/aluno_exception.dart';
 import 'aluno_service.dart';
 
 /// Forma da requisicao e montagem do DTO. Sem regra de negocio nem decisao

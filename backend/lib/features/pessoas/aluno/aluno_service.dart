@@ -2,7 +2,7 @@ import 'package:shared/erros/codigo_erro.dart';
 
 import '../../../database/database.dart' show AlunoData;
 import '../../auth/validacoes.dart';
-import 'aluno_exception.dart';
+import '../../../shared/erros/aluno_exception.dart';
 import 'aluno_repository.dart';
 
 class AlunoService {

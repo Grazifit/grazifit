@@ -99,6 +99,57 @@ void main() {
       );
     });
 
+    test(
+      'uq_professor_cpf / uq_professor_email -> CPF_EM_USO / EMAIL_EM_USO',
+      () {
+        expect(
+          traduzirCodigoBanco(
+            sqlstate: '23505',
+            nomeConstraint: 'uq_professor_cpf',
+          ),
+          CodigoErro.cpfEmUso,
+        );
+        expect(
+          traduzirCodigoBanco(
+            sqlstate: '23505',
+            nomeConstraint: 'uq_professor_email',
+          ),
+          CodigoErro.emailEmUso,
+        );
+      },
+    );
+
+    test('FK RESTRICT que aponta para professor -> REGISTRO_EM_USO', () {
+      for (final constraint in <String>[
+        'fk_vinculo_professor',
+        'fk_cronograma_professor',
+        'fk_aula_professor',
+        'fk_treino_professor',
+      ]) {
+        expect(
+          traduzirCodigoBanco(sqlstate: '23001', nomeConstraint: constraint),
+          CodigoErro.registroEmUso,
+          reason: constraint,
+        );
+      }
+    });
+
+    test('FK de professor com 23503 (INSERT com professor inexistente) nao '
+        'e uso', () {
+      for (final constraint in <String>[
+        'fk_vinculo_professor',
+        'fk_cronograma_professor',
+        'fk_aula_professor',
+        'fk_treino_professor',
+      ]) {
+        expect(
+          traduzirCodigoBanco(sqlstate: '23503', nomeConstraint: constraint),
+          isNull,
+          reason: constraint,
+        );
+      }
+    });
+
     test('FK RESTRICT que aponta para aluno -> REGISTRO_EM_USO', () {
       for (final constraint in <String>[
         'fk_avaliacao_aluno',

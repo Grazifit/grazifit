@@ -4,7 +4,7 @@ import 'dart:convert';
 import 'package:drift_postgres/drift_postgres.dart' show PgDate;
 import 'package:grazifit_backend/database/database.dart';
 import 'package:grazifit_backend/features/pessoas/aluno/aluno_controller.dart';
-import 'package:grazifit_backend/features/pessoas/aluno/aluno_exception.dart';
+import 'package:grazifit_backend/shared/erros/aluno_exception.dart';
 import 'package:grazifit_backend/features/pessoas/aluno/aluno_service.dart';
 import 'package:shared/erros/codigo_erro.dart';
 import 'package:shelf/shelf.dart';
