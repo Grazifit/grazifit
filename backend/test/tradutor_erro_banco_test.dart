@@ -98,6 +98,20 @@ void main() {
         CodigoErro.dataNascimentoInvalida,
       );
     });
+  
+    test('uq_professor_cpf vira CPF_EM_USO', () {
+      expect(
+        traduzirCodigoBanco(sqlstate: '23505', nomeConstraint: 'uq_professor_cpf'),
+        CodigoErro.cpfEmUso,
+      );
+    });
+
+    test('fk_vinculo_professor vira PROFESSOR_EM_USO', () {
+      expect(
+        traduzirCodigoBanco(sqlstate: '23503', nomeConstraint: 'fk_vinculo_professor'),
+        CodigoErro.professorEmUso,
+      );
+    });
 
     test('LACUNA: constraints do schema ainda sem codigo no contrato', () {
       for (final constraint in <String>['uq_admin_cpf', 'uq_admin_email']) {
