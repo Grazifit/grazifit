@@ -99,6 +99,51 @@ void main() {
       );
     });
 
+    test('FK RESTRICT que aponta para aluno -> REGISTRO_EM_USO', () {
+      for (final constraint in <String>[
+        'fk_avaliacao_aluno',
+        'fk_vinculo_aluno',
+        'fk_agendamento_aluno',
+        'fk_historico_aluno',
+      ]) {
+        expect(
+          traduzirCodigoBanco(sqlstate: '23001', nomeConstraint: constraint),
+          CodigoErro.registroEmUso,
+          reason: constraint,
+        );
+      }
+    });
+
+    test('a mesma FK com 23503 (INSERT com aluno inexistente) nao e uso', () {
+      // `fk_agendamento_aluno` falha com 23001 ao excluir o aluno e com 23503
+      // ao agendar para um aluno que nao existe. So o primeiro e
+      // REGISTRO_EM_USO.
+      for (final constraint in <String>[
+        'fk_avaliacao_aluno',
+        'fk_vinculo_aluno',
+        'fk_agendamento_aluno',
+        'fk_historico_aluno',
+      ]) {
+        expect(
+          traduzirCodigoBanco(sqlstate: '23503', nomeConstraint: constraint),
+          isNull,
+          reason: constraint,
+        );
+      }
+    });
+
+    test('23503 de INSERT com chave inexistente continua sem codigo', () {
+      // Tambem e FK, mas outro significado: o endereco nao existe, nao
+      // "esta em uso". Mapear por SQLSTATE daria a mensagem errada.
+      expect(
+        traduzirCodigoBanco(
+          sqlstate: '23503',
+          nomeConstraint: 'fk_aluno_endereco',
+        ),
+        isNull,
+      );
+    });
+
     test('LACUNA: constraints do schema ainda sem codigo no contrato', () {
       for (final constraint in <String>['uq_admin_cpf', 'uq_admin_email']) {
         expect(
