@@ -340,10 +340,15 @@ Envelope `{ codigo, mensagem, campo? }`, com `codigo` legível por máquina. Um 
 | `uq_avaliacao_aluno_data` | `23505` | `AVALIACAO_JA_REGISTRADA` | F-15 (**D6**) |
 | `uq_aluno_cpf` / `uq_aluno_email` | `23505` | `CPF_EM_USO` / `EMAIL_EM_USO` | F-16 (DoD S2) |
 | `ck_aluno_nascimento` | `23514` | `DATA_NASCIMENTO_INVALIDA` | F-16 (DoD S2) |
+| `fk_avaliacao_aluno` / `fk_vinculo_aluno` / `fk_agendamento_aluno` / `fk_historico_aluno` | `23001` | `REGISTRO_EM_USO` | F-16 (exclusão de aluno) |
+| `uq_professor_cpf` / `uq_professor_email` | `23505` | `CPF_EM_USO` / `EMAIL_EM_USO` | cadastro de professor |
+| `fk_vinculo_professor` / `fk_cronograma_professor` / `fk_aula_professor` / `fk_treino_professor` | `23001` | `REGISTRO_EM_USO` | exclusão de professor |
 
 Violação de constraint chega com SQLSTATE `23505` e **nome da constraint** — o nome é a chave do mapeamento, e é estável.
 
-A última linha não estava nas nove originais: `ck_aluno_nascimento` (`data_nascimento < CURRENT_DATE`) existe no schema desde o início, mas não tinha código. Acrescentada durante a fatia de `aluno` (F-16), porque o `AlunoService` verifica a data **antes** do insert — mesmo padrão de §7.4 — e precisava de um código para o envelope.
+**`REGISTRO_EM_USO`.** As quatro FKs são `ON DELETE RESTRICT`: aluno com histórico não pode ser excluído. A exclusão chega ao banco e ele recusa com **`23001`** (`restrict_violation`) — não com `23503`, que é o código de FK `NO ACTION`; verificado contra PostgreSQL 18. Não há pré-checagem no service, porque são quatro tabelas de quatro features diferentes e o banco já responde de forma atômica. A saída para quem precisa manter o histórico é **inativar** (`aluno.status = false`), não excluir. `fk_treino_aluno` fica fora do mapa: é `ON DELETE CASCADE`, então nunca recusa — os treinos do aluno são apagados com ele. Só as FKs **que apontam para** `aluno` entram, e por nome: uma FK violada num INSERT com chave inexistente (ex.: `fk_aluno_endereco`, `23503`) significa outra coisa, e continua não mapeada. As quatro FKs que apontam para `professor` (`fk_vinculo_professor`, `fk_cronograma_professor`, `fk_aula_professor`, `fk_treino_professor`) também são `ON DELETE RESTRICT` e seguem a mesma regra; `fk_aula_professor_cancelou` é `ON DELETE SET NULL` e fica fora.
+
+A penúltima linha não estava nas nove originais: `ck_aluno_nascimento` (`data_nascimento < CURRENT_DATE`) existe no schema desde o início, mas não tinha código. Acrescentada durante a fatia de `aluno` (F-16), porque o `AlunoService` verifica a data **antes** do insert — mesmo padrão de §7.4 — e precisava de um código para o envelope.
 
 ### 7.2 Os triggers precisavam de `ERRCODE` próprio
 
@@ -362,6 +367,24 @@ Verificado: CPF ou e-mail fora do formato não chega como `23505`, e sim como **
 Verificado: `trg_valida_vagas_aula` é `BEFORE INSERT` e dispara **antes** de `uq_agendamento_aluno_aula` ser avaliada. Um aluno que tenta reagendar uma aula **lotada** recebe `AULA_SEM_VAGAS`, não `AGENDAMENTO_DUPLICADO`. Em aula com vaga livre, a constraint responde corretamente.
 
 A DoD da S4 exige "lotada" distinguível dos demais bloqueios. Portanto o `AgendamentoService` **verifica agendamento existente antes do insert** — mesmo padrão que a S2 usa para `uq_aluno_cpf`. O banco continua sendo a última linha de defesa, não a primeira mensagem.
+
+### 7.5 Códigos que não nascem no banco
+
+Nem todo erro do contrato é falha do PostgreSQL. Ausência de registro não viola constraint: a consulta simplesmente volta vazia. O repository devolve `null`, e é o service que decide que isso é erro.
+
+| Origem | HTTP | Código | Jornada |
+|---|---|---|---|
+| Service — repository devolveu `null` para o id pedido | `404` | `REGISTRO_NAO_ENCONTRADO` | F-16 (busca de aluno) |
+| Controller — corpo da requisição não é JSON de objeto | `400` | `JSON_INVALIDO` | F-16 |
+| Controller — campo obrigatório ausente ou em branco | `400` | `CAMPO_OBRIGATORIO` + `campo` | F-16 |
+| Controller — campo, parâmetro de rota ou de query fora da forma (tipo, formato, tamanho, intervalo) | `400` | `CAMPO_INVALIDO` + `campo` | F-16 |
+| Qualquer falha não mapeada | `500` | `ERRO_INTERNO` | todas |
+
+Os códigos são **genéricos de propósito**: valem para qualquer entidade de qualquer feature. A tela sabe qual entidade pediu, e o `campo` diz qual dado está errado — com os dois ela escolhe o texto: "Aluno não encontrado", "Informe o telefone". Nos erros de forma a `mensagem` é específica ("deve ter de 8 a 12 caracteres"), mas continua sendo apoio para quem testa a API, nunca o texto da tela.
+
+`ERRO_INTERNO` não substitui o tradutor: falha de banco não mapeada continua sendo **500**, com a exceção original no log. O código só garante que até o 500 respeita o envelope.
+
+Acrescentados durante a fatia de `aluno` (F-16), quando o controller passou a usar o envelope em **todo** erro; as demais entidades adotam os mesmos códigos à medida que forem migradas.
 
 ---
 
