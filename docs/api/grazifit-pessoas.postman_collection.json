@@ -1,0 +1,404 @@
+{
+  "info": {
+    "name": "GraziFit API — Pessoas",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "CRUD de **Admin**, **Aluno** e **Professor** no estado atual do backend.\n\n- **Sem autenticação** por enquanto: todas as rotas estão abertas.\n- `baseUrl` padrão: `http://localhost:8080` (`SERVER_HOST`/`SERVER_PORT` no `.env`).\n- Corpo sempre JSON; respostas com `Content-Type: application/json`.\n- Envelope de erro padrão (D64): `{ \"codigo\": \"CPF_EM_USO\", \"mensagem\": \"...\", \"campo\": \"cpf\" }`. `campo` só vem quando o erro é de um campo. Códigos em `docs/arquitetura.md` §7.\n\n**Ainda fora do padrão**\n- Admin responde todo erro como `{ \"erro\": \"...\" }`.\n- Professor usa `{ \"erro\": \"...\" }` nos erros de forma e no 500.\n- Os PATCH de admin e professor ignoram chaves desconhecidas; o de aluno recusa."
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080"
+    },
+    {
+      "key": "idAdmin",
+      "value": "1"
+    },
+    {
+      "key": "idAluno",
+      "value": "1"
+    },
+    {
+      "key": "idProfessor",
+      "value": "1"
+    }
+  ],
+  "item": [
+    {
+      "name": "Admin",
+      "description": "Rotas `/admin`.",
+      "item": [
+        {
+          "name": "Criar admin",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin"
+              ]
+            },
+            "description": "**Aceita (JSON)**\n| Campo | Obrig. | Regra |\n|---|---|---|\n| `cpf` | sim | CPF válido; pontuação é removida |\n| `senha` | sim | mínimo 8 caracteres |\n| `nome` | sim | texto |\n| `email` | sim | e-mail válido; gravado em minúsculas |\n| `telefone` | não | texto |\n\n**Sucesso:** `201` → `{ id_admin, nome, email, telefone }`\n\n**Erros** — Todos os erros vêm como `{ \"erro\": \"<mensagem>\" }` (ainda sem o envelope D64).\n| HTTP | Quando |\n|---|---|\n| 400 | JSON inválido · campo obrigatório ausente · CPF inválido · e-mail inválido · senha < 8 |\n| 409 | CPF ou e-mail já cadastrado |\n| 500 | qualquer outra falha |",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"cpf\": \"529.982.247-25\",\n  \"senha\": \"senha123\",\n  \"nome\": \"Admin Teste\",\n  \"email\": \"admin@grazifit.com\",\n  \"telefone\": \"11999990000\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Buscar admin por id",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/admin/{{idAdmin}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "{{idAdmin}}"
+              ]
+            },
+            "description": "**Aceita:** `id` inteiro na rota.\n\n**Sucesso:** `200` → `{ id_admin, nome, email, telefone }`\n\n**Erros** — Todos os erros vêm como `{ \"erro\": \"<mensagem>\" }` (ainda sem o envelope D64).\n| HTTP | Quando |\n|---|---|\n| 400 | id não é inteiro |\n| 404 | admin não existe |\n| 500 | qualquer outra falha |"
+          }
+        },
+        {
+          "name": "Atualizar admin",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/{{idAdmin}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "{{idAdmin}}"
+              ]
+            },
+            "description": "**Aceita (JSON):** só os campos que mudam. Chaves desconhecidas são ignoradas.\n| Campo | Regra |\n|---|---|\n| `nome` | texto |\n| `email` | e-mail válido |\n| `telefone` | texto |\n| `senha` | mínimo 8 caracteres |\n\n**Sucesso:** `200` → admin atualizado\n\n**Erros** — Todos os erros vêm como `{ \"erro\": \"<mensagem>\" }` (ainda sem o envelope D64).\n| HTTP | Quando |\n|---|---|\n| 400 | id não é inteiro · JSON inválido · e-mail inválido · senha < 8 |\n| 404 | admin não existe |\n| 409 | e-mail já cadastrado |\n| 500 | qualquer outra falha |",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nome\": \"Admin Renomeado\",\n  \"telefone\": \"11988887777\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Excluir admin",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/admin/{{idAdmin}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "{{idAdmin}}"
+              ]
+            },
+            "description": "**Aceita:** `id` inteiro na rota.\n\n**Sucesso:** `204`, sem corpo\n\n**Erros** — Todos os erros vêm como `{ \"erro\": \"<mensagem>\" }` (ainda sem o envelope D64).\n| HTTP | Quando |\n|---|---|\n| 400 | id não é inteiro |\n| 404 | admin não existe |\n| 500 | qualquer outra falha |"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Aluno",
+      "description": "Rotas `/aluno`. Já segue o envelope de erro em tudo.",
+      "item": [
+        {
+          "name": "Criar aluno",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/aluno",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "aluno"
+              ]
+            },
+            "description": "**Aceita (JSON)**\n| Campo | Obrig. | Regra |\n|---|---|---|\n| `cpf` | sim | CPF válido; pontuação é removida |\n| `senha` | sim | 8 a 12 caracteres |\n| `nome` | sim | até 150 |\n| `telefone` | sim | até 20 |\n| `email` | sim | e-mail válido, até 255; gravado em minúsculas |\n| `data_nascimento` | sim | `AAAA-MM-DD`, data existente e anterior a hoje |\n| `id_endereco` | não | inteiro |\n| `restricao_medica` | não | texto; em branco vira `null` |\n| `observacao_saude` | não | texto; em branco vira `null` |\n\n**Sucesso:** `201` → `{ id_aluno, nome, email, telefone, status }`\n\n**Erros** — Todos os erros vêm no envelope `{ codigo, mensagem, campo? }`.\n| HTTP | `codigo` | Quando |\n|---|---|---|\n| 400 | `JSON_INVALIDO` | corpo não é um objeto JSON |\n| 400 | `CAMPO_OBRIGATORIO` + `campo` | obrigatório ausente ou em branco |\n| 400 | `CAMPO_INVALIDO` + `campo` | tamanho fora do limite · data fora do formato |\n| 400 | `CPF_INVALIDO` / `EMAIL_INVALIDO` | formato inválido |\n| 400 | `DATA_NASCIMENTO_INVALIDA` | data hoje ou no futuro |\n| 409 | `CPF_EM_USO` / `EMAIL_EM_USO` | já cadastrado |\n| 500 | `ERRO_INTERNO` | falha não mapeada (ex.: `id_endereco` inexistente) |",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"cpf\": \"529.982.247-25\",\n  \"senha\": \"senha123\",\n  \"nome\": \"Aluno Teste\",\n  \"telefone\": \"11999990000\",\n  \"email\": \"aluno@grazifit.com\",\n  \"data_nascimento\": \"1995-04-20\",\n  \"restricao_medica\": \"\",\n  \"observacao_saude\": \"\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Listar alunos",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/aluno?limit=20&offset=0",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "aluno"
+              ],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "20",
+                  "description": "1 a 100 (padrão 20)"
+                },
+                {
+                  "key": "offset",
+                  "value": "0",
+                  "description": ">= 0 (padrão 0)"
+                }
+              ]
+            },
+            "description": "**Aceita (query)**\n| Parâmetro | Padrão | Regra |\n|---|---|---|\n| `limit` | 20 | inteiro de 1 a 100 |\n| `offset` | 0 | inteiro ≥ 0 |\n\n**Sucesso:** `200` → `{ itens: [aluno], limit, offset, total }`. Há próxima página se `offset + itens.length < total`.\n\n**Erros** — Todos os erros vêm no envelope `{ codigo, mensagem, campo? }`.\n| HTTP | `codigo` | Quando |\n|---|---|---|\n| 400 | `CAMPO_INVALIDO` + `campo` | `limit` ou `offset` fora da regra |\n| 500 | `ERRO_INTERNO` | falha não mapeada |"
+          }
+        },
+        {
+          "name": "Buscar aluno por id",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/aluno/{{idAluno}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "aluno",
+                "{{idAluno}}"
+              ]
+            },
+            "description": "**Aceita:** `id` inteiro na rota.\n\n**Sucesso:** `200` → `{ id_aluno, nome, email, telefone, status }`\n\n**Erros** — Todos os erros vêm no envelope `{ codigo, mensagem, campo? }`.\n| HTTP | `codigo` | Quando |\n|---|---|---|\n| 400 | `CAMPO_INVALIDO` (`campo: id`) | id não é inteiro |\n| 404 | `REGISTRO_NAO_ENCONTRADO` | aluno não existe |\n| 500 | `ERRO_INTERNO` | falha não mapeada |"
+          }
+        },
+        {
+          "name": "Atualizar aluno",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/aluno/{{idAluno}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "aluno",
+                "{{idAluno}}"
+              ]
+            },
+            "description": "**Aceita (JSON):** só `nome`, `telefone` e `email`, ao menos um. Mesmos limites do cadastro.\nQualquer outra chave é **recusada** (status tem rota própria).\n\n**Sucesso:** `200` → aluno atualizado\n\n**Erros** — Todos os erros vêm no envelope `{ codigo, mensagem, campo? }`.\n| HTTP | `codigo` | Quando |\n|---|---|---|\n| 400 | `JSON_INVALIDO` | corpo não é um objeto JSON |\n| 400 | `CAMPO_OBRIGATORIO` | corpo vazio `{}` |\n| 400 | `CAMPO_INVALIDO` + `campo` | id inválido · chave não editável · valor `null`/vazio · tamanho |\n| 400 | `EMAIL_INVALIDO` | formato inválido |\n| 404 | `REGISTRO_NAO_ENCONTRADO` | aluno não existe |\n| 409 | `EMAIL_EM_USO` | e-mail de outro aluno |\n| 500 | `ERRO_INTERNO` | falha não mapeada |",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nome\": \"Aluno Renomeado\",\n  \"telefone\": \"11988887777\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Alterar status do aluno",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/aluno/{{idAluno}}/status",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "aluno",
+                "{{idAluno}}",
+                "status"
+              ]
+            },
+            "description": "**Aceita (JSON):** `{ \"status\": false }` inativa · `{ \"status\": true }` reativa.\n\n**Sucesso:** `204`, sem corpo\n\n**Erros** — Todos os erros vêm no envelope `{ codigo, mensagem, campo? }`.\n| HTTP | `codigo` | Quando |\n|---|---|---|\n| 400 | `JSON_INVALIDO` | corpo não é um objeto JSON |\n| 400 | `CAMPO_OBRIGATORIO` (`campo: status`) | `status` ausente |\n| 400 | `CAMPO_INVALIDO` + `campo` | id inválido · `status` não é booleano |\n| 404 | `REGISTRO_NAO_ENCONTRADO` | aluno não existe |\n| 500 | `ERRO_INTERNO` | falha não mapeada |",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": false\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Excluir aluno",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/aluno/{{idAluno}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "aluno",
+                "{{idAluno}}"
+              ]
+            },
+            "description": "**Aceita:** `id` inteiro na rota. Exclusão definitiva; para manter o histórico, inative.\n\n**Sucesso:** `204`, sem corpo\n\n**Erros** — Todos os erros vêm no envelope `{ codigo, mensagem, campo? }`.\n| HTTP | `codigo` | Quando |\n|---|---|---|\n| 400 | `CAMPO_INVALIDO` (`campo: id`) | id não é inteiro |\n| 404 | `REGISTRO_NAO_ENCONTRADO` | aluno não existe |\n| 409 | `REGISTRO_EM_USO` | aluno tem avaliação, vínculo, agendamento ou histórico |\n| 500 | `ERRO_INTERNO` | falha não mapeada |"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Professor",
+      "description": "Rotas `/professor`.",
+      "item": [
+        {
+          "name": "Criar professor",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/professor",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "professor"
+              ]
+            },
+            "description": "**Aceita (JSON)**\n| Campo | Obrig. | Regra |\n|---|---|---|\n| `cpf` | sim | CPF válido; pontuação é removida |\n| `senha` | sim | 8 a 12 caracteres |\n| `nome` | sim | até 150 |\n| `telefone` | sim | até 20 |\n| `email` | sim | e-mail válido; gravado em minúsculas |\n\n**Sucesso:** `201` → `{ id_professor, nome, email, telefone, status }`\n\n**Erros** — Dois formatos: erro de **forma** (JSON, obrigatório, tamanho, id) e o 500 vêm como `{ \"erro\": \"<mensagem>\" }`; erro de **regra/banco** vem no envelope `{ codigo, mensagem, campo? }`.\n| HTTP | Retorno | Quando |\n|---|---|---|\n| 400 | `{ erro }` | JSON inválido · obrigatório ausente · tamanho fora do limite |\n| 400 | `CPF_INVALIDO` / `EMAIL_INVALIDO` | formato inválido |\n| 409 | `CPF_EM_USO` / `EMAIL_EM_USO` | já cadastrado |\n| 500 | `{ erro }` | falha não mapeada |",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"cpf\": \"529.982.247-25\",\n  \"senha\": \"senha123\",\n  \"nome\": \"Professor Teste\",\n  \"telefone\": \"11999990000\",\n  \"email\": \"professor@grazifit.com\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Buscar professor por id",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/professor/{{idProfessor}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "professor",
+                "{{idProfessor}}"
+              ]
+            },
+            "description": "**Aceita:** `id` inteiro na rota.\n\n**Sucesso:** `200` → `{ id_professor, nome, email, telefone, status }`\n\n**Erros** — Dois formatos: erro de **forma** (JSON, obrigatório, tamanho, id) e o 500 vêm como `{ \"erro\": \"<mensagem>\" }`; erro de **regra/banco** vem no envelope `{ codigo, mensagem, campo? }`.\n| HTTP | Retorno | Quando |\n|---|---|---|\n| 400 | `{ erro }` | id não é inteiro |\n| 404 | `REGISTRO_NAO_ENCONTRADO` | professor não existe |\n| 500 | `{ erro }` | falha não mapeada |"
+          }
+        },
+        {
+          "name": "Atualizar professor",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/professor/{{idProfessor}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "professor",
+                "{{idProfessor}}"
+              ]
+            },
+            "description": "**Aceita (JSON):** só os campos que mudam. Chaves desconhecidas são ignoradas.\n| Campo | Regra |\n|---|---|\n| `nome` | 1 a 150 |\n| `telefone` | 1 a 20 |\n| `email` | e-mail válido, não vazio |\n| `senha` | 8 a 12 |\n| `status` | booleano (`false` inativa, `true` reativa) |\n\n**Sucesso:** `200` → professor atualizado\n\n**Erros** — Dois formatos: erro de **forma** (JSON, obrigatório, tamanho, id) e o 500 vêm como `{ \"erro\": \"<mensagem>\" }`; erro de **regra/banco** vem no envelope `{ codigo, mensagem, campo? }`.\n| HTTP | Retorno | Quando |\n|---|---|---|\n| 400 | `{ erro }` | id inválido · JSON inválido · campo fora da regra |\n| 400 | `EMAIL_INVALIDO` | formato inválido |\n| 404 | `REGISTRO_NAO_ENCONTRADO` | professor não existe |\n| 409 | `EMAIL_EM_USO` | e-mail de outro professor |\n| 500 | `{ erro }` | falha não mapeada |",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nome\": \"Professor Renomeado\",\n  \"status\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Excluir professor",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/professor/{{idProfessor}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "professor",
+                "{{idProfessor}}"
+              ]
+            },
+            "description": "**Aceita:** `id` inteiro na rota. Exclusão definitiva; para manter o histórico, use `status: false` no PATCH.\n\n**Sucesso:** `204`, sem corpo\n\n**Erros** — Dois formatos: erro de **forma** (JSON, obrigatório, tamanho, id) e o 500 vêm como `{ \"erro\": \"<mensagem>\" }`; erro de **regra/banco** vem no envelope `{ codigo, mensagem, campo? }`.\n| HTTP | Retorno | Quando |\n|---|---|---|\n| 400 | `{ erro }` | id não é inteiro |\n| 404 | `REGISTRO_NAO_ENCONTRADO` | professor não existe |\n| 409 | `REGISTRO_EM_USO` | professor tem vínculo, cronograma, aula ou treino |\n| 500 | `{ erro }` | falha não mapeada |"
+          }
+        }
+      ]
+    }
+  ]
+}

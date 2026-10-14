@@ -99,23 +99,99 @@ void main() {
       );
     });
 
-    test('uq_professor_cpf vira CPF_EM_USO', () {
-      expect(
-        traduzirCodigoBanco(
-          sqlstate: '23505',
-          nomeConstraint: 'uq_professor_cpf',
-        ),
-        CodigoErro.cpfEmUso,
-      );
+    test(
+      'uq_professor_cpf / uq_professor_email -> CPF_EM_USO / EMAIL_EM_USO',
+      () {
+        expect(
+          traduzirCodigoBanco(
+            sqlstate: '23505',
+            nomeConstraint: 'uq_professor_cpf',
+          ),
+          CodigoErro.cpfEmUso,
+        );
+        expect(
+          traduzirCodigoBanco(
+            sqlstate: '23505',
+            nomeConstraint: 'uq_professor_email',
+          ),
+          CodigoErro.emailEmUso,
+        );
+      },
+    );
+
+    test('FK RESTRICT que aponta para professor -> REGISTRO_EM_USO', () {
+      for (final constraint in <String>[
+        'fk_vinculo_professor',
+        'fk_cronograma_professor',
+        'fk_aula_professor',
+        'fk_treino_professor',
+      ]) {
+        expect(
+          traduzirCodigoBanco(sqlstate: '23001', nomeConstraint: constraint),
+          CodigoErro.registroEmUso,
+          reason: constraint,
+        );
+      }
     });
 
-    test('fk_vinculo_professor vira PROFESSOR_EM_USO', () {
+    test('FK de professor com 23503 (INSERT com professor inexistente) nao '
+        'e uso', () {
+      for (final constraint in <String>[
+        'fk_vinculo_professor',
+        'fk_cronograma_professor',
+        'fk_aula_professor',
+        'fk_treino_professor',
+      ]) {
+        expect(
+          traduzirCodigoBanco(sqlstate: '23503', nomeConstraint: constraint),
+          isNull,
+          reason: constraint,
+        );
+      }
+    });
+
+    test('FK RESTRICT que aponta para aluno -> REGISTRO_EM_USO', () {
+      for (final constraint in <String>[
+        'fk_avaliacao_aluno',
+        'fk_vinculo_aluno',
+        'fk_agendamento_aluno',
+        'fk_historico_aluno',
+      ]) {
+        expect(
+          traduzirCodigoBanco(sqlstate: '23001', nomeConstraint: constraint),
+          CodigoErro.registroEmUso,
+          reason: constraint,
+        );
+      }
+    });
+
+    test('a mesma FK com 23503 (INSERT com aluno inexistente) nao e uso', () {
+      // `fk_agendamento_aluno` falha com 23001 ao excluir o aluno e com 23503
+      // ao agendar para um aluno que nao existe. So o primeiro e
+      // REGISTRO_EM_USO.
+      for (final constraint in <String>[
+        'fk_avaliacao_aluno',
+        'fk_vinculo_aluno',
+        'fk_agendamento_aluno',
+        'fk_historico_aluno',
+      ]) {
+        expect(
+          traduzirCodigoBanco(sqlstate: '23503', nomeConstraint: constraint),
+          isNull,
+          reason: constraint,
+        );
+      }
+    });
+
+    test('23503 de INSERT com chave inexistente continua sem codigo', () {
+      // Tambem e FK, mas outro significado: o endereco nao existe, nao
+      // "esta em uso". Mapear por SQLSTATE daria a mensagem errada.
       expect(
         traduzirCodigoBanco(
           sqlstate: '23503',
-          nomeConstraint: 'fk_vinculo_professor',
+          nomeConstraint: 'fk_aluno_endereco',
         ),
-        CodigoErro.professorEmUso,
+        isNull,
       );
     });
 

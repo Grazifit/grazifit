@@ -13,8 +13,7 @@ class Aluno extends Table {
   TextColumn get email => text().withLength(max: 255).unique()();
   TextColumn get restricaoMedica => text().nullable()();
   TextColumn get observacaoSaude => text().nullable()();
-  BoolColumn get status => boolean().nullable()
-      .withDefault(const Constant(true))();
+  BoolColumn get status => boolean().withDefault(const Constant(true))();
   PgDateColumn get dataCadastro => customType(PgTypes.date)
       .withDefault(const CustomExpression<PgDate>('CURRENT_DATE'))();
   TimestampColumn get dataUltimoAcesso => customType(PgTypes.timestampWithTimezone).nullable()();
