@@ -98,17 +98,23 @@ void main() {
         CodigoErro.dataNascimentoInvalida,
       );
     });
-  
+
     test('uq_professor_cpf vira CPF_EM_USO', () {
       expect(
-        traduzirCodigoBanco(sqlstate: '23505', nomeConstraint: 'uq_professor_cpf'),
+        traduzirCodigoBanco(
+          sqlstate: '23505',
+          nomeConstraint: 'uq_professor_cpf',
+        ),
         CodigoErro.cpfEmUso,
       );
     });
 
     test('fk_vinculo_professor vira PROFESSOR_EM_USO', () {
       expect(
-        traduzirCodigoBanco(sqlstate: '23503', nomeConstraint: 'fk_vinculo_professor'),
+        traduzirCodigoBanco(
+          sqlstate: '23503',
+          nomeConstraint: 'fk_vinculo_professor',
+        ),
         CodigoErro.professorEmUso,
       );
     });
