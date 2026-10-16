@@ -11,6 +11,7 @@ import 'package:flutter/material.dart';
 
 import '../features/pessoas/screens/boas_vindas_alunos.dart';
 import '../features/pessoas/screens/criar_cadastro_aluno.dart';
+import '../features/vinculos/screens/meus_alunos_screen.dart';
 
 
 class MenuDevScreen extends StatelessWidget {
@@ -35,6 +36,10 @@ class MenuDevScreen extends StatelessWidget {
     // _GrupoDev('Auth', [
     //   _TelaDev('Login', () => const LoginScreen()),
     // ]),
+
+    _GrupoDev('Vínculos', [
+      _TelaDev('Meus alunos', () => const MeusAlunosScreen()),
+    ]),
   ];
 
   @override
