@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:shelf/shelf.dart';
 import 'package:shelf/shelf_io.dart' as io;
 import 'package:shelf_router/shelf_router.dart';
@@ -14,6 +16,7 @@ import 'package:grazifit_backend/features/pessoas/aluno/aluno_service.dart';
 import 'package:grazifit_backend/features/pessoas/professor/professor_controller.dart';
 import 'package:grazifit_backend/features/pessoas/professor/professor_repository.dart';
 import 'package:grazifit_backend/features/pessoas/professor/professor_service.dart';
+import 'package:grazifit_backend/shared/middleware/cors_middleware.dart';
 
 void main() async {
   final config = Config.doAmbiente();
@@ -37,14 +40,43 @@ void main() async {
   final professorController = ProfessorController(professorService);
 
   final rootRouter = Router()
+    ..get('/health', (Request _) => _health(db))
     ..mount('/', adminController.router.call)
     ..mount('/', alunoController.router.call)
     ..mount('/', professorController.router.call);
 
   final handler = const Pipeline()
       .addMiddleware(logRequests())
+      .addMiddleware(corsMiddleware(config.corsOrigin))
       .addHandler(rootRouter.call);
 
   final server = await io.serve(handler, config.host, config.port);
   print('Servidor rodando em http://${server.address.host}:${server.port}');
+}
+
+/// `GET /health`: rota de infraestrutura, consumida pelo healthcheck do
+/// compose e nao pelo app. 
+///
+/// Corpo minimo e fixo: nao revela versao, causa da falha nem detalhe da
+/// conexao. Sem autenticacao porque nao expoe dado nenhum.
+Future<Response> _health(GraziDatabase db) async {
+  final disponivel = await _bancoDisponivel(db);
+
+  return Response(
+    disponivel ? 200 : 503,
+    body: jsonEncode({'status': disponivel ? 'ok' : 'indisponivel'}),
+    headers: {'Content-Type': 'application/json'},
+  );
+}
+
+/// `SELECT 1` com prazo curto. Qualquer falha conta como indisponivel; o
+/// erro nao e registrado nem devolvido porque pode trazer host e usuario
+/// da conexao.
+Future<bool> _bancoDisponivel(GraziDatabase db) async {
+  try {
+    await db.customSelect('SELECT 1').get().timeout(const Duration(seconds: 2));
+    return true;
+  } catch (_) {
+    return false;
+  }
 }

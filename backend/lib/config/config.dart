@@ -5,12 +5,14 @@ class Config {
   final String senhaPepper;
   final String host;
   final int port;
+  final String corsOrigin;
 
   const Config({
     required this.databaseUrl,
     required this.senhaPepper,
     required this.host,
     required this.port,
+    required this.corsOrigin,
   });
 
   factory Config.doAmbiente() {
@@ -23,6 +25,7 @@ class Config {
         valor: Platform.environment['SERVER_PORT'],
         padrao: 8080,
       ),
+      corsOrigin: _origem('CORS_ORIGIN'),
     );
   }
 
@@ -34,6 +37,31 @@ class Config {
     }
 
     return valor.trim();
+  }
+
+  /// Origem HTTP exata, como o navegador a envia no cabecalho `Origin`:
+  /// esquema, host e porta, sem caminho nem barra final. `*` e recusado.
+  static String _origem(String nome) {
+    final valor = _obrigatoria(nome);
+    final uri = Uri.tryParse(valor);
+
+    final valida =
+        uri != null &&
+        (uri.scheme == 'http' || uri.scheme == 'https') &&
+        uri.host.isNotEmpty &&
+        uri.userInfo.isEmpty &&
+        uri.path.isEmpty &&
+        !uri.hasQuery &&
+        !uri.hasFragment;
+
+    if (!valida) {
+      throw StateError(
+        '$nome deve ser uma origem no formato esquema://host[:porta], '
+        'sem barra final (ex.: http://localhost:8081).',
+      );
+    }
+
+    return valor;
   }
 
   static int _inteiro({
