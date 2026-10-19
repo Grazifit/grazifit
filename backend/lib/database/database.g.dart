@@ -555,7 +555,7 @@ class $AlunoTable extends Aluno with TableInfo<$AlunoTable, AlunoData> {
   late final GeneratedColumn<bool> status = GeneratedColumn<bool>(
     'status',
     aliasedName,
-    true,
+    false,
     type: DriftSqlType.bool,
     requiredDuringInsert: false,
     defaultConstraints: GeneratedColumn.constraintIsAlways(
@@ -786,7 +786,7 @@ class $AlunoTable extends Aluno with TableInfo<$AlunoTable, AlunoData> {
       status: attachedDatabase.typeMapping.read(
         DriftSqlType.bool,
         data['${effectivePrefix}status'],
-      ),
+      )!,
       dataCadastro: attachedDatabase.typeMapping.read(
         PgTypes.date,
         data['${effectivePrefix}data_cadastro'],
@@ -816,7 +816,7 @@ class AlunoData extends DataClass implements Insertable<AlunoData> {
   final String email;
   final String? restricaoMedica;
   final String? observacaoSaude;
-  final bool? status;
+  final bool status;
   final PgDate dataCadastro;
   final PgDateTime? dataUltimoAcesso;
   const AlunoData({
@@ -831,7 +831,7 @@ class AlunoData extends DataClass implements Insertable<AlunoData> {
     required this.email,
     this.restricaoMedica,
     this.observacaoSaude,
-    this.status,
+    required this.status,
     required this.dataCadastro,
     this.dataUltimoAcesso,
   });
@@ -857,9 +857,7 @@ class AlunoData extends DataClass implements Insertable<AlunoData> {
     if (!nullToAbsent || observacaoSaude != null) {
       map['observacao_saude'] = Variable<String>(observacaoSaude);
     }
-    if (!nullToAbsent || status != null) {
-      map['status'] = Variable<bool>(status);
-    }
+    map['status'] = Variable<bool>(status);
     map['data_cadastro'] = Variable<PgDate>(dataCadastro, PgTypes.date);
     if (!nullToAbsent || dataUltimoAcesso != null) {
       map['data_ultimo_acesso'] = Variable<PgDateTime>(
@@ -891,9 +889,7 @@ class AlunoData extends DataClass implements Insertable<AlunoData> {
       observacaoSaude: observacaoSaude == null && nullToAbsent
           ? const Value.absent()
           : Value(observacaoSaude),
-      status: status == null && nullToAbsent
-          ? const Value.absent()
-          : Value(status),
+      status: Value(status),
       dataCadastro: Value(dataCadastro),
       dataUltimoAcesso: dataUltimoAcesso == null && nullToAbsent
           ? const Value.absent()
@@ -918,7 +914,7 @@ class AlunoData extends DataClass implements Insertable<AlunoData> {
       email: serializer.fromJson<String>(json['email']),
       restricaoMedica: serializer.fromJson<String?>(json['restricaoMedica']),
       observacaoSaude: serializer.fromJson<String?>(json['observacaoSaude']),
-      status: serializer.fromJson<bool?>(json['status']),
+      status: serializer.fromJson<bool>(json['status']),
       dataCadastro: serializer.fromJson<PgDate>(json['dataCadastro']),
       dataUltimoAcesso: serializer.fromJson<PgDateTime?>(
         json['dataUltimoAcesso'],
@@ -940,7 +936,7 @@ class AlunoData extends DataClass implements Insertable<AlunoData> {
       'email': serializer.toJson<String>(email),
       'restricaoMedica': serializer.toJson<String?>(restricaoMedica),
       'observacaoSaude': serializer.toJson<String?>(observacaoSaude),
-      'status': serializer.toJson<bool?>(status),
+      'status': serializer.toJson<bool>(status),
       'dataCadastro': serializer.toJson<PgDate>(dataCadastro),
       'dataUltimoAcesso': serializer.toJson<PgDateTime?>(dataUltimoAcesso),
     };
@@ -958,7 +954,7 @@ class AlunoData extends DataClass implements Insertable<AlunoData> {
     String? email,
     Value<String?> restricaoMedica = const Value.absent(),
     Value<String?> observacaoSaude = const Value.absent(),
-    Value<bool?> status = const Value.absent(),
+    bool? status,
     PgDate? dataCadastro,
     Value<PgDateTime?> dataUltimoAcesso = const Value.absent(),
   }) => AlunoData(
@@ -979,7 +975,7 @@ class AlunoData extends DataClass implements Insertable<AlunoData> {
     observacaoSaude: observacaoSaude.present
         ? observacaoSaude.value
         : this.observacaoSaude,
-    status: status.present ? status.value : this.status,
+    status: status ?? this.status,
     dataCadastro: dataCadastro ?? this.dataCadastro,
     dataUltimoAcesso: dataUltimoAcesso.present
         ? dataUltimoAcesso.value
@@ -1088,7 +1084,7 @@ class AlunoCompanion extends UpdateCompanion<AlunoData> {
   final Value<String> email;
   final Value<String?> restricaoMedica;
   final Value<String?> observacaoSaude;
-  final Value<bool?> status;
+  final Value<bool> status;
   final Value<PgDate> dataCadastro;
   final Value<PgDateTime?> dataUltimoAcesso;
   const AlunoCompanion({
@@ -1174,7 +1170,7 @@ class AlunoCompanion extends UpdateCompanion<AlunoData> {
     Value<String>? email,
     Value<String?>? restricaoMedica,
     Value<String?>? observacaoSaude,
-    Value<bool?>? status,
+    Value<bool>? status,
     Value<PgDate>? dataCadastro,
     Value<PgDateTime?>? dataUltimoAcesso,
   }) {
@@ -2037,7 +2033,7 @@ typedef $$AlunoTableCreateCompanionBuilder = AlunoCompanion Function({
   required String email,
   Value<String?> restricaoMedica,
   Value<String?> observacaoSaude,
-  Value<bool?> status,
+  Value<bool> status,
   Value<PgDate> dataCadastro,
   Value<PgDateTime?> dataUltimoAcesso,
 });
@@ -2053,7 +2049,7 @@ typedef $$AlunoTableUpdateCompanionBuilder = AlunoCompanion Function({
   Value<String> email,
   Value<String?> restricaoMedica,
   Value<String?> observacaoSaude,
-  Value<bool?> status,
+  Value<bool> status,
   Value<PgDate> dataCadastro,
   Value<PgDateTime?> dataUltimoAcesso,
 });
@@ -2323,7 +2319,7 @@ class $$AlunoTableTableManager
                 Value<String> email = const Value.absent(),
                 Value<String?> restricaoMedica = const Value.absent(),
                 Value<String?> observacaoSaude = const Value.absent(),
-                Value<bool?> status = const Value.absent(),
+                Value<bool> status = const Value.absent(),
                 Value<PgDate> dataCadastro = const Value.absent(),
                 Value<PgDateTime?> dataUltimoAcesso = const Value.absent(),
               }) => AlunoCompanion(
@@ -2355,7 +2351,7 @@ class $$AlunoTableTableManager
                 required String email,
                 Value<String?> restricaoMedica = const Value.absent(),
                 Value<String?> observacaoSaude = const Value.absent(),
-                Value<bool?> status = const Value.absent(),
+                Value<bool> status = const Value.absent(),
                 Value<PgDate> dataCadastro = const Value.absent(),
                 Value<PgDateTime?> dataUltimoAcesso = const Value.absent(),
               }) => AlunoCompanion.insert(

@@ -38,7 +38,10 @@ void main() async {
   final adminController = AdminController(adminService);
 
   final alunoRepository = AlunoRepository(db);
-  final alunoService = AlunoService(alunoRepository);
+  final alunoService = AlunoService(
+    alunoRepository,
+    hash: senhaHasher.gerarHash,
+  );
   final alunoController = AlunoController(alunoService);
 
   final professorRepository = ProfessorRepository(db);

@@ -9,6 +9,7 @@ import 'package:shelf_router/shelf_router.dart';
 import '../../../database/database.dart' show ProfessorData;
 import '../../../shared/autorizacao/identidade.dart';
 import '../../../shared/erros/professor_exception.dart';
+import '../../../shared/erros/status_http.dart';
 import '../../../shared/erros/tradutor_erro_banco.dart';
 import '../../../shared/middleware/identidade_middleware.dart';
 import 'professor_service.dart';
@@ -227,11 +228,7 @@ class ProfessorController {
     final codigo = traduzirErroBanco(e);
     if (codigo == null) return _erroInterno(e, st);
 
-    final status = switch (e.code) {
-      '23505' || '23503' => 409, // unicidade ou FK com RESTRICT
-      _ => 400,
-    };
-    return _envelope(status, codigo, campo: _campoDe(codigo));
+    return _envelope(statusHttp(codigo), codigo, campo: _campoDe(codigo));
   }
 
   Response _erroInterno(Object erro, StackTrace st) {
@@ -262,7 +259,7 @@ class ProfessorController {
     CodigoErro.emailInvalido => 'E-mail em formato inválido.',
     CodigoErro.cpfEmUso => 'CPF já cadastrado.',
     CodigoErro.emailEmUso => 'E-mail já cadastrado.',
-    CodigoErro.professorEmUso =>
+    CodigoErro.registroEmUso =>
       'Professor possui vínculos, cronogramas, aulas ou treinos.',
     CodigoErro.professorNaoEncontrado => 'Professor não encontrado.',
     CodigoErro.tokenInvalido => 'Autenticação necessária.',

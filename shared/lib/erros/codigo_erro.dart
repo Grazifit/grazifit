@@ -13,7 +13,7 @@
 /// **Fonte:** docs/arquitetura.md secao 7, incluindo os erros HTTP da F-01.
 /// Codigo novo nasce no contrato documentado, nunca apenas neste enum.
 enum CodigoErro {
-  // --- Triggers, com ERRCODE proprio (arquitetura secao 7.2) ---
+  // --- Triggers, com ERRCODE proprio (`docs/arquitetura.md` §7.2) ---
   aulaSemVagas('AULA_SEM_VAGAS'),
   aulaInativa('AULA_INATIVA'),
   aulaCategoriaDivergente('AULA_CATEGORIA_DIVERGENTE'),
@@ -31,6 +31,13 @@ enum CodigoErro {
   emailInvalido('EMAIL_INVALIDO'),
 
   dataNascimentoInvalida('DATA_NASCIMENTO_INVALIDA'),
+
+  // --- Contrato HTTP generico dos CRUDs ---
+  registroEmUso('REGISTRO_EM_USO'),
+  registroNaoEncontrado('REGISTRO_NAO_ENCONTRADO'),
+  jsonInvalido('JSON_INVALIDO'),
+  campoObrigatorio('CAMPO_OBRIGATORIO'),
+  campoInvalido('CAMPO_INVALIDO'),
 
   // --- Professor ---
   professorEmUso('PROFESSOR_EM_USO'),

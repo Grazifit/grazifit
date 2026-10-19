@@ -23,3 +23,10 @@ final class AlunoValidationException extends AlunoException {
 final class AlunoConflictException extends AlunoException {
   const AlunoConflictException(super.codigo, {super.campo});
 }
+
+/// Aluno que nao existe. Vira HTTP 404.
+///
+/// O codigo e sempre `registroNaoEncontrado` (`docs/arquitetura.md` §7.5).
+final class AlunoNotFoundException extends AlunoException {
+  const AlunoNotFoundException() : super(CodigoErro.registroNaoEncontrado);
+}
