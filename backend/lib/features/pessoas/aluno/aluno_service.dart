@@ -15,6 +15,7 @@ class AlunoService {
   AlunoService(this._repository, {required this.hash});
 
   Future<AlunoData> criar({
+    required Identidade identidade,
     required String cpf,
     required String senha,
     required String nome,

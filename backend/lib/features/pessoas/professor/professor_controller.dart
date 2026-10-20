@@ -7,9 +7,11 @@ import 'package:shelf/shelf.dart';
 import 'package:shelf_router/shelf_router.dart';
 
 import '../../../database/database.dart' show ProfessorData;
+import '../../../shared/autorizacao/identidade.dart';
 import '../../../shared/erros/professor_exception.dart';
 import '../../../shared/erros/status_http.dart';
 import '../../../shared/erros/tradutor_erro_banco.dart';
+import '../../../shared/middleware/identidade_middleware.dart';
 import 'professor_service.dart';
 
 /// Forma da requisição e montagem do DTO — nada além disso.
@@ -33,6 +35,8 @@ class ProfessorController {
   // ---------------------------------------------------------------- handlers
 
   Future<Response> _criar(Request request) async {
+    final identidade = identidadeDaRequisicao(request);
+    if (identidade == null) return _envelope(401, CodigoErro.tokenInvalido);
     final payload = await _lerCorpo(request);
     if (payload == null) return _erroDeForma('JSON inválido.');
 
@@ -66,6 +70,7 @@ class ProfessorController {
 
     try {
       final professor = await _service.criar(
+        identidade: identidade,
         cpf: cpf!,
         senha: senha,
         nome: nome,
@@ -75,6 +80,8 @@ class ProfessorController {
       return _json(201, _paraJson(professor));
     } on ProfessorException catch (e) {
       return _tratarProfessor(e);
+    } on AcessoNegado {
+      return _envelope(403, CodigoErro.acessoNegado);
     } on pg.ServerException catch (e, st) {
       return _tratarBanco(e, st);
     } catch (e, st) {
@@ -83,14 +90,18 @@ class ProfessorController {
   }
 
   Future<Response> _buscarPorId(Request request, String id) async {
+    final identidade = identidadeDaRequisicao(request);
+    if (identidade == null) return _envelope(401, CodigoErro.tokenInvalido);
     final idProfessor = int.tryParse(id);
     if (idProfessor == null) return _erroDeForma('Id inválido.');
 
     try {
-      final professor = await _service.buscarPorId(idProfessor);
+      final professor = await _service.buscarPorId(identidade, idProfessor);
       return _json(200, _paraJson(professor));
     } on ProfessorException catch (e) {
       return _tratarProfessor(e);
+    } on AcessoNegado {
+      return _envelope(403, CodigoErro.acessoNegado);
     } on pg.ServerException catch (e, st) {
       return _tratarBanco(e, st);
     } catch (e, st) {
@@ -99,6 +110,8 @@ class ProfessorController {
   }
 
   Future<Response> _atualizar(Request request, String id) async {
+    final identidade = identidadeDaRequisicao(request);
+    if (identidade == null) return _envelope(401, CodigoErro.tokenInvalido);
     final idProfessor = int.tryParse(id);
     if (idProfessor == null) return _erroDeForma('Id inválido.');
 
@@ -110,6 +123,7 @@ class ProfessorController {
 
     try {
       final professor = await _service.atualizar(
+        identidade: identidade,
         idProfessor: idProfessor,
         nome: _texto(payload['nome']),
         email: _texto(payload['email']),
@@ -120,6 +134,8 @@ class ProfessorController {
       return _json(200, _paraJson(professor));
     } on ProfessorException catch (e) {
       return _tratarProfessor(e);
+    } on AcessoNegado {
+      return _envelope(403, CodigoErro.acessoNegado);
     } on pg.ServerException catch (e, st) {
       return _tratarBanco(e, st);
     } catch (e, st) {
@@ -128,14 +144,18 @@ class ProfessorController {
   }
 
   Future<Response> _deletar(Request request, String id) async {
+    final identidade = identidadeDaRequisicao(request);
+    if (identidade == null) return _envelope(401, CodigoErro.tokenInvalido);
     final idProfessor = int.tryParse(id);
     if (idProfessor == null) return _erroDeForma('Id inválido.');
 
     try {
-      await _service.deletar(idProfessor);
+      await _service.deletar(identidade, idProfessor);
       return Response(204);
     } on ProfessorException catch (e) {
       return _tratarProfessor(e);
+    } on AcessoNegado {
+      return _envelope(403, CodigoErro.acessoNegado);
     } on pg.ServerException catch (e, st) {
       return _tratarBanco(e, st);
     } catch (e, st) {
