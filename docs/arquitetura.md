@@ -318,11 +318,23 @@ Não existe tela de criação de admin (**D32**). A conta é semeada por script 
 
 **Nota para a S2 — ◻ Pendente:** essa unicidade cruzada não existe no schema; não há constraint que a garanta. Enquanto for validação de aplicação, dois cadastros simultâneos podem furá-la. Se isso for considerado risco, o reforço é uma constraint no banco — decisão separada, sem impacto no fluxo de login.
 
+### 6.4 Sessão HTTP da F-01
+
+`POST /auth/login` recebe `{email, senha}` e responde com um token de acesso Bearer e a identidade pública `{id, papel, nome}`. O backend procura o e-mail normalizado nas três tabelas, recusa conta inativa e também recusa resultados ambíguos (mesmo e-mail em mais de um perfil). Nenhuma senha ou hash aparece na resposta.
+
+O token é JWT com assinatura HS256, validade de 1 hora, emissor `grazifit` e audiência `grazifit-api`. A chave `TOKEN_SIGNING_KEY` é um segredo Base64 de pelo menos 32 bytes, separado de `SENHA_PEPPER`. O middleware valida a assinatura, o prazo e a existência de uma conta ainda ativa; injeta `{id, papel}` no contexto. A decisão de permissão fica nos Services (§5). Não há refresh token nesta fatia.
+
+O login limita todas as tentativas por IP (30 em 15 minutos) e por e-mail normalizado, exista ou não a conta (10 em 15 minutos). A 31ª tentativa do IP na janela causa a primeira infração e bloqueia por 15 minutos. Depois de cada desbloqueio, uma nova rodada completa de 30 tentativas pode causar a infração seguinte: 30, 45, 60, 75 e 90 minutos; a 7ª infração bloqueia o IP até o processo reiniciar. Requisições feitas durante um bloqueio não avançam a contagem. A partir de três falhas por conta, impõe espera progressiva de 1 a 60 segundos; sucesso limpa o histórico da conta, não o do IP. No máximo duas verificações de senha podem estar em andamento no processo; excesso responde `429` antes do Argon2id. Bloqueios temporários incluem `Retry-After`; o permanente não anuncia prazo. Os históricos têm limite de memória; ao esgotá-lo, o login falha fechado. O IP vem da conexão TCP, nunca de `X-Forwarded-For` não confiável. O log registra método, caminho e status, sem query string, cabeçalhos, senha ou token.
+
+**Limite operacional:** os contadores e bloqueios são em memória de um único processo e reiniciam com ele; o bloqueio "permanente" não sobrevive ao restart. Para múltiplas instâncias ou tráfego atrás de proxy, é necessário um limitador compartilhado/na borda e configuração explícita de proxies confiáveis; não se deve assumir que o IP do cliente está em `X-Forwarded-For`. Bloqueios por IP também atingem usuários legítimos que compartilham IP (NAT/proxy), e os estágios do IP são preservados até reiniciar o processo. O bloqueio por conta pode ser explorado para negar acesso a um usuário específico, portanto o tempo de espera é limitado e deve ser monitorado.
+
 ---
 
 ## 7. Contrato de erro — ✔ Firmada (D64)
 
 Envelope `{ codigo, mensagem, campo? }`, com `codigo` legível por máquina. Um tradutor único no `error_handler` mapeia a falha do banco para o código; nenhuma feature traduz por conta própria.
+
+Erros de autenticação da F-01 usam o mesmo envelope: `REQUISICAO_INVALIDA` (400), `CREDENCIAIS_INVALIDAS` (401), `TOKEN_INVALIDO` (401), `ACESSO_NEGADO` (403) e `MUITAS_TENTATIVAS` (429, com `Retry-After` apenas quando há prazo). `ERRO_INTERNO` (500) cobre falhas não mapeadas sem expor exceções ao cliente. Conta inexistente, inativa, e-mail duplicado entre perfis e senha incorreta compartilham `CREDENCIAIS_INVALIDAS` para não revelar qual condição ocorreu.
 
 **A UI escolhe o texto pelo código, jamais pela string de mensagem do Postgres.** Quatro Definições de Pronto exigem "mensagem e não exceção crua"; sem contrato, cada sprint reinventa o mapeamento.
 

@@ -3,6 +3,7 @@ import '../../auth/criptografia.dart';
 import 'package:grazifit_backend/features/auth/validacoes.dart';
 
 import '../../../database/database.dart';
+import '../../../shared/autorizacao/identidade.dart';
 import 'admin_repository.dart';
 
 import 'package:grazifit_backend/shared/erros/admin_exceptions.dart'; // ver nota abaixo
@@ -14,12 +15,14 @@ class AdminService {
   AdminService(this._repository, this._senhaHasher);
 
   Future<AdminData> criar({
+    required Identidade identidade,
     required String cpf,
     required String senha,
     required String nome,
     required String email,
     String? telefone,
   }) async {
+    exigirAdmin(identidade);
     if (!Validacoes.cpfValido(cpf)) {
       throw ValidationException('CPF inválido.');
     }
@@ -42,7 +45,8 @@ class AdminService {
     );
   }
 
-  Future<AdminData> buscarPorId(int idAdmin) async {
+  Future<AdminData> buscarPorId(Identidade identidade, int idAdmin) async {
+    exigirAdmin(identidade);
     final admin = await _repository.buscarPorId(idAdmin);
     if (admin == null) {
       throw NotFoundException('Admin não encontrado.');
@@ -51,12 +55,14 @@ class AdminService {
   }
 
   Future<AdminData> atualizar({
+    required Identidade identidade,
     required int idAdmin,
     String? nome,
     String? email,
     String? telefone,
     String? senha,
   }) async {
+    exigirAdmin(identidade);
     if (email != null && !Validacoes.emailValido(email)) {
       throw ValidationException('E-mail inválido.');
     }
@@ -75,5 +81,8 @@ class AdminService {
     );
   }
 
-  Future<void> deletar(int idAdmin) => _repository.deletar(idAdmin);
+  Future<void> deletar(Identidade identidade, int idAdmin) {
+    exigirAdmin(identidade);
+    return _repository.deletar(idAdmin);
+  }
 }
