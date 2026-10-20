@@ -29,6 +29,7 @@ class AlunoService {
     String? observacaoSaude,
   }) async {
     exigirAdmin(identidade);
+
     final cpfNormalizado = cpf.replaceAll(RegExp(r'[^0-9]'), '');
     final emailNormalizado = email.trim().toLowerCase();
 

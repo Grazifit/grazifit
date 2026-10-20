@@ -8,11 +8,11 @@ import 'package:shelf/shelf.dart';
 import 'package:shelf_router/shelf_router.dart';
 
 import '../../../database/database.dart' show AlunoData;
+import '../../../shared/autorizacao/identidade.dart';
 import '../../../shared/erros/status_http.dart';
 import '../../../shared/erros/tradutor_erro_banco.dart';
-import '../../../shared/autorizacao/identidade.dart';
-import '../../../shared/middleware/identidade_middleware.dart';
 import '../../../shared/erros/aluno_exception.dart';
+import '../../../shared/middleware/identidade_middleware.dart';
 import 'aluno_service.dart';
 
 /// Forma da requisicao e montagem do DTO. Sem regra de negocio nem decisao
