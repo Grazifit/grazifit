@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 
 import 'tela_detalhe_aula.dart';
+import 'tela_meus_agendamentos_aluno.dart';
+import '../../treinos/screens/tela_treino_aluno.dart';
+import '../../../core/theme/app_colors.dart';
 
 /// Tela de agenda do aluno: abas (Agenda / Meus agendamentos),
 /// filtros por modalidade e lista de aulas disponíveis.
@@ -12,8 +15,8 @@ class TelaAgendaAluno extends StatefulWidget {
 }
 
 class _TelaAgendaAlunoState extends State<TelaAgendaAluno> {
-  static const Color kGreen = Color(0xFF1B5E3C);
-  static const Color kBackground = Color(0xFFF3F4F6);
+  static const Color kGreen = AppColors.verde;
+  static const Color kBackground = AppColors.fundo;
 
   int _abaSelecionada = 0; // 0 = Agenda, 1 = Meus agendamentos
   int _filtroSelecionado = 0; // índice da modalidade ativa
@@ -104,6 +107,27 @@ class _TelaAgendaAlunoState extends State<TelaAgendaAluno> {
     );
   }
 
+  void _selecionarAba(int index) {
+    if (index == 1) {
+      Navigator.of(context).push(
+        MaterialPageRoute(builder: (_) => const TelaMeusAgendamentosAluno()),
+      );
+      return;
+    }
+    setState(() => _abaSelecionada = index);
+  }
+
+  void _selecionarNav(int index) {
+    if (index == 1) {
+      // Treinos: abre a tela por cima; a Agenda continua marcada ao voltar.
+      Navigator.of(context).push(
+        MaterialPageRoute(builder: (_) => const TelaTreinosAluno()),
+      );
+      return;
+    }
+    setState(() => _navSelecionado = index);
+  }
+
   Widget _buildAbas() {
     return Container(
       color: kBackground,
@@ -121,7 +145,7 @@ class _TelaAgendaAlunoState extends State<TelaAgendaAluno> {
   Widget _buildAba(String texto, int index) {
     final selecionada = _abaSelecionada == index;
     return GestureDetector(
-      onTap: () => setState(() => _abaSelecionada = index),
+      onTap: () => _selecionarAba(index),
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 10),
         decoration: BoxDecoration(
@@ -308,7 +332,7 @@ class _TelaAgendaAlunoState extends State<TelaAgendaAluno> {
             final selecionado = _navSelecionado == index;
             final item = itens[index];
             return GestureDetector(
-              onTap: () => setState(() => _navSelecionado = index),
+              onTap: () => _selecionarNav(index),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -344,7 +368,7 @@ class _CabecalhoAgenda extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      color: const Color(0xFFF3F4F6),
+      color: AppColors.fundo,
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
       child: Stack(
         alignment: Alignment.center,
