@@ -15,7 +15,10 @@ Identidade? identidadeDaRequisicao(Request request) =>
 /// Resolve quem chama a API. Permissoes continuam nos services.
 Middleware identidadeMiddleware(TokenService tokens, AuthRepository contas) =>
     (innerHandler) => (request) async {
-      if (request.method == 'POST' && request.url.path == 'auth/login') {
+      final rotaPublica =
+          (request.method == 'POST' && request.url.path == 'auth/login') ||
+          (request.method == 'GET' && request.url.path == 'health');
+      if (rotaPublica) {
         return innerHandler(request);
       }
 

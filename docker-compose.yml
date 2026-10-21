@@ -1,9 +1,18 @@
 # ============================================================
-# UM servico: PostgreSQL 18.
+# Ambiente de DESENVOLVIMENTO completo, guiado pelo .env.
 #
-# O servico de backend e o seed one-shot do admin sao da Fase 3
-# (ver docs/arquitetura.md secao 10 e prompt-fase-2 secao 4.2).
-# Nao acrescente nenhum dos dois aqui antes daquela fase.
+# Servicos, na ordem de subida:
+#   banco   -> PostgreSQL 18 (dados no volume grazifit-data)
+#   migrate -> one-shot: database/aplicar.sh (schema + migrations) e sai
+#   backend -> API Dart (dart run); sobe so depois do exit 0 do migrate
+#   app-web -> Flutter Web (opcional): so com COMPOSE_PROFILES=web no .env
+#
+# Comando do dia a dia:  docker compose up --build --watch
+# Detalhes, variaveis e cuidados: docs/guia-desenvolvimento.md secao 12.6
+# e docs/arquitetura.md secao 10.
+#
+# Fora daqui por decisao: o seed one-shot do admin (D60) continua sendo
+# servico separado da Fase 3; nunca roda no boot do backend.
 # ============================================================
 
 services:
@@ -26,9 +35,10 @@ services:
     # Publica SOMENTE em loopback (127.0.0.1). Sem o prefixo, a forma
     # curta "PORTA:PORTA" publica em 0.0.0.0 — todas as interfaces,
     # inclusive a placa de rede —, deixando o banco alcancavel por
-    # qualquer host da rede local. O backend (via localhost) e o
-    # aplicar.sh (via psql dentro do container) nao usam a placa de
-    # rede, entao nada legitimo depende dela.
+    # qualquer host da rede local. Os servicos do compose (migrate,
+    # backend) chegam ao banco por banco:5432, na rede interna; a porta
+    # publicada serve so a ferramentas do host (psql, IDE, backend
+    # rodando fora do Docker). Nada legitimo depende da placa de rede.
     ports:
       - "127.0.0.1:${POSTGRES_PORT:-5432}:5432"
 
@@ -46,6 +56,161 @@ services:
       timeout: 5s
       retries: 10
       start_period: 30s
+
+  # One-shot: aplica schema e migrations com o database/aplicar.sh
+  # original (idempotente) e termina. O backend so sobe depois do exit 0.
+  # Usa o psql da propria imagem do Postgres; nenhuma imagem a mais.
+  migrate:
+    image: postgres:18
+    restart: "no"
+    user: postgres
+    depends_on:
+      banco:
+        condition: service_healthy
+    entrypoint: ["bash", "/database/aplicar.sh"]
+    environment:
+      # Dentro da rede do compose: nome do servico e porta interna,
+      # qualquer que seja a POSTGRES_PORT publicada no host.
+      POSTGRES_HOST: banco
+      POSTGRES_PORT: "5432"
+      POSTGRES_USER: ${POSTGRES_USER:-grazifit}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?defina POSTGRES_PASSWORD no .env (veja .env.example)}
+      POSTGRES_DB: ${POSTGRES_DB:-grazifit}
+    volumes:
+      - ./database:/database:ro
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    read_only: true
+    # A imagem postgres:18 declara VOLUME /var/lib/postgresql. O migrate
+    # nao usa esse diretorio; sem o tmpfs, cada container novo deixaria
+    # um volume anonimo orfao que o "down" (sem -v) nao remove.
+    tmpfs:
+      - /var/lib/postgresql
+
+  # API em Dart (dart run, JIT). So sobe depois das migrations (exit 0).
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+      args:
+        DART_VERSION: ${DART_VERSION:?defina DART_VERSION no .env (veja .env.example)}
+    restart: unless-stopped
+    # O dart run como PID 1 ignora SIGTERM: sem init, cada restart do
+    # watch esperaria os 10 s do docker stop e terminaria em SIGKILL (137).
+    init: true
+    depends_on:
+      banco:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    # Segredos so em runtime, nunca na imagem.
+    environment:
+      DATABASE_URL: ${DATABASE_URL_DOCKER:?defina DATABASE_URL_DOCKER no .env (veja .env.example)}
+      SENHA_PEPPER: ${SENHA_PEPPER:?defina SENHA_PEPPER no .env (veja .env.example)}
+      TOKEN_SIGNING_KEY: ${TOKEN_SIGNING_KEY:?defina TOKEN_SIGNING_KEY no .env (veja .env.example)}
+      # Fixo: dentro do container o servidor precisa ouvir em todas as
+      # interfaces do container para a porta publicada alcanca-lo. A
+      # exposicao para fora continua limitada a 127.0.0.1 em "ports".
+      SERVER_HOST: 0.0.0.0
+      SERVER_PORT: ${SERVER_PORT:-8080}
+      CORS_ORIGIN: ${CORS_ORIGIN:?defina CORS_ORIGIN no .env (veja .env.example)}
+    ports:
+      - "127.0.0.1:${BACKEND_PUBLIC_PORT:-8080}:${SERVER_PORT:-8080}"
+    # /health responde 200 so se o banco atende um SELECT 1.
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:$${SERVER_PORT}/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
+    # read_only nao se aplica: o develop.watch copia arquivos para dentro
+    # do container e o dart run grava em .dart_tool.
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    # docker compose up --watch: copia o arquivo alterado para o container
+    # e reinicia o dart run (o servidor Dart nao tem hot reload). Mudanca
+    # de dependencia reconstroi a imagem.
+    develop:
+      watch:
+        - action: sync+restart
+          path: ./backend/lib
+          target: /app/backend/lib
+        - action: sync+restart
+          path: ./backend/bin
+          target: /app/backend/bin
+        - action: sync+restart
+          path: ./shared/lib
+          target: /app/shared/lib
+        - action: rebuild
+          path: ./backend/pubspec.yaml
+        - action: rebuild
+          path: ./backend/pubspec.lock
+        - action: rebuild
+          path: ./shared/pubspec.yaml
+        - action: rebuild
+          path: ./shared/pubspec.lock
+
+  # App Flutter Web (opcional): sobe so com COMPOSE_PROFILES=web no .env.
+  app-web:
+    profiles: ["web"]
+    build:
+      context: .
+      dockerfile: app/Dockerfile
+      args:
+        DART_VERSION: ${DART_VERSION:?defina DART_VERSION no .env (veja .env.example)}
+        FLUTTER_VERSION: ${FLUTTER_VERSION:?defina FLUTTER_VERSION no .env (veja .env.example)}
+    restart: unless-stopped
+    depends_on:
+      backend:
+        condition: service_healthy
+    # O flutter run encerra se o stdin fechar.
+    stdin_open: true
+    environment:
+      WEB_PORT: ${WEB_PORT:-8081}
+    command:
+      - flutter
+      - run
+      - -d
+      - web-server
+      - --web-hostname=0.0.0.0
+      - --web-port=${WEB_PORT:-8081}
+      - --pid-file=/tmp/flutter.pid
+      - --dart-define=API_BASE_URL=${API_BASE_URL:?defina API_BASE_URL no .env (veja .env.example)}
+    ports:
+      - "127.0.0.1:${WEB_PORT:-8081}:${WEB_PORT:-8081}"
+    # Mede se o servidor de dev do Flutter responde, NAO se a compilacao
+    # terminou: o GET / ja da 200 em segundos e a 1a carga da pagina ainda
+    # compila (tela em branco por dezenas de segundos). O start_period
+    # longo so da folga a 1a inicializacao do SDK numa maquina lenta.
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:$${WEB_PORT}/ || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 300s
+    # read_only nao se aplica: o flutter run grava em build/, .dart_tool/ e
+    # no cache do SDK, e o develop.watch copia arquivos para dentro.
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    # docker compose up --watch: copia o arquivo alterado e envia SIGUSR1 ao
+    # flutter run (hot reload). So aplica com o app aberto no navegador;
+    # sem cliente conectado, o proximo carregamento da pagina ja traz a
+    # mudanca. Mudanca de dependencia reconstroi a imagem.
+    develop:
+      watch:
+        - action: sync+exec
+          path: ./app/lib
+          target: /app/app/lib
+          exec: &hot_reload
+            command: ["sh", "-c", "kill -USR1 \"$$(cat /tmp/flutter.pid)\""]
+        - action: sync+exec
+          path: ./app/web
+          target: /app/app/web
+          exec: *hot_reload
+        - action: rebuild
+          path: ./app/pubspec.yaml
+        - action: rebuild
+          path: ./app/pubspec.lock
 
 volumes:
   grazifit-data:

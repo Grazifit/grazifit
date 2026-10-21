@@ -57,6 +57,7 @@ void main() {
   final auth = AuthController(AuthService(repo, _Hasher(), tokens));
   final router = Router()
     ..mount('/', auth.router.call)
+    ..get('/health', (Request _) => Response.ok('ok'))
     ..get('/protegida', (Request request) {
       final identidade = identidadeDaRequisicao(request)!;
       return Response.ok('${identidade.papel.name}:${identidade.id}');
@@ -64,6 +65,15 @@ void main() {
   final handler = const Pipeline()
       .addMiddleware(identidadeMiddleware(tokens, repo))
       .addHandler(router.call);
+
+  test('healthcheck e publico e nao exige token', () async {
+    final resposta = await handler(
+      Request('GET', Uri.parse('http://localhost/health')),
+    );
+
+    expect(resposta.statusCode, 200);
+    expect(await resposta.readAsString(), 'ok');
+  });
 
   test('login emite token que identifica a chamada protegida', () async {
     final login = await handler(

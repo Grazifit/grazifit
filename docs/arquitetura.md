@@ -436,7 +436,16 @@ Concorrência de vaga é resolvida pelo trigger com `FOR UPDATE`, **não** por p
 
 Fecha o M2.4 do roadmap.
 
-**`docker-compose.yml`** — Postgres 18 + backend. O Postgres tem healthcheck e o backend só sobe depois dele. A inicialização aplica `database/schema/` e em seguida `database/migrations/` em ordem numérica — nunca schema gerado por código (**D58**).
+**`docker-compose.yml`** — Postgres 18 + backend, e opcionalmente o app web. O Postgres tem healthcheck e o backend só sobe depois dele. A inicialização aplica `database/schema/` e em seguida `database/migrations/` em ordem numérica — nunca schema gerado por código (**D58**).
+
+| Serviço | O que é | Sobe depois de | Health check |
+|---|---|---|---|
+| `banco` | `postgres:18`, volume `grazifit-data` | — | `pg_isready` |
+| `migrate` | one-shot com o `database/aplicar.sh` original, `database/` montado só leitura | `banco` healthy | nenhum; sucesso = `exit 0` |
+| `backend` | `backend/Dockerfile`, `dart run` (JIT), usuário sem root | `migrate` com `exit 0` | `GET /health` |
+| `app-web` | `app/Dockerfile`, `flutter run -d web-server`; só com `COMPOSE_PROFILES=web` | `backend` healthy | HTTP na porta do app |
+
+Comando principal: `docker compose up --build --watch`. Portas publicadas só em `127.0.0.1`; segredos só em runtime, pelo `environment` do compose — nunca em imagem. Operação no dia a dia: `docs/guia-desenvolvimento.md` §12.6.
 
 **O seed do admin (D60) é serviço one-shot separado**, jamais executado no boot do backend: no boot, reexecutaria a cada restart e viraria caminho silencioso de criação de conta privilegiada.
 
@@ -445,6 +454,10 @@ Fecha o M2.4 do roadmap.
 **Pool de conexões** — declarado em config, não fixado em código. Ponto de partida de 10 por instância, contra o `max_connections` padrão de 100 do Postgres. A regra que importa é a negativa: **nunca uma conexão por requisição**.
 
 **`/health`** verifica a conexão com o banco, não apenas se o processo está vivo — a S7 depende disso para a hospedagem. **Log estruturado** com id de requisição propagado desde o middleware.
+
+**Exceção de nomenclatura — `GET /health`.** É a única rota fora da convenção de endpoints em pt-BR, e de propósito: é rota de **infraestrutura**, consumida pelo healthcheck do compose e por orquestradores, nunca pelo app, e `health` é o nome que essas ferramentas e qualquer colaborador reconhecem. Responde `200 {"status":"ok"}` quando o banco atende um `SELECT 1` em até 2 s, e `503 {"status":"indisponivel"}` caso contrário. O corpo é fixo: não revela versão, causa da falha nem detalhe da conexão. Não exige autenticação porque não expõe dado nenhum. Nenhuma outra rota herda essa exceção.
+
+**CORS** — middleware escrito à mão, sem pacote, em `backend/lib/shared/middleware/cors_middleware.dart`. Uma única origem explícita, `CORS_ORIGIN`, obrigatória e validada em `config.dart` (`*`, caminho e barra final são recusados). Só a origem igual à configurada recebe `Access-Control-Allow-Origin`; `Vary: Origin` vai em toda resposta e o preflight `OPTIONS` é respondido no próprio middleware.
 
 ---
 
