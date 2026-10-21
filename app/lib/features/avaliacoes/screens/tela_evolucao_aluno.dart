@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../treinos/screens/tela_treino_aluno.dart';
+import '../../pessoas/screens/tela_perfil_aluno.dart';
 import 'tela_registrar_medida_aluno.dart';
 
 /// Tela de evolução do aluno: peso e IMC atuais, gráfico mensal
@@ -73,6 +74,11 @@ class _TelaEvolucaoAlunoState extends State<TelaEvolucaoAluno> {
       // Treinos: troca esta tela pela de treinos.
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(builder: (_) => const TelaTreinosAluno()),
+      );
+    } else if (index == 3) {
+      // Perfil: troca esta tela pela de perfil.
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(builder: (_) => const TelaPerfilAluno()),
       );
     } else {
       setState(() => _navSelecionado = index);

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../treinos/screens/tela_treino_aluno.dart';
+import '../../pessoas/screens/tela_perfil_aluno.dart';
 import '../../avaliacoes/screens/tela_evolucao_aluno.dart';
 import '../../../core/theme/app_colors.dart';
 
@@ -80,6 +81,11 @@ class _TelaMeusAgendamentosAlunoState extends State<TelaMeusAgendamentosAluno> {
       // Evolução: troca esta tela pela de evolução.
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(builder: (_) => const TelaEvolucaoAluno()),
+      );
+    } else if (i == 3) {
+      // Perfil: troca esta tela pela de perfil.
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(builder: (_) => const TelaPerfilAluno()),
       );
     } else {
       setState(() => _navIndex = i);
