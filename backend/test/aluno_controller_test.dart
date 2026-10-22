@@ -30,6 +30,7 @@ class _ServicoFalso implements AlunoService {
 
   @override
   Future<AlunoData> criar({
+    required Identidade identidade,
     required String cpf,
     required String senha,
     required String nome,
@@ -187,6 +188,9 @@ Future<Response> _post(AlunoController controller, String corpo) {
       Uri.parse('http://localhost/aluno'),
       body: corpo,
       headers: {'Content-Type': 'application/json'},
+      context: {
+        chaveIdentidadeContexto: const Identidade(id: 1, papel: Papel.admin),
+      },
     ),
   );
 }

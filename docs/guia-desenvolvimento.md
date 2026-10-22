@@ -361,11 +361,17 @@ Os comandos abaixo são os que funcionam **hoje**. Comando de fase futura está 
 
 | # | Comando | O que faz |
 |---|---|---|
-| 1 | `cp .env.example .env` | Cria o ambiente local. Preencher **`POSTGRES_PASSWORD`** e **`DATABASE_URL`** — nenhuma das duas tem default |
-| 2 | `docker compose up -d` | Sobe o PostgreSQL 18 (serviço `banco`, container `grazifit-db`) |
-| 3 | `bash database/aplicar.sh` | Aplica schema e migrations, em ordem e de forma idempotente |
-| 4 | `cd backend && dart pub get` | Baixa as dependências do backend |
-| 5 | `cd app && flutter pub get` | Baixa as dependências do app |
+| 1 | `cp .env.example .env` | Cria o ambiente local. Preencher **`POSTGRES_PASSWORD`**, **`DATABASE_URL`**, **`DATABASE_URL_DOCKER`** e **`SENHA_PEPPER`** — nenhuma tem default |
+| 2 | `docker compose up --build --watch` | Sobe banco, aplica schema e migrations, sobe o backend e recompila a cada alteração. Com `COMPOSE_PROFILES=web` no `.env`, sobe também o app web. **É o caminho padrão** — §12.6 |
+
+Nada além disso é obrigatório: nenhum script local de inicialização (o antigo `run-dev.ps1`, nunca versionado) e nenhum SDK instalado na máquina. Os passos abaixo só valem para quem quer rodar backend ou app **fora** do Docker:
+
+| # | Comando | O que faz |
+|---|---|---|
+| 3 | `docker compose up -d banco` | Sobe só o PostgreSQL 18 (serviço `banco`, container `grazifit-db`) |
+| 4 | `bash database/aplicar.sh` | Aplica schema e migrations, em ordem e de forma idempotente |
+| 5 | `cd backend && dart pub get` | Baixa as dependências do backend |
+| 6 | `cd app && flutter pub get` | Baixa as dependências do app |
 
 **Porta ocupada.** Se a máquina já tiver um PostgreSQL nativo na 5432, o container não sobe — ou pior, o Dart conecta no servidor errado e o erro aparece como corrupção de protocolo. Defina `POSTGRES_PORT=5433` no `.env` e reflita a mesma porta na `DATABASE_URL`. Dentro da rede do compose a porta continua sendo 5432.
 
@@ -398,14 +404,15 @@ dart run build_runner build --delete-conflicting-outputs
 
 | Alvo | Comando | Estado |
 |---|---|---|
-| Banco | `docker compose up -d` | Disponível |
-| Banco — logs | `docker compose logs -f banco` | Disponível |
-| Banco — parar | `docker compose down` | Disponível |
+| Ambiente completo | `docker compose up --build --watch` | Disponível — §12.6 |
+| Só o banco | `docker compose up -d banco` | Disponível |
+| Logs de um serviço | `docker compose logs -f <servico>` (`banco`, `migrate`, `backend`, `app-web`) | Disponível |
+| Parar tudo | `docker compose down` | Disponível — mantém os dados |
 | App no Chrome | `cd app && flutter run -d chrome` | Disponível |
 | App no Android | `cd app && flutter run -d <id>` (`flutter devices` lista os ids) | Disponível |
-| Servidor backend | `dart run bin/server.dart` | **Fase 3** — `backend/bin/` só tem `.gitkeep`; o servidor, o `shelf` e o serviço de backend no compose ainda não existem |
+| Servidor backend fora do Docker | `cd backend && dart run bin/server.dart` | Disponível — exige `DATABASE_URL`, `SENHA_PEPPER` e `CORS_ORIGIN` no ambiente do processo |
 
-**`docker compose down -v` apaga o volume `grazifit-data`** e com ele todos os dados. Depois disso, `bash database/aplicar.sh` precisa rodar de novo. Use apenas quando o objetivo for justamente zerar o banco.
+**`docker compose down -v` apaga o volume `grazifit-data`** e com ele todos os dados. Depois disso, o próximo `docker compose up` reaplica o schema pelo serviço `migrate` (ou `bash database/aplicar.sh`, se só o `banco` foi levantado). Use apenas quando o objetivo for justamente zerar o banco.
 
 ### 12.5 Testar e analisar
 
@@ -432,6 +439,42 @@ dart test
 ```
 
 Caractere especial na senha precisa ser percent-encoded: `@` vira `%40`, `:` vira `%3A`, `/` vira `%2F`.
+
+### 12.6 Ambiente Docker completo
+
+```bash
+docker compose up --build --watch   # comando principal: sobe tudo e recompila a cada alteração
+docker compose up --build           # alternativa: sobe sem recompilação automática
+```
+
+| Serviço | O que faz | Porta no host | Pronto quando |
+|---|---|---|---|
+| `banco` | PostgreSQL 18, volume `grazifit-data` | `127.0.0.1:${POSTGRES_PORT}` | `pg_isready` |
+| `migrate` | Roda `database/aplicar.sh` uma vez e termina; na segunda vez imprime `ja aplicado, pulando` e não altera nada | — | `exit 0` |
+| `backend` | `dart run bin/server.dart`, como usuário sem root | `127.0.0.1:${BACKEND_PUBLIC_PORT}` | `GET /health` → 200 |
+| `app-web` | `flutter run -d web-server` — **só com `COMPOSE_PROFILES=web`** | `127.0.0.1:${WEB_PORT}` | a página responde |
+
+**Frontend opcional, pelo `.env`.** `COMPOSE_PROFILES=web` sobe o app junto; `COMPOSE_PROFILES=` (vazio) sobe só banco, migrations e backend. Ninguém precisa digitar `--profile`.
+
+**Variáveis.** Além das da §12.1, o compose lê `DART_VERSION`, `FLUTTER_VERSION`, `BACKEND_PUBLIC_PORT`, `WEB_PORT`, `API_BASE_URL`, `CORS_ORIGIN` e `COMPOSE_PROFILES` — todas descritas no `.env.example`. **Quem já tinha um `.env`** precisa acrescentá-las: sem as obrigatórias, o compose para com `defina <VARIAVEL> no .env (veja .env.example)`. `DATABASE_URL_DOCKER` é a mesma URL da `DATABASE_URL`, mas com host `banco` e porta `5432` — é como o backend enxerga o banco de dentro da rede do compose.
+
+**Recompilação automática (`--watch`).**
+
+- `backend/lib`, `backend/bin`, `shared/lib`: o arquivo é copiado para o container e o `dart run` reinicia (o servidor Dart não tem hot reload). A mudança aparece em ~10–15 s.
+- `app/lib`, `app/web`: o arquivo é copiado e o `flutter run` recebe `SIGUSR1` (hot reload). **Só aplica com o app aberto no navegador**; sem página conectada, o log mostra `No client connected` e o próximo carregamento da página já traz a mudança.
+- `pubspec.yaml` / `pubspec.lock` de `backend/`, `shared/` ou `app/`: a imagem é reconstruída.
+
+**Custo do SDK do Flutter.** A imagem do `app-web` tem de ~2 a ~3 GB e o primeiro build leva de ~15 a ~20 min (depende da rede). É pago uma vez por máquina e só por quem usa `COMPOSE_PROFILES=web`. Trocar `FLUTTER_VERSION`, ou rodar `docker system prune` / `docker builder prune`, apaga o cache e **repete o custo inteiro**. A primeira carga do app depois do `up` ainda leva dezenas de segundos de tela em branco (compilação).
+
+**Lockfile.** As imagens rodam `dart pub get --enforce-lockfile` / `flutter pub get --enforce-lockfile`: se o `pubspec.lock` divergir do `pubspec.yaml`, **o build falha** — de propósito. Mudar dependência continua sendo alteração estrutural (§11, §12.2).
+
+**CORS.** O backend só autoriza a origem exata de `CORS_ORIGIN` (ex.: `http://localhost:8081`). Abra o app pela mesma origem: `http://127.0.0.1:8081` é **outra** origem para o navegador e seria bloqueada.
+
+**Fins de linha.** O `.gitattributes` força LF em `*.sh`, porque o `database/aplicar.sh` roda no container Linux. Um clone feito **antes** desse arquivo pode ter o script em CRLF, e o `migrate` falha com `$'\r': command not found`. Para corrigir a cópia local, sem tocar em mais nada: `rm database/aplicar.sh && git checkout -- database/aplicar.sh`.
+
+**Segurança.** Portas só em `127.0.0.1`. Backend e app rodam sem root, com `cap_drop: [ALL]` e `no-new-privileges`. `.env` e `.git` nunca entram no contexto de build (`.dockerignore`); senha, pepper e URL do banco chegam ao container só em runtime.
+
+**Dados.** `docker compose down` para tudo e **mantém** o volume. `docker compose down -v` apaga o banco — ver §12.4.
 
 ---
 

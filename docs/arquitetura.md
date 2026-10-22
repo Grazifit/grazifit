@@ -318,11 +318,23 @@ Não existe tela de criação de admin (**D32**). A conta é semeada por script 
 
 **Nota para a S2 — ◻ Pendente:** essa unicidade cruzada não existe no schema; não há constraint que a garanta. Enquanto for validação de aplicação, dois cadastros simultâneos podem furá-la. Se isso for considerado risco, o reforço é uma constraint no banco — decisão separada, sem impacto no fluxo de login.
 
+### 6.4 Sessão HTTP da F-01
+
+`POST /auth/login` recebe `{email, senha}` e responde com um token de acesso Bearer e a identidade pública `{id, papel, nome}`. O backend procura o e-mail normalizado nas três tabelas, recusa conta inativa e também recusa resultados ambíguos (mesmo e-mail em mais de um perfil). Nenhuma senha ou hash aparece na resposta.
+
+O token é JWT com assinatura HS256, validade de 1 hora, emissor `grazifit` e audiência `grazifit-api`. A chave `TOKEN_SIGNING_KEY` é um segredo Base64 de pelo menos 32 bytes, separado de `SENHA_PEPPER`. O middleware valida a assinatura, o prazo e a existência de uma conta ainda ativa; injeta `{id, papel}` no contexto. A decisão de permissão fica nos Services (§5). Não há refresh token nesta fatia.
+
+O login limita todas as tentativas por IP (30 em 15 minutos) e por e-mail normalizado, exista ou não a conta (10 em 15 minutos). A 31ª tentativa do IP na janela causa a primeira infração e bloqueia por 15 minutos. Depois de cada desbloqueio, uma nova rodada completa de 30 tentativas pode causar a infração seguinte: 30, 45, 60, 75 e 90 minutos; a 7ª infração bloqueia o IP até o processo reiniciar. Requisições feitas durante um bloqueio não avançam a contagem. A partir de três falhas por conta, impõe espera progressiva de 1 a 60 segundos; sucesso limpa o histórico da conta, não o do IP. No máximo duas verificações de senha podem estar em andamento no processo; excesso responde `429` antes do Argon2id. Bloqueios temporários incluem `Retry-After`; o permanente não anuncia prazo. Os históricos têm limite de memória; ao esgotá-lo, o login falha fechado. O IP vem da conexão TCP, nunca de `X-Forwarded-For` não confiável. O log registra método, caminho e status, sem query string, cabeçalhos, senha ou token.
+
+**Limite operacional:** os contadores e bloqueios são em memória de um único processo e reiniciam com ele; o bloqueio "permanente" não sobrevive ao restart. Para múltiplas instâncias ou tráfego atrás de proxy, é necessário um limitador compartilhado/na borda e configuração explícita de proxies confiáveis; não se deve assumir que o IP do cliente está em `X-Forwarded-For`. Bloqueios por IP também atingem usuários legítimos que compartilham IP (NAT/proxy), e os estágios do IP são preservados até reiniciar o processo. O bloqueio por conta pode ser explorado para negar acesso a um usuário específico, portanto o tempo de espera é limitado e deve ser monitorado.
+
 ---
 
 ## 7. Contrato de erro — ✔ Firmada (D64)
 
 Envelope `{ codigo, mensagem, campo? }`, com `codigo` legível por máquina. Um tradutor único no `error_handler` mapeia a falha do banco para o código; nenhuma feature traduz por conta própria.
+
+Erros de autenticação da F-01 usam o mesmo envelope: `REQUISICAO_INVALIDA` (400), `CREDENCIAIS_INVALIDAS` (401), `TOKEN_INVALIDO` (401), `ACESSO_NEGADO` (403) e `MUITAS_TENTATIVAS` (429, com `Retry-After` apenas quando há prazo). `ERRO_INTERNO` (500) cobre falhas não mapeadas sem expor exceções ao cliente. Conta inexistente, inativa, e-mail duplicado entre perfis e senha incorreta compartilham `CREDENCIAIS_INVALIDAS` para não revelar qual condição ocorreu.
 
 **A UI escolhe o texto pelo código, jamais pela string de mensagem do Postgres.** Quatro Definições de Pronto exigem "mensagem e não exceção crua"; sem contrato, cada sprint reinventa o mapeamento.
 
@@ -424,7 +436,16 @@ Concorrência de vaga é resolvida pelo trigger com `FOR UPDATE`, **não** por p
 
 Fecha o M2.4 do roadmap.
 
-**`docker-compose.yml`** — Postgres 18 + backend. O Postgres tem healthcheck e o backend só sobe depois dele. A inicialização aplica `database/schema/` e em seguida `database/migrations/` em ordem numérica — nunca schema gerado por código (**D58**).
+**`docker-compose.yml`** — Postgres 18 + backend, e opcionalmente o app web. O Postgres tem healthcheck e o backend só sobe depois dele. A inicialização aplica `database/schema/` e em seguida `database/migrations/` em ordem numérica — nunca schema gerado por código (**D58**).
+
+| Serviço | O que é | Sobe depois de | Health check |
+|---|---|---|---|
+| `banco` | `postgres:18`, volume `grazifit-data` | — | `pg_isready` |
+| `migrate` | one-shot com o `database/aplicar.sh` original, `database/` montado só leitura | `banco` healthy | nenhum; sucesso = `exit 0` |
+| `backend` | `backend/Dockerfile`, `dart run` (JIT), usuário sem root | `migrate` com `exit 0` | `GET /health` |
+| `app-web` | `app/Dockerfile`, `flutter run -d web-server`; só com `COMPOSE_PROFILES=web` | `backend` healthy | HTTP na porta do app |
+
+Comando principal: `docker compose up --build --watch`. Portas publicadas só em `127.0.0.1`; segredos só em runtime, pelo `environment` do compose — nunca em imagem. Operação no dia a dia: `docs/guia-desenvolvimento.md` §12.6.
 
 **O seed do admin (D60) é serviço one-shot separado**, jamais executado no boot do backend: no boot, reexecutaria a cada restart e viraria caminho silencioso de criação de conta privilegiada.
 
@@ -433,6 +454,10 @@ Fecha o M2.4 do roadmap.
 **Pool de conexões** — declarado em config, não fixado em código. Ponto de partida de 10 por instância, contra o `max_connections` padrão de 100 do Postgres. A regra que importa é a negativa: **nunca uma conexão por requisição**.
 
 **`/health`** verifica a conexão com o banco, não apenas se o processo está vivo — a S7 depende disso para a hospedagem. **Log estruturado** com id de requisição propagado desde o middleware.
+
+**Exceção de nomenclatura — `GET /health`.** É a única rota fora da convenção de endpoints em pt-BR, e de propósito: é rota de **infraestrutura**, consumida pelo healthcheck do compose e por orquestradores, nunca pelo app, e `health` é o nome que essas ferramentas e qualquer colaborador reconhecem. Responde `200 {"status":"ok"}` quando o banco atende um `SELECT 1` em até 2 s, e `503 {"status":"indisponivel"}` caso contrário. O corpo é fixo: não revela versão, causa da falha nem detalhe da conexão. Não exige autenticação porque não expõe dado nenhum. Nenhuma outra rota herda essa exceção.
+
+**CORS** — middleware escrito à mão, sem pacote, em `backend/lib/shared/middleware/cors_middleware.dart`. Uma única origem explícita, `CORS_ORIGIN`, obrigatória e validada em `config.dart` (`*`, caminho e barra final são recusados). Só a origem igual à configurada recebe `Access-Control-Allow-Origin`; `Vary: Origin` vai em toda resposta e o preflight `OPTIONS` é respondido no próprio middleware.
 
 ---
 

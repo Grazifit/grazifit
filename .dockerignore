@@ -1,0 +1,28 @@
+# Contexto de build = raiz do repositorio (o backend depende de ../shared).
+# Tudo o que esta aqui NAO e enviado ao daemon e nunca entra numa imagem.
+
+# Segredos: o .env so entra no container em runtime, pelo compose.
+**/.env
+**/.env.*
+
+# Historico e metadados de ferramentas, em qualquer nivel
+.git
+.github
+**/.claude
+**/.idea
+**/.vscode
+
+# Artefatos locais de Dart/Flutter: as imagens resolvem os proprios
+# (pub get --enforce-lockfile) e misturar os do host quebraria o cache.
+**/.dart_tool
+**/build
+**/.packages
+
+# Material que nenhuma imagem usa (o migrate monta database/ em runtime;
+# o app web nao precisa do projeto Android)
+docs
+openspec
+database
+app/android
+prompt-*.md
+**/*.log
