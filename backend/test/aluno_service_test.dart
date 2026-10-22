@@ -155,6 +155,7 @@ class _ContaConsultas extends _RepositorioFalso {
 /// quando o alvo do teste e outra coisa.
 const cpfValido = '52998224725';
 const outroCpfValido = '11144477735';
+const identidadeAdmin = Identidade(id: 1, papel: Papel.admin);
 
 Future<AlunoData> _criar(
   AlunoService service, {
@@ -168,7 +169,7 @@ Future<AlunoData> _criar(
   String? observacaoSaude,
 }) {
   return service.criar(
-    identidade: const Identidade(id: 1, papel: Papel.admin),
+    identidade: identidadeAdmin,
     cpf: cpf,
     senha: senha,
     nome: nome,
@@ -198,6 +199,99 @@ Matcher _recusa<T extends AlunoException>(CodigoErro codigo, String campo) {
 }
 
 void main() {
+  group('AlunoService — matriz de autorizacao', () {
+    const admin = Identidade(id: 10, papel: Papel.admin);
+    const alunoDono = Identidade(id: 7, papel: Papel.aluno);
+    const outroAluno = Identidade(id: 8, papel: Papel.aluno);
+    const professor = Identidade(id: 9, papel: Papel.professor);
+
+    test('aluno acessa e atualiza somente o proprio cadastro', () async {
+      final repo = _RepositorioFalso()..existentes[7] = _alunoExistente(7);
+      final service = AlunoService(repo, hash: _hashFalso);
+
+      expect(
+        (await service.buscarAlunoPorId(7, identidade: alunoDono)).idAluno,
+        7,
+      );
+      expect(
+        (await service.atualizar(
+          7,
+          identidade: alunoDono,
+          nome: 'Proprio',
+        )).nome,
+        'Proprio',
+      );
+    });
+
+    for (final identidade in [outroAluno, professor]) {
+      test(
+        '${identidade.papel.name} recebe acesso negado antes da busca',
+        () async {
+          final repo = _RepositorioFalso();
+          final service = AlunoService(repo, hash: _hashFalso);
+
+          await expectLater(
+            () => service.buscarAlunoPorId(0, identidade: identidade),
+            throwsA(isA<AcessoNegado>()),
+          );
+          await expectLater(
+            () => service.atualizar(0, identidade: identidade, nome: 'X'),
+            throwsA(isA<AcessoNegado>()),
+          );
+          expect(repo.buscasPorId, 0);
+        },
+      );
+    }
+
+    for (final identidade in [alunoDono, professor]) {
+      test(
+        '${identidade.papel.name} nao lista, altera status nem exclui',
+        () async {
+          final repo = _RepositorioFalso()..existentes[7] = _alunoExistente(7);
+          final service = AlunoService(repo, hash: _hashFalso);
+
+          await expectLater(
+            () => service.buscarAlunos(
+              identidade: identidade,
+              limit: 20,
+              offset: 0,
+            ),
+            throwsA(isA<AcessoNegado>()),
+          );
+          await expectLater(
+            () =>
+                service.alterarStatus(0, identidade: identidade, status: false),
+            throwsA(isA<AcessoNegado>()),
+          );
+          await expectLater(
+            () => service.excluir(0, identidade: identidade),
+            throwsA(isA<AcessoNegado>()),
+          );
+          expect(repo.buscasPorId, 0);
+          expect(repo.existentes, contains(7));
+        },
+      );
+    }
+
+    test('admin preserva acesso completo', () async {
+      final repo = _RepositorioFalso()..existentes[7] = _alunoExistente(7);
+      final service = AlunoService(repo, hash: _hashFalso);
+
+      expect((await service.buscarAlunoPorId(7, identidade: admin)).idAluno, 7);
+      expect(
+        (await service.buscarAlunos(
+          identidade: admin,
+          limit: 20,
+          offset: 0,
+        )).total,
+        1,
+      );
+      await service.alterarStatus(7, identidade: admin, status: false);
+      await service.excluir(7, identidade: admin);
+      expect(repo.existentes, isEmpty);
+    });
+  });
+
   test('somente admin pode cadastrar aluno', () async {
     final repo = _RepositorioFalso();
     final service = AlunoService(repo, hash: _hashFalso);
@@ -371,7 +465,7 @@ void main() {
       final pagina = await AlunoService(
         repo,
         hash: _hashFalso,
-      ).buscarAlunos(limit: 2, offset: 2);
+      ).buscarAlunos(identidade: identidadeAdmin, limit: 2, offset: 2);
 
       expect(pagina.itens.map((a) => a.idAluno), [3, 4]);
       expect(pagina.total, 5);
@@ -383,7 +477,7 @@ void main() {
       final pagina = await AlunoService(
         repo,
         hash: _hashFalso,
-      ).buscarAlunos(limit: 20, offset: 40);
+      ).buscarAlunos(identidade: identidadeAdmin, limit: 20, offset: 40);
 
       expect(pagina.itens, isEmpty);
       expect(pagina.total, 1);
@@ -405,7 +499,7 @@ void main() {
       final aluno = await AlunoService(
         repo,
         hash: _hashFalso,
-      ).buscarAlunoPorId(7);
+      ).buscarAlunoPorId(7, identidade: identidadeAdmin);
 
       expect(aluno.idAluno, 7);
     });
@@ -414,7 +508,10 @@ void main() {
       final repo = _RepositorioFalso();
 
       expect(
-        () => AlunoService(repo, hash: _hashFalso).buscarAlunoPorId(99),
+        () => AlunoService(
+          repo,
+          hash: _hashFalso,
+        ).buscarAlunoPorId(99, identidade: identidadeAdmin),
         naoEncontrado,
       );
     });
@@ -427,7 +524,7 @@ void main() {
           () => AlunoService(
             repo,
             hash: _hashFalso,
-          ).buscarAlunoPorId(idImpossivel),
+          ).buscarAlunoPorId(idImpossivel, identidade: identidadeAdmin),
           naoEncontrado,
         );
         expect(repo.buscasPorId, 0);
@@ -442,7 +539,7 @@ void main() {
       final aluno = await AlunoService(
         repo,
         hash: _hashFalso,
-      ).atualizar(1, email: '  Novo@Exemplo.COM ');
+      ).atualizar(1, identidade: identidadeAdmin, email: '  Novo@Exemplo.COM ');
 
       expect(aluno.email, 'novo@exemplo.com');
       expect(aluno.nome, 'Aluno 1', reason: 'nome nao veio, nao muda');
@@ -456,10 +553,12 @@ void main() {
     test('tira os espacos das pontas de nome e telefone', () async {
       final repo = _RepositorioFalso()..existentes[1] = _alunoExistente(1);
 
-      await AlunoService(
-        repo,
-        hash: _hashFalso,
-      ).atualizar(1, nome: '  Novo Nome  ', telefone: ' 11911112222 ');
+      await AlunoService(repo, hash: _hashFalso).atualizar(
+        1,
+        identidade: identidadeAdmin,
+        nome: '  Novo Nome  ',
+        telefone: ' 11911112222 ',
+      );
 
       expect(repo.atualizacaoRecebida, {
         'nome': 'Novo Nome',
@@ -473,10 +572,11 @@ void main() {
       final repo = _RepositorioFalso(emailJaExiste: true);
 
       await expectLater(
-        () => AlunoService(
-          repo,
-          hash: _hashFalso,
-        ).atualizar(99, email: 'outro@exemplo.com'),
+        () => AlunoService(repo, hash: _hashFalso).atualizar(
+          99,
+          identidade: identidadeAdmin,
+          email: 'outro@exemplo.com',
+        ),
         throwsA(isA<AlunoNotFoundException>()),
       );
     });
@@ -487,7 +587,7 @@ void main() {
       await AlunoService(
         repo,
         hash: _hashFalso,
-      ).atualizar(1, email: 'aluno1@exemplo.com');
+      ).atualizar(1, identidade: identidadeAdmin, email: 'aluno1@exemplo.com');
 
       expect(repo.emailChecadoExceto, 1);
     });
@@ -500,7 +600,7 @@ void main() {
         () => AlunoService(
           repo,
           hash: _hashFalso,
-        ).atualizar(1, email: 'outro@exemplo.com'),
+        ).atualizar(1, identidade: identidadeAdmin, email: 'outro@exemplo.com'),
         _recusa<AlunoConflictException>(CodigoErro.emailEmUso, 'email'),
       );
       expect(repo.atualizacaoRecebida, isNull);
@@ -513,7 +613,7 @@ void main() {
         () => AlunoService(
           repo,
           hash: _hashFalso,
-        ).atualizar(1, email: 'sem-arroba'),
+        ).atualizar(1, identidade: identidadeAdmin, email: 'sem-arroba'),
         _recusa<AlunoValidationException>(CodigoErro.emailInvalido, 'email'),
       );
       expect(repo.atualizacaoRecebida, isNull);
@@ -524,7 +624,7 @@ void main() {
         () => AlunoService(
           _RepositorioFalso(),
           hash: _hashFalso,
-        ).atualizar(99, nome: 'X'),
+        ).atualizar(99, identidade: identidadeAdmin, nome: 'X'),
         throwsA(isA<AlunoNotFoundException>()),
       );
     });
@@ -537,7 +637,7 @@ void main() {
       await AlunoService(
         repo,
         hash: _hashFalso,
-      ).alterarStatus(1, status: false);
+      ).alterarStatus(1, identidade: identidadeAdmin, status: false);
 
       expect(repo.existentes[1]!.status, isFalse);
     });
@@ -546,7 +646,10 @@ void main() {
       final repo = _RepositorioFalso()
         ..existentes[1] = _alunoExistente(1).copyWith(status: false);
 
-      await AlunoService(repo, hash: _hashFalso).alterarStatus(1, status: true);
+      await AlunoService(
+        repo,
+        hash: _hashFalso,
+      ).alterarStatus(1, identidade: identidadeAdmin, status: true);
 
       expect(repo.existentes[1]!.status, isTrue);
     });
@@ -556,7 +659,7 @@ void main() {
         () => AlunoService(
           _RepositorioFalso(),
           hash: _hashFalso,
-        ).alterarStatus(99, status: false),
+        ).alterarStatus(99, identidade: identidadeAdmin, status: false),
         throwsA(isA<AlunoNotFoundException>()),
       );
     });
@@ -566,7 +669,10 @@ void main() {
     test('remove o aluno', () async {
       final repo = _RepositorioFalso()..existentes[1] = _alunoExistente(1);
 
-      await AlunoService(repo, hash: _hashFalso).excluir(1);
+      await AlunoService(
+        repo,
+        hash: _hashFalso,
+      ).excluir(1, identidade: identidadeAdmin);
 
       expect(repo.existentes, isEmpty);
     });
@@ -574,7 +680,10 @@ void main() {
     for (final id in const [99, 0, -1]) {
       test('id $id -> REGISTRO_NAO_ENCONTRADO', () {
         expect(
-          () => AlunoService(_RepositorioFalso(), hash: _hashFalso).excluir(id),
+          () => AlunoService(
+            _RepositorioFalso(),
+            hash: _hashFalso,
+          ).excluir(id, identidade: identidadeAdmin),
           throwsA(isA<AlunoNotFoundException>()),
         );
       });

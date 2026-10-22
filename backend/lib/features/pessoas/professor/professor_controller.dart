@@ -261,7 +261,9 @@ class ProfessorController {
     CodigoErro.emailEmUso => 'E-mail já cadastrado.',
     CodigoErro.registroEmUso =>
       'Professor possui vínculos, cronogramas, aulas ou treinos.',
-    CodigoErro.registroNaoEncontrado => 'Professor não encontrado.',
+    CodigoErro.professorNaoEncontrado => 'Professor não encontrado.',
+    CodigoErro.tokenInvalido => 'Autenticação necessária.',
+    CodigoErro.acessoNegado => 'Acesso negado.',
     _ => 'Requisição rejeitada.',
   };
 

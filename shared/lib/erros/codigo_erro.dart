@@ -10,9 +10,8 @@
 /// traduz a falha do banco para um destes valores, e
 /// `app/lib/core/network/`, que escolhe o texto da tela a partir dele.
 ///
-/// **Fonte:** `docs/arquitetura.md` §7.1 (erros do banco), §7.3 (dominio)
-/// e §7.5 (erros que nao nascem no banco). Todo codigo aqui e transcricao
-/// dessas secoes; codigo novo nasce la primeiro, nunca aqui.
+/// **Fonte:** docs/arquitetura.md secao 7, incluindo os erros HTTP da F-01.
+/// Codigo novo nasce no contrato documentado, nunca apenas neste enum.
 enum CodigoErro {
   // --- Triggers, com ERRCODE proprio (`docs/arquitetura.md` §7.2) ---
   aulaSemVagas('AULA_SEM_VAGAS'),
@@ -33,17 +32,24 @@ enum CodigoErro {
 
   dataNascimentoInvalida('DATA_NASCIMENTO_INVALIDA'),
 
-  // --- Registro referenciado por FK RESTRICT (23001) ---
+  // --- Contrato HTTP generico dos CRUDs ---
   registroEmUso('REGISTRO_EM_USO'),
-
   registroNaoEncontrado('REGISTRO_NAO_ENCONTRADO'),
-
-  // --- Fora do banco: forma da requisicao (`docs/arquitetura.md` §7.5) ---
   jsonInvalido('JSON_INVALIDO'),
   campoObrigatorio('CAMPO_OBRIGATORIO'),
   campoInvalido('CAMPO_INVALIDO'),
 
-  // --- Falha nao mapeada: sempre 500 (`docs/arquitetura.md` §7.5) ---
+  // --- Professor ---
+  professorEmUso('PROFESSOR_EM_USO'),
+  professorNaoEncontrado('PROFESSOR_NAO_ENCONTRADO'),
+
+  // Jornada F-01 e autenticacao das chamadas subsequentes.
+  requisicaoInvalida('REQUISICAO_INVALIDA'),
+  credenciaisInvalidas('CREDENCIAIS_INVALIDAS'),
+  muitasTentativas('MUITAS_TENTATIVAS'),
+  corpoMuitoGrande('CORPO_MUITO_GRANDE'),
+  tokenInvalido('TOKEN_INVALIDO'),
+  acessoNegado('ACESSO_NEGADO'),
   erroInterno('ERRO_INTERNO');
 
   const CodigoErro(this.valor);

@@ -2,6 +2,7 @@ import 'package:drift/drift.dart';
 
 import '../../database/database.dart';
 import '../../shared/autorizacao/identidade.dart';
+import 'token_service.dart';
 
 class ContaAutenticacao {
   final Identidade identidade;
@@ -77,5 +78,68 @@ class AuthRepository {
         )
         .getSingleOrNull();
     return linha != null;
+  }
+
+  Future<void> registrarSessao(
+    TokenEmitido token,
+    Identidade identidade,
+  ) async {
+    await _db.customStatement(
+      r'''
+      INSERT INTO sessao_auth (jti_hash, papel, id_usuario, expira_em)
+      VALUES ($1, $2, $3, $4)
+      ''',
+      [token.jtiHash, identidade.papel.name, identidade.id, token.expiraEm],
+    );
+  }
+
+  Future<bool> sessaoAtiva(TokenValidado token) async {
+    final linha = await _db
+        .customSelect(
+          r'''
+          SELECT 1
+            FROM sessao_auth
+           WHERE jti_hash = $1
+             AND papel = $2
+             AND id_usuario = $3
+             AND expira_em = $4
+             AND revogada_em IS NULL
+             AND expira_em > now()
+           LIMIT 1
+          ''',
+          variables: [
+            Variable.withString(token.jtiHash),
+            Variable.withString(token.identidade.papel.name),
+            Variable.withInt(token.identidade.id),
+            Variable<DateTime>(token.expiraEm),
+          ],
+        )
+        .getSingleOrNull();
+    return linha != null;
+  }
+
+  Future<bool> revogarSessao(TokenValidado token) async {
+    final alteradas = await _db.customUpdate(
+      r'''
+      UPDATE sessao_auth
+         SET revogada_em = now()
+       WHERE jti_hash = $1
+         AND papel = $2
+         AND id_usuario = $3
+         AND revogada_em IS NULL
+      ''',
+      variables: [
+        Variable.withString(token.jtiHash),
+        Variable.withString(token.identidade.papel.name),
+        Variable.withInt(token.identidade.id),
+      ],
+    );
+    return alteradas == 1;
+  }
+
+  Future<void> limparSessoesExpiradas() async {
+    await _db.customStatement(
+      'DELETE FROM sessao_auth WHERE expira_em <= now()',
+    );
   }
 }

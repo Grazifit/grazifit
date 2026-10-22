@@ -122,7 +122,7 @@ void main() {
   });
 
   // ==========================================================
-  test('1. o schema aplicado tem as 14 tabelas de dominio', () async {
+  test('1. o schema aplicado tem as 15 tabelas de dominio', () async {
     final total = await escalar('''
       SELECT count(*) FROM information_schema.tables
        WHERE table_schema = 'public'
@@ -131,7 +131,7 @@ void main() {
     ''');
 
     // schema_migracao e infraestrutura do aplicar.sh, nao dominio.
-    expect(total, 14);
+    expect(total, 15);
   });
 
   // ==========================================================

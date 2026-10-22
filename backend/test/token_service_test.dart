@@ -11,10 +11,13 @@ void main() {
   const admin = Identidade(id: 7, papel: Papel.admin);
 
   test('emite token para identidade e rejeita alteracao ou expiracao', () {
-    final token = tokens.emitir(admin);
-    final identidade = tokens.validar(token);
-    expect(identidade?.id, 7);
-    expect(identidade?.papel, Papel.admin);
+    final emitido = tokens.emitir(admin);
+    final token = emitido.token;
+    final validado = tokens.validar(token);
+    expect(validado?.identidade.id, 7);
+    expect(validado?.identidade.papel, Papel.admin);
+    expect(validado?.jtiHash, emitido.jtiHash);
+    expect(validado?.expiraEm, emitido.expiraEm);
 
     final partes = token.split('.');
     final segmento = partes[1];
@@ -36,6 +39,16 @@ void main() {
       chaveBase64: base64Encode(List<int>.filled(32, 9)),
       agora: () => agora,
     );
-    expect(outro.validar(tokens.emitir(admin)), isNull);
+    expect(outro.validar(tokens.emitir(admin).token), isNull);
+  });
+
+  test('cada token recebe identificador persistivel independente', () {
+    final primeiro = tokens.emitir(admin);
+    final segundo = tokens.emitir(admin);
+
+    expect(segundo, isNot(primeiro));
+    expect(segundo.jtiHash, isNot(primeiro.jtiHash));
+    expect(tokens.validar(primeiro.token)?.identidade.id, admin.id);
+    expect(tokens.validar(segundo.token)?.identidade.id, admin.id);
   });
 }

@@ -25,5 +25,5 @@ final class ProfessorConflictException extends ProfessorException {
 
 /// Id inexistente. Vira HTTP 404.
 final class ProfessorNotFoundException extends ProfessorException {
-  const ProfessorNotFoundException() : super(CodigoErro.registroNaoEncontrado);
+  const ProfessorNotFoundException() : super(CodigoErro.professorNaoEncontrado);
 }

@@ -15,6 +15,7 @@ import 'package:test/test.dart';
 
 class _Repo implements AuthRepository {
   bool ativa = true;
+  final Map<String, TokenValidado> sessoes = {};
 
   @override
   Future<List<ContaAutenticacao>> buscarPorEmail(String email) async => [
@@ -28,6 +29,33 @@ class _Repo implements AuthRepository {
 
   @override
   Future<bool> contaAtiva(Identidade identidade) async => ativa;
+
+  @override
+  Future<void> registrarSessao(
+    TokenEmitido token,
+    Identidade identidade,
+  ) async {
+    sessoes[token.jtiHash] = TokenValidado(
+      identidade: identidade,
+      jtiHash: token.jtiHash,
+      expiraEm: token.expiraEm,
+    );
+  }
+
+  @override
+  Future<bool> sessaoAtiva(TokenValidado token) async {
+    final salva = sessoes[token.jtiHash];
+    return salva != null &&
+        salva.identidade.id == token.identidade.id &&
+        salva.identidade.papel == token.identidade.papel;
+  }
+
+  @override
+  Future<bool> revogarSessao(TokenValidado token) async =>
+      sessoes.remove(token.jtiHash) != null;
+
+  @override
+  Future<void> limparSessoesExpiradas() async {}
 }
 
 class _Hasher implements SenhaHasher {
@@ -57,6 +85,7 @@ void main() {
   final auth = AuthController(AuthService(repo, _Hasher(), tokens));
   final router = Router()
     ..mount('/', auth.router.call)
+    ..get('/health', (Request _) => Response.ok('ok'))
     ..get('/protegida', (Request request) {
       final identidade = identidadeDaRequisicao(request)!;
       return Response.ok('${identidade.papel.name}:${identidade.id}');
@@ -64,6 +93,15 @@ void main() {
   final handler = const Pipeline()
       .addMiddleware(identidadeMiddleware(tokens, repo))
       .addHandler(router.call);
+
+  test('healthcheck e publico e nao exige token', () async {
+    final resposta = await handler(
+      Request('GET', Uri.parse('http://localhost/health')),
+    );
+
+    expect(resposta.statusCode, 200);
+    expect(await resposta.readAsString(), 'ok');
+  });
 
   test('login emite token que identifica a chamada protegida', () async {
     final login = await handler(
@@ -98,6 +136,54 @@ void main() {
       ),
     );
     expect(desativada.statusCode, 401);
+  });
+
+  test('logout revoga a sessao atual e permite um novo login', () async {
+    repo.ativa = true;
+
+    Future<String> entrar() async {
+      final resposta = await handler(
+        Request(
+          'POST',
+          Uri.parse('http://localhost/auth/login'),
+          body: jsonEncode({'email': 'admin@exemplo.com', 'senha': 'correta'}),
+        ),
+      );
+      expect(resposta.statusCode, 200);
+      final json =
+          jsonDecode(await resposta.readAsString()) as Map<String, dynamic>;
+      return json['access_token'] as String;
+    }
+
+    final tokenEncerrado = await entrar();
+    final logout = await handler(
+      Request(
+        'POST',
+        Uri.parse('http://localhost/auth/logout'),
+        headers: {'Authorization': 'Bearer $tokenEncerrado'},
+      ),
+    );
+    expect(logout.statusCode, 204);
+
+    final reutilizacao = await handler(
+      Request(
+        'GET',
+        Uri.parse('http://localhost/protegida'),
+        headers: {'Authorization': 'Bearer $tokenEncerrado'},
+      ),
+    );
+    expect(reutilizacao.statusCode, 401);
+
+    final novoToken = await entrar();
+    expect(novoToken, isNot(tokenEncerrado));
+    final novaSessao = await handler(
+      Request(
+        'GET',
+        Uri.parse('http://localhost/protegida'),
+        headers: {'Authorization': 'Bearer $novoToken'},
+      ),
+    );
+    expect(novaSessao.statusCode, 200);
   });
 
   test('login errado e rota sem token retornam envelope', () async {

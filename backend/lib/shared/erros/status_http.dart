@@ -12,7 +12,10 @@ int statusHttp(CodigoErro codigo) => switch (codigo) {
   CodigoErro.cpfInvalido ||
   CodigoErro.emailInvalido ||
   CodigoErro.dataNascimentoInvalida => 400,
-  CodigoErro.registroNaoEncontrado => 404,
+  CodigoErro.requisicaoInvalida => 400,
+  CodigoErro.credenciaisInvalidas || CodigoErro.tokenInvalido => 401,
+  CodigoErro.acessoNegado => 403,
+  CodigoErro.registroNaoEncontrado || CodigoErro.professorNaoEncontrado => 404,
   CodigoErro.cpfEmUso ||
   CodigoErro.emailEmUso ||
   CodigoErro.registroEmUso ||
@@ -24,5 +27,8 @@ int statusHttp(CodigoErro codigo) => switch (codigo) {
   CodigoErro.aulaInativa ||
   CodigoErro.aulaCategoriaDivergente ||
   CodigoErro.aulaProfessorDivergente => 409,
+  CodigoErro.professorEmUso => 409,
+  CodigoErro.muitasTentativas => 429,
+  CodigoErro.corpoMuitoGrande => 413,
   CodigoErro.erroInterno => 500,
 };

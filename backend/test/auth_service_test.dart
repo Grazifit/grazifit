@@ -11,6 +11,7 @@ import 'package:test/test.dart';
 class _ContasFalsas implements AuthRepository {
   List<ContaAutenticacao> contas = [];
   String? emailConsultado;
+  final Map<String, TokenValidado> sessoes = {};
 
   @override
   Future<List<ContaAutenticacao>> buscarPorEmail(String email) async {
@@ -20,6 +21,30 @@ class _ContasFalsas implements AuthRepository {
 
   @override
   Future<bool> contaAtiva(Identidade identidade) async => true;
+
+  @override
+  Future<void> registrarSessao(
+    TokenEmitido token,
+    Identidade identidade,
+  ) async {
+    sessoes[token.jtiHash] = TokenValidado(
+      identidade: identidade,
+      jtiHash: token.jtiHash,
+      expiraEm: token.expiraEm,
+    );
+  }
+
+  @override
+  Future<bool> sessaoAtiva(TokenValidado token) async =>
+      sessoes[token.jtiHash]?.identidade.id == token.identidade.id &&
+      sessoes[token.jtiHash]?.identidade.papel == token.identidade.papel;
+
+  @override
+  Future<bool> revogarSessao(TokenValidado token) async =>
+      sessoes.remove(token.jtiHash) != null;
+
+  @override
+  Future<void> limparSessoesExpiradas() async {}
 }
 
 class _SenhaFalsa implements SenhaHasher {
@@ -57,7 +82,7 @@ void main() {
     );
 
     expect(resposta.papel, 'admin');
-    expect(tokens.validar(resposta.accessToken)?.id, 1);
+    expect(tokens.validar(resposta.accessToken)?.identidade.id, 1);
   });
 
   test(
@@ -85,7 +110,10 @@ void main() {
       expect(resposta.papel, 'professor');
       expect(resposta.id, 3);
       expect(resposta.toJson(), isNot(contains('senha_hash')));
-      expect(tokens.validar(resposta.accessToken)?.papel, Papel.professor);
+      expect(
+        tokens.validar(resposta.accessToken)?.identidade.papel,
+        Papel.professor,
+      );
     },
   );
 
