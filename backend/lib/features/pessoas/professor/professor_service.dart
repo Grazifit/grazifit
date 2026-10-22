@@ -2,6 +2,7 @@ import 'package:grazifit_backend/features/auth/validacoes.dart';
 import 'package:shared/erros/codigo_erro.dart';
 
 import '../../../database/database.dart' show ProfessorData;
+import '../../../shared/autorizacao/identidade.dart';
 import '../../../shared/erros/professor_exception.dart';
 import '../../auth/criptografia.dart';
 import 'professor_repository.dart';
@@ -13,13 +14,14 @@ class ProfessorService {
   ProfessorService(this._repository, this._senhaHasher);
 
   Future<ProfessorData> criar({
+    required Identidade identidade,
     required String cpf,
     required String senha,
     required String nome,
     required String telefone,
     required String email,
-    int? idAdminCriador,
   }) async {
+    exigirAdmin(identidade);
     final cpfNormalizado = cpf.replaceAll(RegExp(r'[^0-9]'), '');
     final emailNormalizado = email.trim().toLowerCase();
 
@@ -38,10 +40,7 @@ class ProfessorService {
     }
 
     if (await _repository.cpfEmUso(cpfNormalizado)) {
-      throw const ProfessorConflictException(
-        CodigoErro.cpfEmUso,
-        campo: 'cpf',
-      );
+      throw const ProfessorConflictException(CodigoErro.cpfEmUso, campo: 'cpf');
     }
 
     if (await _repository.emailEmUso(emailNormalizado)) {
@@ -57,11 +56,15 @@ class ProfessorService {
       nome: nome.trim(),
       telefone: telefone.trim(),
       email: emailNormalizado,
-      idAdminCriador: idAdminCriador,
+      idAdminCriador: identidade.id,
     );
   }
 
-  Future<ProfessorData> buscarPorId(int idProfessor) async {
+  Future<ProfessorData> buscarPorId(
+    Identidade identidade,
+    int idProfessor,
+  ) async {
+    exigirAdmin(identidade);
     final professor = await _repository.buscarPorId(idProfessor);
     if (professor == null) {
       throw const ProfessorNotFoundException();
@@ -70,6 +73,7 @@ class ProfessorService {
   }
 
   Future<ProfessorData> atualizar({
+    required Identidade identidade,
     required int idProfessor,
     String? nome,
     String? email,
@@ -77,6 +81,7 @@ class ProfessorService {
     String? senha,
     bool? status,
   }) async {
+    exigirAdmin(identidade);
     final emailNormalizado = email?.trim().toLowerCase();
 
     if (emailNormalizado != null) {
@@ -113,7 +118,8 @@ class ProfessorService {
     return atualizado;
   }
 
-  Future<void> deletar(int idProfessor) async {
+  Future<void> deletar(Identidade identidade, int idProfessor) async {
+    exigirAdmin(identidade);
     final removido = await _repository.deletar(idProfessor);
     if (!removido) {
       throw const ProfessorNotFoundException();
