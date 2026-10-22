@@ -38,4 +38,14 @@ void main() {
     );
     expect(outro.validar(tokens.emitir(admin)), isNull);
   });
+
+  test('revoga somente o token informado e mantem nova sessao valida', () {
+    final primeiro = tokens.emitir(admin);
+    final segundo = tokens.emitir(admin);
+
+    expect(segundo, isNot(primeiro));
+    expect(tokens.revogar(primeiro), isTrue);
+    expect(tokens.validar(primeiro), isNull);
+    expect(tokens.validar(segundo)?.id, admin.id);
+  });
 }

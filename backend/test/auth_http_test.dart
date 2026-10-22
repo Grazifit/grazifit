@@ -110,6 +110,57 @@ void main() {
     expect(desativada.statusCode, 401);
   });
 
+  test('logout revoga a sessao atual e permite um novo login', () async {
+    repo.ativa = true;
+
+    Future<String> entrar() async {
+      final resposta = await handler(
+        Request(
+          'POST',
+          Uri.parse('http://localhost/auth/login'),
+          body: jsonEncode({
+            'email': 'admin@exemplo.com',
+            'senha': 'correta',
+          }),
+        ),
+      );
+      expect(resposta.statusCode, 200);
+      final json =
+          jsonDecode(await resposta.readAsString()) as Map<String, dynamic>;
+      return json['access_token'] as String;
+    }
+
+    final tokenEncerrado = await entrar();
+    final logout = await handler(
+      Request(
+        'POST',
+        Uri.parse('http://localhost/auth/logout'),
+        headers: {'Authorization': 'Bearer $tokenEncerrado'},
+      ),
+    );
+    expect(logout.statusCode, 204);
+
+    final reutilizacao = await handler(
+      Request(
+        'GET',
+        Uri.parse('http://localhost/protegida'),
+        headers: {'Authorization': 'Bearer $tokenEncerrado'},
+      ),
+    );
+    expect(reutilizacao.statusCode, 401);
+
+    final novoToken = await entrar();
+    expect(novoToken, isNot(tokenEncerrado));
+    final novaSessao = await handler(
+      Request(
+        'GET',
+        Uri.parse('http://localhost/protegida'),
+        headers: {'Authorization': 'Bearer $novoToken'},
+      ),
+    );
+    expect(novaSessao.statusCode, 200);
+  });
+
   test('login errado e rota sem token retornam envelope', () async {
     repo.ativa = true;
     final login = await handler(

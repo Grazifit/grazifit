@@ -8,9 +8,13 @@ import '../../features/auth/token_service.dart';
 import '../autorizacao/identidade.dart';
 
 const chaveIdentidadeContexto = 'grazifit.identidade';
+const chaveTokenContexto = 'grazifit.token';
 
 Identidade? identidadeDaRequisicao(Request request) =>
     request.context[chaveIdentidadeContexto] as Identidade?;
+
+String? tokenDaRequisicao(Request request) =>
+    request.context[chaveTokenContexto] as String?;
 
 /// Resolve quem chama a API. Permissoes continuam nos services.
 Middleware identidadeMiddleware(TokenService tokens, AuthRepository contas) =>
@@ -43,6 +47,11 @@ Middleware identidadeMiddleware(TokenService tokens, AuthRepository contas) =>
       }
 
       return innerHandler(
-        request.change(context: {chaveIdentidadeContexto: identidade}),
+        request.change(
+          context: {
+            chaveIdentidadeContexto: identidade,
+            chaveTokenContexto: token,
+          },
+        ),
       );
     };

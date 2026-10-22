@@ -1,0 +1,639 @@
+{
+  "_type": "export",
+  "__export_format": 4,
+  "__export_date": "2026-10-21T00:00:00.000Z",
+  "__export_source": "grazifit.backend",
+  "resources": [
+    {
+      "_id": "wrk_grazifit_backend",
+      "parentId": null,
+      "modified": 1792540800000,
+      "created": 1792540800000,
+      "name": "GraziFit Backend",
+      "description": "Collection dos endpoints implementados no backend GraziFit.",
+      "scope": "collection",
+      "_type": "workspace"
+    },
+    {
+      "_id": "env_grazifit_base",
+      "parentId": "wrk_grazifit_backend",
+      "modified": 1792540800000,
+      "created": 1792540800000,
+      "name": "Base Environment",
+      "data": {
+        "base_url": "http://localhost:8080",
+        "login_email": "usuario@exemplo.com",
+        "login_senha": "altere-esta-senha",
+        "admin_id": 1,
+        "aluno_id": 1,
+        "professor_id": 1
+      },
+      "dataPropertyOrder": {
+        "&": [
+          "base_url",
+          "login_email",
+          "login_senha",
+          "admin_id",
+          "aluno_id",
+          "professor_id"
+        ]
+      },
+      "color": null,
+      "isPrivate": false,
+      "metaSortKey": 1,
+      "_type": "environment"
+    },
+    {
+      "_id": "fld_saude",
+      "parentId": "wrk_grazifit_backend",
+      "modified": 1792540800000,
+      "created": 1792540800000,
+      "name": "Saude",
+      "description": "Verificacao publica de disponibilidade do backend e do banco.",
+      "environment": {},
+      "environmentPropertyOrder": null,
+      "metaSortKey": -5000,
+      "_type": "request_group"
+    },
+    {
+      "_id": "req_health",
+      "parentId": "fld_saude",
+      "modified": 1792540800000,
+      "created": 1792540800000,
+      "url": "{{ _.base_url }}/health",
+      "name": "Health check",
+      "description": "Retorna 200 e `ok` quando o backend e o banco estao disponiveis.",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [],
+      "authentication": {},
+      "metaSortKey": -1000,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global",
+      "_type": "request"
+    },
+    {
+      "_id": "fld_auth",
+      "parentId": "wrk_grazifit_backend",
+      "modified": 1792540800000,
+      "created": 1792540800000,
+      "name": "Autenticacao",
+      "description": "Login por e-mail e senha para administradores, professores e alunos. O token desta resposta alimenta automaticamente as rotas protegidas.",
+      "environment": {},
+      "environmentPropertyOrder": null,
+      "metaSortKey": -4000,
+      "_type": "request_group"
+    },
+    {
+      "_id": "req_login",
+      "parentId": "fld_auth",
+      "modified": 1792540800000,
+      "created": 1792540800000,
+      "url": "{{ _.base_url }}/auth/login",
+      "name": "Login",
+      "description": "Autentica admin, professor ou aluno e retorna access_token, token_type, expires_in e os dados publicos do usuario.",
+      "method": "POST",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"email\": \"{{ _.login_email }}\",\n  \"senha\": \"{{ _.login_senha }}\"\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1000,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global",
+      "_type": "request"
+    },
+    {
+      "_id": "req_logout",
+      "parentId": "fld_auth",
+      "modified": 1792540800000,
+      "created": 1792540800000,
+      "url": "{{ _.base_url }}/auth/logout",
+      "name": "Logout",
+      "description": "Encerra a sessao atual e revoga o token Bearer ate sua expiracao. Resposta esperada: 204.",
+      "method": "POST",
+      "body": {},
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {% response 'body', 'req_login', 'b64::JC5hY2Nlc3NfdG9rZW4=::46b', 'never', 60 %}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -500,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global",
+      "_type": "request"
+    },
+    {
+      "_id": "fld_admin",
+      "parentId": "wrk_grazifit_backend",
+      "modified": 1792540800000,
+      "created": 1792540800000,
+      "name": "Admin",
+      "description": "CRUD de administradores. Requer login de um administrador ativo.",
+      "environment": {},
+      "environmentPropertyOrder": null,
+      "metaSortKey": -3000,
+      "_type": "request_group"
+    },
+    {
+      "_id": "req_admin_criar",
+      "parentId": "fld_admin",
+      "modified": 1792540800000,
+      "created": 1792540800000,
+      "url": "{{ _.base_url }}/admin",
+      "name": "Criar admin",
+      "description": "Cria um administrador. O usuario autenticado precisa ser um administrador.",
+      "method": "POST",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"cpf\": \"52998224725\",\n  \"senha\": \"senha123\",\n  \"nome\": \"Administrador Teste\",\n  \"email\": \"novo.admin@exemplo.com\",\n  \"telefone\": \"11999998888\"\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {% response 'body', 'req_login', 'b64::JC5hY2Nlc3NfdG9rZW4=::46b', 'never', 60 %}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -4000,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global",
+      "_type": "request"
+    },
+    {
+      "_id": "req_admin_buscar",
+      "parentId": "fld_admin",
+      "modified": 1792540800000,
+      "created": 1792540800000,
+      "url": "{{ _.base_url }}/admin/{{ _.admin_id }}",
+      "name": "Buscar admin por ID",
+      "description": "Busca os dados publicos de um administrador.",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {% response 'body', 'req_login', 'b64::JC5hY2Nlc3NfdG9rZW4=::46b', 'never', 60 %}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -3000,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global",
+      "_type": "request"
+    },
+    {
+      "_id": "req_admin_atualizar",
+      "parentId": "fld_admin",
+      "modified": 1792540800000,
+      "created": 1792540800000,
+      "url": "{{ _.base_url }}/admin/{{ _.admin_id }}",
+      "name": "Atualizar admin",
+      "description": "Atualiza somente os campos enviados: nome, email, telefone ou senha.",
+      "method": "PATCH",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"nome\": \"Administrador Atualizado\",\n  \"telefone\": \"11988887777\"\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {% response 'body', 'req_login', 'b64::JC5hY2Nlc3NfdG9rZW4=::46b', 'never', 60 %}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -2000,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global",
+      "_type": "request"
+    },
+    {
+      "_id": "req_admin_excluir",
+      "parentId": "fld_admin",
+      "modified": 1792540800000,
+      "created": 1792540800000,
+      "url": "{{ _.base_url }}/admin/{{ _.admin_id }}",
+      "name": "Excluir admin",
+      "description": "Exclui o administrador informado. Resposta esperada: 204.",
+      "method": "DELETE",
+      "body": {},
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {% response 'body', 'req_login', 'b64::JC5hY2Nlc3NfdG9rZW4=::46b', 'never', 60 %}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1000,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global",
+      "_type": "request"
+    },
+    {
+      "_id": "fld_aluno",
+      "parentId": "wrk_grazifit_backend",
+      "modified": 1792540800000,
+      "created": 1792540800000,
+      "name": "Aluno",
+      "description": "Cadastro, consulta, atualizacao, status e exclusao de alunos.",
+      "environment": {},
+      "environmentPropertyOrder": null,
+      "metaSortKey": -2000,
+      "_type": "request_group"
+    },
+    {
+      "_id": "req_aluno_criar",
+      "parentId": "fld_aluno",
+      "modified": 1792540800000,
+      "created": 1792540800000,
+      "url": "{{ _.base_url }}/aluno",
+      "name": "Criar aluno",
+      "description": "Cria um aluno. O usuario autenticado precisa ser um administrador. data_nascimento usa o formato AAAA-MM-DD.",
+      "method": "POST",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"cpf\": \"11144477735\",\n  \"senha\": \"senha123\",\n  \"nome\": \"Aluno Teste\",\n  \"telefone\": \"11977776666\",\n  \"email\": \"aluno@exemplo.com\",\n  \"data_nascimento\": \"2000-05-15\",\n  \"restricao_medica\": null,\n  \"observacao_saude\": null\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {% response 'body', 'req_login', 'b64::JC5hY2Nlc3NfdG9rZW4=::46b', 'never', 60 %}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -6000,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global",
+      "_type": "request"
+    },
+    {
+      "_id": "req_aluno_listar",
+      "parentId": "fld_aluno",
+      "modified": 1792540800000,
+      "created": 1792540800000,
+      "url": "{{ _.base_url }}/aluno",
+      "name": "Listar alunos",
+      "description": "Lista alunos com paginacao. limit aceita de 1 a 100.",
+      "method": "GET",
+      "body": {},
+      "parameters": [
+        {
+          "name": "limit",
+          "value": "20"
+        },
+        {
+          "name": "offset",
+          "value": "0"
+        }
+      ],
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {% response 'body', 'req_login', 'b64::JC5hY2Nlc3NfdG9rZW4=::46b', 'never', 60 %}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -5000,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global",
+      "_type": "request"
+    },
+    {
+      "_id": "req_aluno_buscar",
+      "parentId": "fld_aluno",
+      "modified": 1792540800000,
+      "created": 1792540800000,
+      "url": "{{ _.base_url }}/aluno/{{ _.aluno_id }}",
+      "name": "Buscar aluno por ID",
+      "description": "Busca os dados publicos do aluno informado.",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {% response 'body', 'req_login', 'b64::JC5hY2Nlc3NfdG9rZW4=::46b', 'never', 60 %}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -4000,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global",
+      "_type": "request"
+    },
+    {
+      "_id": "req_aluno_atualizar",
+      "parentId": "fld_aluno",
+      "modified": 1792540800000,
+      "created": 1792540800000,
+      "url": "{{ _.base_url }}/aluno/{{ _.aluno_id }}",
+      "name": "Atualizar aluno",
+      "description": "Atualiza somente nome, telefone ou email.",
+      "method": "PATCH",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"nome\": \"Aluno Atualizado\",\n  \"telefone\": \"11966665555\",\n  \"email\": \"aluno.atualizado@exemplo.com\"\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {% response 'body', 'req_login', 'b64::JC5hY2Nlc3NfdG9rZW4=::46b', 'never', 60 %}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -3000,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global",
+      "_type": "request"
+    },
+    {
+      "_id": "req_aluno_status",
+      "parentId": "fld_aluno",
+      "modified": 1792540800000,
+      "created": 1792540800000,
+      "url": "{{ _.base_url }}/aluno/{{ _.aluno_id }}/status",
+      "name": "Alterar status do aluno",
+      "description": "Use false para inativar e true para reativar. Resposta esperada: 204.",
+      "method": "PATCH",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"status\": false\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {% response 'body', 'req_login', 'b64::JC5hY2Nlc3NfdG9rZW4=::46b', 'never', 60 %}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -2000,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global",
+      "_type": "request"
+    },
+    {
+      "_id": "req_aluno_excluir",
+      "parentId": "fld_aluno",
+      "modified": 1792540800000,
+      "created": 1792540800000,
+      "url": "{{ _.base_url }}/aluno/{{ _.aluno_id }}",
+      "name": "Excluir aluno",
+      "description": "Exclusao definitiva. Pode retornar 409 quando houver historico relacionado.",
+      "method": "DELETE",
+      "body": {},
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {% response 'body', 'req_login', 'b64::JC5hY2Nlc3NfdG9rZW4=::46b', 'never', 60 %}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1000,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global",
+      "_type": "request"
+    },
+    {
+      "_id": "fld_professor",
+      "parentId": "wrk_grazifit_backend",
+      "modified": 1792540800000,
+      "created": 1792540800000,
+      "name": "Professor",
+      "description": "CRUD de professores. Requer login de um administrador ativo.",
+      "environment": {},
+      "environmentPropertyOrder": null,
+      "metaSortKey": -1000,
+      "_type": "request_group"
+    },
+    {
+      "_id": "req_professor_criar",
+      "parentId": "fld_professor",
+      "modified": 1792540800000,
+      "created": 1792540800000,
+      "url": "{{ _.base_url }}/professor",
+      "name": "Criar professor",
+      "description": "Cria um professor. O usuario autenticado precisa ser um administrador.",
+      "method": "POST",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"cpf\": \"93541134780\",\n  \"senha\": \"senha123\",\n  \"nome\": \"Professor Teste\",\n  \"telefone\": \"11955554444\",\n  \"email\": \"professor@exemplo.com\"\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {% response 'body', 'req_login', 'b64::JC5hY2Nlc3NfdG9rZW4=::46b', 'never', 60 %}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -4000,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global",
+      "_type": "request"
+    },
+    {
+      "_id": "req_professor_buscar",
+      "parentId": "fld_professor",
+      "modified": 1792540800000,
+      "created": 1792540800000,
+      "url": "{{ _.base_url }}/professor/{{ _.professor_id }}",
+      "name": "Buscar professor por ID",
+      "description": "Busca os dados publicos do professor informado.",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {% response 'body', 'req_login', 'b64::JC5hY2Nlc3NfdG9rZW4=::46b', 'never', 60 %}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -3000,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global",
+      "_type": "request"
+    },
+    {
+      "_id": "req_professor_atualizar",
+      "parentId": "fld_professor",
+      "modified": 1792540800000,
+      "created": 1792540800000,
+      "url": "{{ _.base_url }}/professor/{{ _.professor_id }}",
+      "name": "Atualizar professor",
+      "description": "Atualiza os campos enviados: nome, email, telefone, senha ou status.",
+      "method": "PATCH",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"nome\": \"Professor Atualizado\",\n  \"telefone\": \"11944443333\",\n  \"status\": true\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {% response 'body', 'req_login', 'b64::JC5hY2Nlc3NfdG9rZW4=::46b', 'never', 60 %}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -2000,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global",
+      "_type": "request"
+    },
+    {
+      "_id": "req_professor_excluir",
+      "parentId": "fld_professor",
+      "modified": 1792540800000,
+      "created": 1792540800000,
+      "url": "{{ _.base_url }}/professor/{{ _.professor_id }}",
+      "name": "Excluir professor",
+      "description": "Exclui o professor. Pode retornar 409 quando houver registros relacionados.",
+      "method": "DELETE",
+      "body": {},
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {% response 'body', 'req_login', 'b64::JC5hY2Nlc3NfdG9rZW4=::46b', 'never', 60 %}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1000,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global",
+      "_type": "request"
+    }
+  ]
+}

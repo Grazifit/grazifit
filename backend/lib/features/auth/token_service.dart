@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:math';
 import 'dart:typed_data';
 
 import 'package:crypto/crypto.dart';
@@ -19,10 +20,17 @@ class TokenService {
 
   final Uint8List _chave;
   final DateTime Function() _agora;
+  final Random _random;
+  final Map<String, int> _revogados = {};
 
-  TokenService({required String chaveBase64, DateTime Function()? agora})
+  TokenService({
+    required String chaveBase64,
+    DateTime Function()? agora,
+    Random? random,
+  })
     : _chave = _decodificarChave(chaveBase64),
-      _agora = agora ?? DateTime.now;
+      _agora = agora ?? DateTime.now,
+      _random = random ?? Random.secure();
 
   String emitir(Identidade identidade) {
     final emitidoEm = _agora().toUtc().millisecondsSinceEpoch ~/ 1000;
@@ -31,6 +39,7 @@ class TokenService {
       'aud': _audiencia,
       'sub': '${identidade.papel.name}:${identidade.id}',
       'papel': identidade.papel.name,
+      'jti': _gerarJti(),
       'iat': emitidoEm,
       'exp': emitidoEm + validade.inSeconds,
     });
@@ -68,16 +77,22 @@ class TokenService {
 
     final papelBruto = payload['papel'];
     final sub = payload['sub'];
+    final jti = payload['jti'];
     final emitidoEm = payload['iat'];
     final expiraEm = payload['exp'];
     if (papelBruto is! String ||
         sub is! String ||
+        jti is! String ||
+        jti.isEmpty ||
         emitidoEm is! int ||
         expiraEm is! int) {
       return null;
     }
 
     final agora = _agora().toUtc().millisecondsSinceEpoch ~/ 1000;
+    _limparRevogados(agora);
+    if (_revogados.containsKey(_impressao(token))) return null;
+
     if (emitidoEm > agora + 60 ||
         expiraEm <= agora ||
         expiraEm <= emitidoEm ||
@@ -94,6 +109,28 @@ class TokenService {
     }
     return null;
   }
+
+  bool revogar(String token) {
+    if (validar(token) == null) return false;
+
+    final payload = _decodificarJson(token.split('.')[1]);
+    final expiraEm = payload?['exp'];
+    if (expiraEm is! int) return false;
+
+    _revogados[_impressao(token)] = expiraEm;
+    return true;
+  }
+
+  String _gerarJti() => _base64SemPadding(
+    List<int>.generate(16, (_) => _random.nextInt(256)),
+  );
+
+  void _limparRevogados(int agora) {
+    _revogados.removeWhere((_, expiraEm) => expiraEm <= agora);
+  }
+
+  static String _impressao(String token) =>
+      sha256.convert(utf8.encode(token)).toString();
 
   List<int> _assinar(String conteudo) =>
       Hmac(sha256, _chave).convert(utf8.encode(conteudo)).bytes;

@@ -44,4 +44,6 @@ class AuthService {
       nome: conta.nome,
     );
   }
+
+  bool logout(String token) => _tokens.revogar(token);
 }

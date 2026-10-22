@@ -20,6 +20,8 @@ Identidade resolvida sobre as três tabelas de pessoa; o e-mail é único entre 
 
 F-01: `POST /auth/login` recebe e-mail e senha e devolve token Bearer de 1 hora e `{id, papel, nome}`. O middleware valida o token e reconsulta status/existência da conta antes de injetar a identidade. A autorização de cada operação permanece no Service. Contrato detalhado em `docs/arquitetura.md` §6.4.
 
+`POST /auth/logout` exige o token Bearer atual, responde `204` e o revoga ate a expiracao. A lista de revogacao fica em memoria: reiniciar o processo permite novamente tokens que ainda nao expiraram. Cada login recebe um `jti` aleatorio, portanto uma nova sessao nao reutiliza o token encerrado.
+
 `protecao_login.dart` aplica limites por IP e por conta, espera progressiva e teto de verificações simultâneas antes do Argon2id. O IP tem janela de 15 minutos, bloqueios de 15/30/45/60/75/90 minutos após infrações sucessivas e bloqueio até o reinício na sétima. Responde `429` com `Retry-After` nos bloqueios temporários. O estado é local ao processo; múltiplas réplicas exigem limitador compartilhado e proteção na borda.
 
 ## Arquivos
