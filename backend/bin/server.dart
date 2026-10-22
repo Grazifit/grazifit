@@ -52,18 +52,18 @@ void main() async {
   final professorController = ProfessorController(professorService);
 
   final rootRouter = Router()
-    ..mount('/', authController.router.call)
     ..get('/health', (Request _) => _health(db))
+    ..mount('/', authController.router.call)
     ..mount('/', adminController.router.call)
     ..mount('/', alunoController.router.call)
     ..mount('/', professorController.router.call);
 
   final handler = const Pipeline()
+      .addMiddleware(logRequests())
+      .addMiddleware(corsMiddleware(config.corsOrigin))
       .addMiddleware(registroRequisicoes())
       .addMiddleware(errorHandler())
       .addMiddleware(identidadeMiddleware(tokens, authRepository))
-      .addMiddleware(logRequests())
-      .addMiddleware(corsMiddleware(config.corsOrigin))
       .addHandler(rootRouter.call);
 
   final server = await io.serve(handler, config.host, config.port);
