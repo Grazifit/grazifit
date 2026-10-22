@@ -2,7 +2,7 @@
   "info": {
     "name": "GraziFit API — Pessoas",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
-    "description": "CRUD de **Admin**, **Aluno** e **Professor** no estado atual do backend.\n\n- **Sem autenticação** por enquanto: todas as rotas estão abertas.\n- `baseUrl` padrão: `http://localhost:8080` (`SERVER_HOST`/`SERVER_PORT` no `.env`).\n- Corpo sempre JSON; respostas com `Content-Type: application/json`.\n- Envelope de erro padrão (D64): `{ \"codigo\": \"CPF_EM_USO\", \"mensagem\": \"...\", \"campo\": \"cpf\" }`. `campo` só vem quando o erro é de um campo. Códigos em `docs/arquitetura.md` §7.\n\n**Ainda fora do padrão**\n- Admin responde todo erro como `{ \"erro\": \"...\" }`.\n- Professor usa `{ \"erro\": \"...\" }` nos erros de forma e no 500.\n- Os PATCH de admin e professor ignoram chaves desconhecidas; o de aluno recusa."
+    "description": "CRUD de **Admin**, **Aluno** e **Professor** no estado atual do backend.\n\n- **Sem autenticação** por enquanto: todas as rotas estão abertas.\n- `baseUrl` padrão: `http://localhost:8080` (`SERVER_HOST`/`SERVER_PORT` no `.env`).\n- `GET /health` (pasta **Infra**): rota de infraestrutura, fora da convenção pt-BR (exceção registrada em `docs/arquitetura.md` §10).\n- Corpo sempre JSON; respostas com `Content-Type: application/json`.\n- Envelope de erro padrão (D64): `{ \"codigo\": \"CPF_EM_USO\", \"mensagem\": \"...\", \"campo\": \"cpf\" }`. `campo` só vem quando o erro é de um campo. Códigos em `docs/arquitetura.md` §7.\n\n**Ainda fora do padrão**\n- Admin responde todo erro como `{ \"erro\": \"...\" }`.\n- Professor usa `{ \"erro\": \"...\" }` nos erros de forma e no 500.\n- Os PATCH de admin e professor ignoram chaves desconhecidas; o de aluno recusa."
   },
   "variable": [
     {
@@ -396,6 +396,29 @@
               ]
             },
             "description": "**Aceita:** `id` inteiro na rota. Exclusão definitiva; para manter o histórico, use `status: false` no PATCH.\n\n**Sucesso:** `204`, sem corpo\n\n**Erros** — Dois formatos: erro de **forma** (JSON, obrigatório, tamanho, id) e o 500 vêm como `{ \"erro\": \"<mensagem>\" }`; erro de **regra/banco** vem no envelope `{ codigo, mensagem, campo? }`.\n| HTTP | Retorno | Quando |\n|---|---|---|\n| 400 | `{ erro }` | id não é inteiro |\n| 404 | `REGISTRO_NAO_ENCONTRADO` | professor não existe |\n| 409 | `REGISTRO_EM_USO` | professor tem vínculo, cronograma, aula ou treino |\n| 500 | `{ erro }` | falha não mapeada |"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Infra",
+      "description": "Rotas de infraestrutura, consumidas pelo healthcheck do compose e não pelo app.",
+      "item": [
+        {
+          "name": "Health check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/health",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "health"
+              ]
+            },
+            "description": "**Aceita:** nada (sem corpo, sem parâmetros, sem autenticação).\n\n**Sucesso:** `200` → `{ \"status\": \"ok\" }` — processo no ar e o banco respondeu a um `SELECT 1` em até 2 s.\n\n**Falha:** `503` → `{ \"status\": \"indisponivel\" }` — banco fora do ar ou lento. O corpo é fixo e não revela a causa.\n\nNo Docker, a porta publicada é `BACKEND_PUBLIC_PORT` (padrão `8080`) em `127.0.0.1`."
           }
         }
       ]

@@ -1,0 +1,4 @@
+# Scripts de shell rodam dentro de containers Linux (database/aplicar.sh no
+# servico migrate). Com core.autocrlf=true no Windows, o checkout os
+# converteria para CRLF e o bash quebraria ("$'\r': command not found").
+*.sh text eol=lf
