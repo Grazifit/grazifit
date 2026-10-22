@@ -90,13 +90,14 @@ class AlunoController {
 
     return _executar(() async {
       final aluno = await _service.criar(
+        identidade: identidade,
         cpf: cpf!,
         senha: senha!,
         nome: nome!,
         dataNascimento: dataNascimento,
         telefone: telefone!,
         email: email!,
-        idAdminCriador: null,
+        idAdminCriador: identidade.id,
         idEndereco: _inteiro(payload['id_endereco']),
         restricaoMedica: _texto(payload['restricao_medica']),
         observacaoSaude: _texto(payload['observacao_saude']),
