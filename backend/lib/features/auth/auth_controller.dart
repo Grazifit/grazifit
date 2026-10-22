@@ -22,9 +22,9 @@ class AuthController {
     ..post('/auth/login', _login)
     ..post('/auth/logout', _logout);
 
-  Response _logout(Request request) {
+  Future<Response> _logout(Request request) async {
     final token = tokenDaRequisicao(request);
-    if (token == null || !_service.logout(token)) {
+    if (token == null || !await _service.logout(token)) {
       return _erro(
         401,
         CodigoErro.tokenInvalido,

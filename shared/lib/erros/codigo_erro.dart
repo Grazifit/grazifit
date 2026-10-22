@@ -47,6 +47,7 @@ enum CodigoErro {
   requisicaoInvalida('REQUISICAO_INVALIDA'),
   credenciaisInvalidas('CREDENCIAIS_INVALIDAS'),
   muitasTentativas('MUITAS_TENTATIVAS'),
+  corpoMuitoGrande('CORPO_MUITO_GRANDE'),
   tokenInvalido('TOKEN_INVALIDO'),
   acessoNegado('ACESSO_NEGADO'),
   erroInterno('ERRO_INTERNO');

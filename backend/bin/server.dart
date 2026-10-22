@@ -19,6 +19,7 @@ import 'package:grazifit_backend/features/pessoas/aluno/aluno_repository.dart';
 import 'package:grazifit_backend/features/pessoas/aluno/aluno_service.dart';
 import 'package:grazifit_backend/shared/middleware/error_handler.dart';
 import 'package:grazifit_backend/shared/middleware/identidade_middleware.dart';
+import 'package:grazifit_backend/shared/middleware/limite_corpo.dart';
 import 'package:grazifit_backend/shared/middleware/registro_requisicoes.dart';
 import 'package:grazifit_backend/features/pessoas/professor/professor_controller.dart';
 import 'package:grazifit_backend/features/pessoas/professor/professor_repository.dart';
@@ -64,6 +65,7 @@ void main() async {
       .addMiddleware(registroRequisicoes())
       .addMiddleware(errorHandler())
       .addMiddleware(identidadeMiddleware(tokens, authRepository))
+      .addMiddleware(limiteCorpo())
       .addHandler(rootRouter.call);
 
   final server = await io.serve(handler, config.host, config.port);

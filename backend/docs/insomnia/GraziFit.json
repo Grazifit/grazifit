@@ -22,8 +22,11 @@
       "name": "Base Environment",
       "data": {
         "base_url": "http://localhost:8080",
-        "login_email": "usuario@exemplo.com",
-        "login_senha": "altere-esta-senha",
+        "login_email": "",
+        "login_senha": "",
+        "novo_cpf": "",
+        "novo_email": "",
+        "nova_senha": "",
         "admin_id": 1,
         "aluno_id": 1,
         "professor_id": 1
@@ -33,6 +36,9 @@
           "base_url",
           "login_email",
           "login_senha",
+          "novo_cpf",
+          "novo_email",
+          "nova_senha",
           "admin_id",
           "aluno_id",
           "professor_id"
@@ -172,7 +178,7 @@
       "method": "POST",
       "body": {
         "mimeType": "application/json",
-        "text": "{\n  \"cpf\": \"52998224725\",\n  \"senha\": \"senha123\",\n  \"nome\": \"Administrador Teste\",\n  \"email\": \"novo.admin@exemplo.com\",\n  \"telefone\": \"11999998888\"\n}"
+        "text": "{\n  \"cpf\": \"{{ _.novo_cpf }}\",\n  \"senha\": \"{{ _.nova_senha }}\",\n  \"nome\": \"Administrador Teste\",\n  \"email\": \"{{ _.novo_email }}\",\n  \"telefone\": \"11999998888\"\n}"
       },
       "parameters": [],
       "headers": [
@@ -310,7 +316,7 @@
       "method": "POST",
       "body": {
         "mimeType": "application/json",
-        "text": "{\n  \"cpf\": \"11144477735\",\n  \"senha\": \"senha123\",\n  \"nome\": \"Aluno Teste\",\n  \"telefone\": \"11977776666\",\n  \"email\": \"aluno@exemplo.com\",\n  \"data_nascimento\": \"2000-05-15\",\n  \"restricao_medica\": null,\n  \"observacao_saude\": null\n}"
+        "text": "{\n  \"cpf\": \"{{ _.novo_cpf }}\",\n  \"senha\": \"{{ _.nova_senha }}\",\n  \"nome\": \"Aluno Teste\",\n  \"telefone\": \"11977776666\",\n  \"email\": \"{{ _.novo_email }}\",\n  \"data_nascimento\": \"2000-05-15\",\n  \"restricao_medica\": null,\n  \"observacao_saude\": null\n}"
       },
       "parameters": [],
       "headers": [
@@ -520,7 +526,7 @@
       "method": "POST",
       "body": {
         "mimeType": "application/json",
-        "text": "{\n  \"cpf\": \"93541134780\",\n  \"senha\": \"senha123\",\n  \"nome\": \"Professor Teste\",\n  \"telefone\": \"11955554444\",\n  \"email\": \"professor@exemplo.com\"\n}"
+        "text": "{\n  \"cpf\": \"{{ _.novo_cpf }}\",\n  \"senha\": \"{{ _.nova_senha }}\",\n  \"nome\": \"Professor Teste\",\n  \"telefone\": \"11955554444\",\n  \"email\": \"{{ _.novo_email }}\"\n}"
       },
       "parameters": [],
       "headers": [

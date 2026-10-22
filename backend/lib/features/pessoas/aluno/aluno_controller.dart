@@ -111,13 +111,23 @@ class AlunoController {
     });
   }
 
-  Future<Response> _buscarAlunoPorId(Request req, String id) =>
-      _comId(id, (idAluno) async {
-        final aluno = await _service.buscarAlunoPorId(idAluno);
-        return _json(200, _alunoJson(aluno));
-      });
+  Future<Response> _buscarAlunoPorId(Request req, String id) {
+    final identidade = identidadeDaRequisicao(req);
+    if (identidade == null) {
+      return Future.value(_envelope(CodigoErro.tokenInvalido));
+    }
+    return _comId(id, (idAluno) async {
+      final aluno = await _service.buscarAlunoPorId(
+        idAluno,
+        identidade: identidade,
+      );
+      return _json(200, _alunoJson(aluno));
+    });
+  }
 
   Future<Response> _buscarAlunos(Request req) async {
+    final identidade = identidadeDaRequisicao(req);
+    if (identidade == null) return _envelope(CodigoErro.tokenInvalido);
     final parametros = req.url.queryParameters;
 
     final limit = _parametroInteiro(parametros['limit'], padrao: _limitPadrao);
@@ -134,7 +144,11 @@ class AlunoController {
     }
 
     return _executar(() async {
-      final pagina = await _service.buscarAlunos(limit: limit, offset: offset);
+      final pagina = await _service.buscarAlunos(
+        identidade: identidade,
+        limit: limit,
+        offset: offset,
+      );
       return _json(
         200,
         paginaToJson(
@@ -149,53 +163,73 @@ class AlunoController {
 
   /// Edita nome, telefone e e-mail — so os que vierem no corpo. Qualquer
   /// outra chave e recusada: ignorar faria o cliente achar que mudou.
-  Future<Response> _atualizarAluno(Request req, String id) =>
-      _comId(id, (idAluno) async {
-        final payload = await _lerObjeto(req);
-        if (payload == null) {
-          return _envelope(CodigoErro.jsonInvalido);
-        }
+  Future<Response> _atualizarAluno(Request req, String id) {
+    final identidade = identidadeDaRequisicao(req);
+    if (identidade == null) {
+      return Future.value(_envelope(CodigoErro.tokenInvalido));
+    }
+    return _comId(id, (idAluno) async {
+      final payload = await _lerObjeto(req);
+      if (payload == null) {
+        return _envelope(CodigoErro.jsonInvalido);
+      }
 
-        final formaInvalida = _validarEdicao(payload);
-        if (formaInvalida != null) {
-          return formaInvalida;
-        }
+      final formaInvalida = _validarEdicao(payload);
+      if (formaInvalida != null) {
+        return formaInvalida;
+      }
 
-        final aluno = await _service.atualizar(
-          idAluno,
-          nome: _texto(payload['nome']),
-          telefone: _texto(payload['telefone']),
-          email: _texto(payload['email']),
-        );
-        return _json(200, _alunoJson(aluno));
-      });
+      final aluno = await _service.atualizar(
+        idAluno,
+        identidade: identidade,
+        nome: _texto(payload['nome']),
+        telefone: _texto(payload['telefone']),
+        email: _texto(payload['email']),
+      );
+      return _json(200, _alunoJson(aluno));
+    });
+  }
 
   /// Corpo `{ "status": false }` inativa; `{ "status": true }` reativa.
-  Future<Response> _alterarStatus(Request req, String id) =>
-      _comId(id, (idAluno) async {
-        final payload = await _lerObjeto(req);
-        if (payload == null) {
-          return _envelope(CodigoErro.jsonInvalido);
-        }
+  Future<Response> _alterarStatus(Request req, String id) {
+    final identidade = identidadeDaRequisicao(req);
+    if (identidade == null) {
+      return Future.value(_envelope(CodigoErro.tokenInvalido));
+    }
+    return _comId(id, (idAluno) async {
+      final payload = await _lerObjeto(req);
+      if (payload == null) {
+        return _envelope(CodigoErro.jsonInvalido);
+      }
 
-        final status = payload['status'];
-        if (status == null) {
-          return _envelope(CodigoErro.campoObrigatorio, campo: 'status');
-        }
-        if (status is! bool) {
-          return _campoInvalido('status', 'Deve ser true ou false.');
-        }
+      final status = payload['status'];
+      if (status == null) {
+        return _envelope(CodigoErro.campoObrigatorio, campo: 'status');
+      }
+      if (status is! bool) {
+        return _campoInvalido('status', 'Deve ser true ou false.');
+      }
 
-        await _service.alterarStatus(idAluno, status: status);
-        return Response(204);
-      });
+      await _service.alterarStatus(
+        idAluno,
+        identidade: identidade,
+        status: status,
+      );
+      return Response(204);
+    });
+  }
 
   /// Exclusao real. Aluno com historico: 409 `REGISTRO_EM_USO`.
-  Future<Response> _excluirAluno(Request req, String id) =>
-      _comId(id, (idAluno) async {
-        await _service.excluir(idAluno);
-        return Response(204);
-      });
+  Future<Response> _excluirAluno(Request req, String id) {
+    final identidade = identidadeDaRequisicao(req);
+    if (identidade == null) {
+      return Future.value(_envelope(CodigoErro.tokenInvalido));
+    }
+    return _comId(id, (idAluno) async {
+      await _service.excluir(idAluno, identidade: identidade);
+      return Response(204);
+    });
+  }
 
   // --- Validacao de forma ---
 

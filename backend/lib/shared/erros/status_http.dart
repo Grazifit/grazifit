@@ -29,5 +29,6 @@ int statusHttp(CodigoErro codigo) => switch (codigo) {
   CodigoErro.aulaProfessorDivergente => 409,
   CodigoErro.professorEmUso => 409,
   CodigoErro.muitasTentativas => 429,
+  CodigoErro.corpoMuitoGrande => 413,
   CodigoErro.erroInterno => 500,
 };

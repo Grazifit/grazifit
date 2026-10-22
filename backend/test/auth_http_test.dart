@@ -15,6 +15,7 @@ import 'package:test/test.dart';
 
 class _Repo implements AuthRepository {
   bool ativa = true;
+  final Map<String, TokenValidado> sessoes = {};
 
   @override
   Future<List<ContaAutenticacao>> buscarPorEmail(String email) async => [
@@ -28,6 +29,33 @@ class _Repo implements AuthRepository {
 
   @override
   Future<bool> contaAtiva(Identidade identidade) async => ativa;
+
+  @override
+  Future<void> registrarSessao(
+    TokenEmitido token,
+    Identidade identidade,
+  ) async {
+    sessoes[token.jtiHash] = TokenValidado(
+      identidade: identidade,
+      jtiHash: token.jtiHash,
+      expiraEm: token.expiraEm,
+    );
+  }
+
+  @override
+  Future<bool> sessaoAtiva(TokenValidado token) async {
+    final salva = sessoes[token.jtiHash];
+    return salva != null &&
+        salva.identidade.id == token.identidade.id &&
+        salva.identidade.papel == token.identidade.papel;
+  }
+
+  @override
+  Future<bool> revogarSessao(TokenValidado token) async =>
+      sessoes.remove(token.jtiHash) != null;
+
+  @override
+  Future<void> limparSessoesExpiradas() async {}
 }
 
 class _Hasher implements SenhaHasher {
@@ -118,10 +146,7 @@ void main() {
         Request(
           'POST',
           Uri.parse('http://localhost/auth/login'),
-          body: jsonEncode({
-            'email': 'admin@exemplo.com',
-            'senha': 'correta',
-          }),
+          body: jsonEncode({'email': 'admin@exemplo.com', 'senha': 'correta'}),
         ),
       );
       expect(resposta.statusCode, 200);

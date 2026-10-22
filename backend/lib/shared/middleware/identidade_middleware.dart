@@ -13,8 +13,8 @@ const chaveTokenContexto = 'grazifit.token';
 Identidade? identidadeDaRequisicao(Request request) =>
     request.context[chaveIdentidadeContexto] as Identidade?;
 
-String? tokenDaRequisicao(Request request) =>
-    request.context[chaveTokenContexto] as String?;
+TokenValidado? tokenDaRequisicao(Request request) =>
+    request.context[chaveTokenContexto] as TokenValidado?;
 
 /// Resolve quem chama a API. Permissoes continuam nos services.
 Middleware identidadeMiddleware(TokenService tokens, AuthRepository contas) =>
@@ -34,8 +34,10 @@ Middleware identidadeMiddleware(TokenService tokens, AuthRepository contas) =>
               partes[0].toLowerCase() == 'bearer'
           ? partes[1]
           : null;
-      final identidade = token == null ? null : tokens.validar(token);
-      if (identidade == null || !await contas.contaAtiva(identidade)) {
+      final validado = token == null ? null : tokens.validar(token);
+      if (validado == null ||
+          !await contas.sessaoAtiva(validado) ||
+          !await contas.contaAtiva(validado.identidade)) {
         return Response(
           401,
           body: jsonEncode({
@@ -49,8 +51,8 @@ Middleware identidadeMiddleware(TokenService tokens, AuthRepository contas) =>
       return innerHandler(
         request.change(
           context: {
-            chaveIdentidadeContexto: identidade,
-            chaveTokenContexto: token,
+            chaveIdentidadeContexto: validado.identidade,
+            chaveTokenContexto: validado,
           },
         ),
       );

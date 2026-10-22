@@ -6,6 +6,30 @@ import 'package:crypto/crypto.dart';
 
 import '../../shared/autorizacao/identidade.dart';
 
+class TokenEmitido {
+  final String token;
+  final String jtiHash;
+  final DateTime expiraEm;
+
+  const TokenEmitido({
+    required this.token,
+    required this.jtiHash,
+    required this.expiraEm,
+  });
+}
+
+class TokenValidado {
+  final Identidade identidade;
+  final String jtiHash;
+  final DateTime expiraEm;
+
+  const TokenValidado({
+    required this.identidade,
+    required this.jtiHash,
+    required this.expiraEm,
+  });
+}
+
 /// Token de acesso assinado, sem estado no servidor. A chave e separada do
 /// pepper de senhas e deve ser igual em todas as instancias da API.
 class TokenService {
@@ -21,34 +45,41 @@ class TokenService {
   final Uint8List _chave;
   final DateTime Function() _agora;
   final Random _random;
-  final Map<String, int> _revogados = {};
 
   TokenService({
     required String chaveBase64,
     DateTime Function()? agora,
     Random? random,
-  })
-    : _chave = _decodificarChave(chaveBase64),
-      _agora = agora ?? DateTime.now,
-      _random = random ?? Random.secure();
+  }) : _chave = _decodificarChave(chaveBase64),
+       _agora = agora ?? DateTime.now,
+       _random = random ?? Random.secure();
 
-  String emitir(Identidade identidade) {
+  TokenEmitido emitir(Identidade identidade) {
     final emitidoEm = _agora().toUtc().millisecondsSinceEpoch ~/ 1000;
+    final jti = _gerarJti();
+    final expiraEm = emitidoEm + validade.inSeconds;
     final payload = _codificarJson({
       'iss': _emissor,
       'aud': _audiencia,
       'sub': '${identidade.papel.name}:${identidade.id}',
       'papel': identidade.papel.name,
-      'jti': _gerarJti(),
+      'jti': jti,
       'iat': emitidoEm,
-      'exp': emitidoEm + validade.inSeconds,
+      'exp': expiraEm,
     });
     final conteudo = '$_segmentoHeader.$payload';
     final assinatura = _base64SemPadding(_assinar(conteudo));
-    return '$conteudo.$assinatura';
+    return TokenEmitido(
+      token: '$conteudo.$assinatura',
+      jtiHash: _impressao(jti),
+      expiraEm: DateTime.fromMillisecondsSinceEpoch(
+        expiraEm * 1000,
+        isUtc: true,
+      ),
+    );
   }
 
-  Identidade? validar(String token) {
+  TokenValidado? validar(String token) {
     if (token.length > 4096) return null;
     final partes = token.split('.');
     if (partes.length != 3 || partes.any((p) => !_base64Url.hasMatch(p))) {
@@ -90,9 +121,6 @@ class TokenService {
     }
 
     final agora = _agora().toUtc().millisecondsSinceEpoch ~/ 1000;
-    _limparRevogados(agora);
-    if (_revogados.containsKey(_impressao(token))) return null;
-
     if (emitidoEm > agora + 60 ||
         expiraEm <= agora ||
         expiraEm <= emitidoEm ||
@@ -105,32 +133,25 @@ class TokenService {
     final id = int.tryParse(partesSub[1]);
     if (id == null || id <= 0) return null;
     for (final papel in Papel.values) {
-      if (papel.name == papelBruto) return Identidade(id: id, papel: papel);
+      if (papel.name == papelBruto) {
+        return TokenValidado(
+          identidade: Identidade(id: id, papel: papel),
+          jtiHash: _impressao(jti),
+          expiraEm: DateTime.fromMillisecondsSinceEpoch(
+            expiraEm * 1000,
+            isUtc: true,
+          ),
+        );
+      }
     }
     return null;
   }
 
-  bool revogar(String token) {
-    if (validar(token) == null) return false;
+  String _gerarJti() =>
+      _base64SemPadding(List<int>.generate(16, (_) => _random.nextInt(256)));
 
-    final payload = _decodificarJson(token.split('.')[1]);
-    final expiraEm = payload?['exp'];
-    if (expiraEm is! int) return false;
-
-    _revogados[_impressao(token)] = expiraEm;
-    return true;
-  }
-
-  String _gerarJti() => _base64SemPadding(
-    List<int>.generate(16, (_) => _random.nextInt(256)),
-  );
-
-  void _limparRevogados(int agora) {
-    _revogados.removeWhere((_, expiraEm) => expiraEm <= agora);
-  }
-
-  static String _impressao(String token) =>
-      sha256.convert(utf8.encode(token)).toString();
+  static String _impressao(String valor) =>
+      sha256.convert(utf8.encode(valor)).toString();
 
   List<int> _assinar(String conteudo) =>
       Hmac(sha256, _chave).convert(utf8.encode(conteudo)).bytes;
