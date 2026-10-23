@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../treinos/screens/tela_treino_aluno.dart';
+import '../../avaliacoes/screens/tela_evolucao_aluno.dart';
 import '../../../core/theme/app_colors.dart';
 
 // Cores da tela (ajuste para o tema do app, se já tiver um).
@@ -74,6 +75,11 @@ class _TelaMeusAgendamentosAlunoState extends State<TelaMeusAgendamentosAluno> {
       // da barra leve de volta à Agenda.
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(builder: (_) => const TelaTreinosAluno()),
+      );
+    } else if (i == 2) {
+      // Evolução: troca esta tela pela de evolução.
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(builder: (_) => const TelaEvolucaoAluno()),
       );
     } else {
       setState(() => _navIndex = i);
@@ -343,10 +349,10 @@ class _BarraInferior extends StatelessWidget {
   const _BarraInferior({required this.indexAtual, required this.onTap});
 
   static const _itens = [
-    (Icons.calendar_month, 'Agenda'),
+    (Icons.calendar_today, 'Agenda'),
     (Icons.fitness_center, 'Treinos'),
-    (Icons.bar_chart, 'Evolução'),
-    (Icons.person_outline, 'Perfil'),
+    (Icons.trending_up, 'Evolução'),
+    (Icons.person, 'Perfil'),
   ];
 
   @override
