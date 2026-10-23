@@ -11,6 +11,7 @@ import 'package:flutter/material.dart';
 
 import '../features/pessoas/screens/boas_vindas_alunos.dart';
 import '../features/pessoas/screens/criar_cadastro_aluno.dart';
+import '../features/vinculos/screens/alunos_inativos_screen.dart';
 import '../features/treinos/screens/historico_treinos_screen.dart';
 
 
@@ -36,6 +37,9 @@ class MenuDevScreen extends StatelessWidget {
     // _GrupoDev('Auth', [
     //   _TelaDev('Login', () => const LoginScreen()),
     // ]),
+
+    _GrupoDev('Vínculos', [
+      _TelaDev('Alunos inativos', () => const AlunosInativosScreen()),
     _GrupoDev('Treinos', [
       _TelaDev(
         'Histórico de treinos',
