@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
-import 'dev/menu_dev_screen.dart';
+import 'features/pessoas/screens/tela_usuarios_admin.dart';
 
 void main() {
   runApp(
     MaterialApp(
       debugShowCheckedModeBanner: false,
-      home: const MenuDevScreen(),
+      home: const TelaUsuariosAdmin(),
     ),
   );
 }
