@@ -221,7 +221,6 @@ class _TelaUsuariosAdminState extends State<TelaUsuariosAdmin> {
           for (var indice = 0; indice < filtrados.length; indice++) ...[
             _LinhaUsuario(
               usuario: filtrados[indice],
-              mostrarVinculo: _categoria == CategoriaUsuariosAdmin.alunos,
               onTap: () => _abrirUsuario(filtrados[indice]),
             ),
             if (indice < filtrados.length - 1)
@@ -328,7 +327,7 @@ class _TelaUsuariosAdminState extends State<TelaUsuariosAdmin> {
       ),
       builder: (_) => _DetalheUsuario(
         usuario: usuario,
-        mostrarVinculo: _categoria == CategoriaUsuariosAdmin.alunos,
+        mostrarVinculo: usuario.complemento != null,
       ),
     );
   }
@@ -473,17 +472,15 @@ class _FiltroStatus extends StatelessWidget {
 class _LinhaUsuario extends StatelessWidget {
   const _LinhaUsuario({
     required this.usuario,
-    required this.mostrarVinculo,
     required this.onTap,
   });
 
   final UsuarioAdminData usuario;
-  final bool mostrarVinculo;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    final complemento = mostrarVinculo ? usuario.complemento : null;
+    final complemento = usuario.complemento;
     final subtitulo = complemento == null || complemento.isEmpty
         ? usuario.status
         : '${usuario.status} · $complemento';

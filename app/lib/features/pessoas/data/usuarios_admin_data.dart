@@ -46,16 +46,19 @@ class UsuariosAdminData {
         nome: 'Marina Alves',
         ativo: true,
         statusLegivel: 'Ativa',
+        complemento: '8 alunos vinculados',
       ),
       UsuarioAdminData(
-        nome: 'Rafael Costa',
+        nome: 'Rafael Nunes',
         ativo: true,
         statusLegivel: 'Ativo',
+        complemento: '5 alunos vinculados',
       ),
       UsuarioAdminData(
-        nome: 'Paula Nunes',
+        nome: 'Beatriz Lima',
         ativo: false,
         statusLegivel: 'Inativa',
+        complemento: 'sem alunos',
       ),
     ],
   );
