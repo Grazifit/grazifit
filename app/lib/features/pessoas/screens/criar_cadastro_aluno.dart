@@ -1,9 +1,50 @@
+import 'package:flutter/foundation.dart' show immutable;
 import 'package:flutter/material.dart';
 
-/// Tela de cadastro de aluno, com destaque nos campos principais
-/// e campo de senha com opção de mostrar/ocultar.
+import '../../../core/design_system/components/app_bar_interna.dart';
+import '../../../core/design_system/components/botao_primario.dart';
+import '../../../core/design_system/components/campo_texto.dart';
+import '../../../core/design_system/components/fundo_tela.dart';
+import '../../../core/design_system/tokens/cores_provisorias.dart';
+import '../../../core/utils/formatadores.dart';
+import '../../../core/utils/validadores.dart';
+import '../widgets/endereco_opcional.dart';
+
+@immutable
+class DadosCadastroAluno {
+  const DadosCadastroAluno({
+    this.id,
+    required this.nome,
+    required this.cpf,
+    required this.email,
+    required this.nascimento,
+  });
+
+  final String? id;
+  final String nome;
+  final String cpf;
+  final String email;
+  final String nascimento;
+}
+
+typedef SalvarCadastroAluno = Future<void> Function(DadosCadastroAluno dados);
+typedef RedefinirSenhaAluno = Future<void> Function(DadosCadastroAluno aluno);
+
 class CriarCadastroAlunoScreen extends StatefulWidget {
-  const CriarCadastroAlunoScreen({super.key});
+  const CriarCadastroAlunoScreen({
+    super.key,
+    this.dadosIniciais,
+    this.modoEdicao = false,
+    this.onSalvar,
+    this.onAbrirAvaliacao,
+    this.onRedefinirSenha,
+  });
+
+  final DadosCadastroAluno? dadosIniciais;
+  final bool modoEdicao;
+  final SalvarCadastroAluno? onSalvar;
+  final VoidCallback? onAbrirAvaliacao;
+  final RedefinirSenhaAluno? onRedefinirSenha;
 
   @override
   State<CriarCadastroAlunoScreen> createState() =>
@@ -11,352 +52,287 @@ class CriarCadastroAlunoScreen extends StatefulWidget {
 }
 
 class _CriarCadastroAlunoScreenState extends State<CriarCadastroAlunoScreen> {
-  static const Color kGreen = Color(0xFF1B5E3C);
-  static const Color kFieldFill = Color(0xFFF5F5F5);
-  static const Color kHint = Color(0xFF9AA0A6);
+  final _formKey = GlobalKey<FormState>();
+  late final TextEditingController _nomeController;
+  late final TextEditingController _cpfController;
+  late final TextEditingController _emailController;
+  late final TextEditingController _nascimentoController;
 
-  final _nomeCtrl = TextEditingController(text: 'Ana Beatriz Ramos');
-  final _cpfCtrl = TextEditingController(text: '000.000.000-00');
-  final _emailCtrl = TextEditingController(text: 'ana.ramos@exemplo.com');
-  final _nascCtrl = TextEditingController(text: '14/07/1996');
-  final _senhaCtrl = TextEditingController();
+  bool _senhaRedefinida = false;
+  bool _salvando = false;
 
-  bool _enderecoAberto = false;
-  bool _senhaVisivel = false;
+  @override
+  void initState() {
+    super.initState();
+    final dados = widget.dadosIniciais;
+    _nomeController =
+        TextEditingController(text: dados?.nome ?? 'Ana Beatriz Ramos');
+    _cpfController =
+        TextEditingController(text: dados?.cpf ?? '000.000.000-00');
+    _emailController = TextEditingController(
+      text: dados?.email ?? 'ana.ramos@exemplo.com',
+    );
+    _nascimentoController =
+        TextEditingController(text: dados?.nascimento ?? '14/07/1996');
+  }
 
   @override
   void dispose() {
-    _nomeCtrl.dispose();
-    _cpfCtrl.dispose();
-    _emailCtrl.dispose();
-    _nascCtrl.dispose();
-    _senhaCtrl.dispose();
+    _nomeController.dispose();
+    _cpfController.dispose();
+    _emailController.dispose();
+    _nascimentoController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFF3F4F6),
-      body: SafeArea(
-        child: Column(
-          children: [
-            _buildHeader(context),
-            Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _buildCamposDestacados(),
-                    const SizedBox(height: 20),
-                    _buildEnderecoExpansivel(),
-                    const SizedBox(height: 12),
-                    _buildAvaliacaoFisica(),
-                  ],
-                ),
-              ),
-            ),
-            _buildBotaoSalvar(context),
-          ],
+    return FundoTela(
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        appBar: appBarInterna(
+          context,
+          widget.modoEdicao ? 'Editar aluno' : 'Cadastro de aluno',
         ),
-      ),
-    );
-  }
-
-  Widget _buildHeader(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(8, 8, 16, 8),
-      child: Row(
-        children: [
-          IconButton(
-            icon: const Icon(Icons.arrow_back, color: kGreen),
-            onPressed: () => Navigator.of(context).maybePop(),
-          ),
-          const Text(
-            'Cadastro de aluno',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w600,
-              color: Colors.black87,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildCamposDestacados() {
-    return Padding(
-      padding: const EdgeInsets.all(12),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildCampo(
-            label: 'Nome completo',
-            controller: _nomeCtrl,
-            hint: 'Como aparece no app',
-          ),
-          const SizedBox(height: 16),
-          _buildCampo(
-            label: 'CPF',
-            controller: _cpfCtrl,
-            hint: '11 dígitos',
-            keyboardType: TextInputType.number,
-          ),
-          const SizedBox(height: 16),
-          _buildCampo(
-            label: 'E-mail',
-            controller: _emailCtrl,
-            hint: 'Será a credencial de acesso',
-            keyboardType: TextInputType.emailAddress,
-          ),
-          const SizedBox(height: 16),
-          _buildCampo(
-            label: 'Nascimento',
-            controller: _nascCtrl,
-            hint: 'Anterior a hoje',
-            keyboardType: TextInputType.datetime,
-          ),
-          const SizedBox(height: 16),
-          _buildCampoSenha(),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildCampo({
-    required String label,
-    required TextEditingController controller,
-    required String hint,
-    TextInputType keyboardType = TextInputType.text,
-  }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: const TextStyle(
-            fontSize: 13,
-            color: Colors.black87,
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-        const SizedBox(height: 6),
-        TextField(
-          controller: controller,
-          keyboardType: keyboardType,
-          style: const TextStyle(fontSize: 15),
-          decoration: InputDecoration(
-            filled: true,
-            fillColor: kFieldFill,
-            contentPadding:
-                const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-              borderSide: BorderSide.none,
-            ),
-          ),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          hint,
-          style: const TextStyle(fontSize: 11.5, color: kHint),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildCampoSenha() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'Senha',
-          style: TextStyle(
-            fontSize: 13,
-            color: Colors.black87,
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-        const SizedBox(height: 6),
-        TextField(
-          controller: _senhaCtrl,
-          obscureText: !_senhaVisivel,
-          style: const TextStyle(fontSize: 15),
-          decoration: InputDecoration(
-            hintText: 'Digite uma senha',
-            hintStyle: const TextStyle(color: kHint, fontSize: 14),
-            filled: true,
-            fillColor: kFieldFill,
-            contentPadding:
-                const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-              borderSide: BorderSide.none,
-            ),
-            suffixIcon: IconButton(
-              icon: Icon(
-                _senhaVisivel ? Icons.visibility_off : Icons.visibility,
-                color: kHint,
-                size: 20,
-              ),
-              onPressed: () {
-                setState(() {
-                  _senhaVisivel = !_senhaVisivel;
-                });
-              },
-            ),
-          ),
-        ),
-        const SizedBox(height: 4),
-        const Text(
-          'Mínimo de 6 caracteres',
-          style: TextStyle(fontSize: 11.5, color: kHint),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildEnderecoExpansivel() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        InkWell(
-          onTap: () => setState(() => _enderecoAberto = !_enderecoAberto),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        body: SafeArea(
+          child: Column(
             children: [
-              const Text(
-                'Endereço (opcional)',
-                style: TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.black87,
+              if (_senhaRedefinida) _bannerSenhaRedefinida(),
+              Expanded(
+                child: Form(
+                  key: _formKey,
+                  child: ListView(
+                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+                    children: [
+                      CampoTexto(
+                        label: 'Nome completo',
+                        controller: _nomeController,
+                        helper: 'Como aparece no app',
+                        textCapitalization: TextCapitalization.words,
+                        validator: Validadores.nome,
+                      ),
+                      const SizedBox(height: 20),
+                      CampoTexto(
+                        label: 'CPF',
+                        controller: _cpfController,
+                        helper: '11 dígitos',
+                        keyboardType: TextInputType.number,
+                        inputFormatters: [CpfInputFormatter()],
+                        validator: Validadores.cpf,
+                      ),
+                      const SizedBox(height: 20),
+                      CampoTexto(
+                        label: 'E-mail',
+                        controller: _emailController,
+                        helper: 'Será a credencial de acesso',
+                        keyboardType: TextInputType.emailAddress,
+                        validator: Validadores.email,
+                      ),
+                      const SizedBox(height: 20),
+                      CampoTexto(
+                        label: 'Nascimento',
+                        controller: _nascimentoController,
+                        helper: 'Anterior a hoje',
+                        keyboardType: TextInputType.datetime,
+                        inputFormatters: [DataInputFormatter()],
+                        validator: Validadores.nascimento,
+                      ),
+                      const SizedBox(height: 24),
+                      const EnderecoOpcional(),
+                      const SizedBox(height: 16),
+                      const Text(
+                        'Informações de saúde são preenchidas pelo próprio '
+                        'aluno no primeiro acesso.',
+                        style: TextStyle(
+                          color: Color(0xFF78827F),
+                          fontSize: 12,
+                          height: 1.4,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      _acoesDoAluno(),
+                    ],
+                  ),
                 ),
-              ),
-              AnimatedRotation(
-                turns: _enderecoAberto ? 0.5 : 0,
-                duration: const Duration(milliseconds: 200),
-                child: const Icon(Icons.keyboard_arrow_down,
-                    color: Colors.black54),
               ),
             ],
           ),
         ),
-        const SizedBox(height: 6),
-        const Text(
-          'Informações de saúde são preenchidas pelo próprio aluno no primeiro acesso.',
-          style: TextStyle(fontSize: 12.5, color: kHint, height: 1.4),
-        ),
-        AnimatedSize(
-          duration: const Duration(milliseconds: 200),
-          child: _enderecoAberto
-              ? Padding(
-                  padding: const EdgeInsets.only(top: 12),
-                  child: Column(
-                    children: [
-                      _buildCampoSimples('CEP'),
-                      const SizedBox(height: 12),
-                      _buildCampoSimples('Rua'),
-                      const SizedBox(height: 12),
-                      _buildCampoSimples('Cidade'),
-                    ],
-                  ),
-                )
-              : const SizedBox.shrink(),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildCampoSimples(String label) {
-    return TextField(
-      style: const TextStyle(fontSize: 15),
-      decoration: InputDecoration(
-        labelText: label,
-        filled: true,
-        fillColor: kFieldFill,
-        contentPadding:
-            const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
-          borderSide: BorderSide.none,
-        ),
-      ),
-    );
-  }
-
-  Widget _buildAvaliacaoFisica() {
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 4),
-      decoration: const BoxDecoration(
-        border: Border(
-          top: BorderSide(color: Color(0xFFE0E0E0)),
-          bottom: BorderSide(color: Color(0xFFE0E0E0)),
-        ),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          const Text(
-            'Avaliação física',
-            style: TextStyle(fontSize: 15, color: Colors.black87),
-          ),
-          TextButton(
-            onPressed: () {},
-            style: TextButton.styleFrom(
-              padding: EdgeInsets.zero,
-              minimumSize: const Size(0, 0),
-              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-            ),
-            child: const Text(
-              'Abrir',
-              style: TextStyle(
-                color: kGreen,
-                fontWeight: FontWeight.w600,
-                fontSize: 15,
-              ),
+        bottomNavigationBar: Container(
+          color: const Color(0xFFE7E9E8),
+          child: SafeArea(
+            top: false,
+            minimum: const EdgeInsets.fromLTRB(16, 15, 16, 16),
+            child: BotaoPrimario(
+              texto: _salvando
+                  ? 'Salvando...'
+                  : widget.modoEdicao
+                      ? 'Salvar alterações'
+                      : 'Salvar cadastro',
+              onPressed: _salvando ? null : _salvar,
             ),
           ),
-        ],
+        ),
       ),
     );
   }
 
-  Widget _buildBotaoSalvar(BuildContext context) {
+  Widget _bannerSenhaRedefinida() {
     return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+      height: 48,
+      margin: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+      padding: const EdgeInsets.symmetric(horizontal: 16),
       decoration: BoxDecoration(
-        color: const Color(0xFFF3F4F6),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 8,
-            offset: const Offset(0, -2),
+        color: const Color(0xFF176B3A),
+        borderRadius: BorderRadius.circular(4),
+      ),
+      child: const Row(
+        children: [
+          Icon(Icons.check, color: Colors.white, size: 22),
+          SizedBox(width: 14),
+          Text(
+            'Senha redefinida',
+            style: TextStyle(color: Colors.white, fontSize: 14),
           ),
         ],
       ),
-      child: SizedBox(
-        height: 50,
-        child: ElevatedButton(
-          onPressed: () {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Cadastro salvo!')),
-            );
-          },
-          style: ElevatedButton.styleFrom(
-            backgroundColor: kGreen,
-            foregroundColor: Colors.white,
-            elevation: 0,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(10),
-            ),
+    );
+  }
+
+  Widget _acoesDoAluno() {
+    return Material(
+      color: Colors.white,
+      child: Column(
+        children: [
+          _AcaoCadastroAluno(
+            titulo: 'Avaliação física',
+            onTap: widget.onAbrirAvaliacao ?? _avisarAvaliacaoPendente,
           ),
-          child: const Text(
-            'Salvar cadastro',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+          const Divider(height: 1, color: Color(0xFFD4DEDB)),
+          _AcaoCadastroAluno(
+            titulo: 'Redefinir senha',
+            onTap: _confirmarRedefinicaoSenha,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _salvar() async {
+    if (!(_formKey.currentState?.validate() ?? false)) return;
+
+    setState(() => _salvando = true);
+    try {
+      final dados = _dadosAtuais();
+      if (widget.onSalvar == null) {
+        _mostrarAviso('Cadastro preenchido localmente.');
+      } else {
+        await widget.onSalvar!(dados);
+        if (mounted) _mostrarAviso('Cadastro salvo.');
+      }
+    } catch (_) {
+      if (mounted) _mostrarAviso('Não foi possível salvar o cadastro.');
+    } finally {
+      if (mounted) setState(() => _salvando = false);
+    }
+  }
+
+  Future<void> _confirmarRedefinicaoSenha() async {
+    final confirmou = await showDialog<bool>(
+      context: context,
+      builder: (contextoDialogo) => AlertDialog(
+        title: const Text('Redefinir a senha?'),
+        content: Text(
+          'A senha atual de ${_nomeController.text.trim()} deixa de valer. '
+          'Este app não tem recuperação por e-mail — a nova senha é '
+          'combinada na academia.',
+          style: const TextStyle(height: 1.5),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(contextoDialogo).pop(false),
+            child: const Text('Voltar'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: corInstitucional,
+            ),
+            onPressed: () => Navigator.of(contextoDialogo).pop(true),
+            child: const Text('Redefinir'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmou != true || !mounted) return;
+
+    try {
+      final onRedefinirSenha = widget.onRedefinirSenha;
+      if (onRedefinirSenha != null) {
+        await onRedefinirSenha(_dadosAtuais());
+      }
+      if (mounted) setState(() => _senhaRedefinida = true);
+    } catch (_) {
+      if (mounted) _mostrarAviso('Não foi possível redefinir a senha.');
+    }
+  }
+
+  void _avisarAvaliacaoPendente() {
+    _mostrarAviso('A avaliação física aguarda integração.');
+  }
+
+  DadosCadastroAluno _dadosAtuais() => DadosCadastroAluno(
+        id: widget.dadosIniciais?.id,
+        nome: _nomeController.text.trim(),
+        cpf: _cpfController.text.trim(),
+        email: _emailController.text.trim(),
+        nascimento: _nascimentoController.text.trim(),
+      );
+
+  void _mostrarAviso(String mensagem) {
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(content: Text(mensagem)));
+  }
+}
+
+class _AcaoCadastroAluno extends StatelessWidget {
+  const _AcaoCadastroAluno({required this.titulo, required this.onTap});
+
+  final String titulo;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      child: SizedBox(
+        height: 71,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  titulo,
+                  style: const TextStyle(
+                    color: Color(0xFF33413F),
+                    fontSize: 14,
+                  ),
+                ),
+              ),
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 8, vertical: 12),
+                child: Text(
+                  'Abrir',
+                  style: TextStyle(
+                    color: corInstitucional,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
       ),
@@ -364,15 +340,8 @@ class _CriarCadastroAlunoScreenState extends State<CriarCadastroAlunoScreen> {
   }
 }
 
-/// Container com borda tracejada (dashed) reutilizável.
+/// Container com borda tracejada disponível para os demais formulários.
 class DashedBorderContainer extends StatelessWidget {
-  final Widget child;
-  final Color color;
-  final double strokeWidth;
-  final double dashLength;
-  final double gap;
-  final double radius;
-
   const DashedBorderContainer({
     super.key,
     required this.child,
@@ -382,6 +351,13 @@ class DashedBorderContainer extends StatelessWidget {
     this.gap = 4,
     this.radius = 8,
   });
+
+  final Widget child;
+  final Color color;
+  final double strokeWidth;
+  final double dashLength;
+  final double gap;
+  final double radius;
 
   @override
   Widget build(BuildContext context) {
@@ -399,13 +375,7 @@ class DashedBorderContainer extends StatelessWidget {
 }
 
 class _DashedBorderPainter extends CustomPainter {
-  final Color color;
-  final double strokeWidth;
-  final double dashLength;
-  final double gap;
-  final double radius;
-
-  _DashedBorderPainter({
+  const _DashedBorderPainter({
     required this.color,
     required this.strokeWidth,
     required this.dashLength,
@@ -413,30 +383,29 @@ class _DashedBorderPainter extends CustomPainter {
     required this.radius,
   });
 
+  final Color color;
+  final double strokeWidth;
+  final double dashLength;
+  final double gap;
+  final double radius;
+
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
       ..color = color
       ..strokeWidth = strokeWidth
       ..style = PaintingStyle.stroke;
+    final bounds = Rect.fromLTWH(0, 0, size.width, size.height);
+    final path = Path()
+      ..addRRect(RRect.fromRectAndRadius(bounds, Radius.circular(radius)));
 
-    final rrect = RRect.fromRectAndRadius(
-      Rect.fromLTWH(0, 0, size.width, size.height),
-      Radius.circular(radius),
-    );
-
-    final path = Path()..addRRect(rrect);
-    final metrics = path.computeMetrics();
-
-    for (final metric in metrics) {
-      double distance = 0;
+    for (final metric in path.computeMetrics()) {
+      var distance = 0.0;
       while (distance < metric.length) {
-        final next = distance + dashLength;
-        canvas.drawPath(
-          metric.extractPath(distance, next.clamp(0, metric.length)),
-          paint,
-        );
-        distance = next + gap;
+        final end =
+            (distance + dashLength).clamp(0.0, metric.length).toDouble();
+        canvas.drawPath(metric.extractPath(distance, end), paint);
+        distance = end + gap;
       }
     }
   }
