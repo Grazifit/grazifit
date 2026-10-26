@@ -1,4 +1,5 @@
 import 'package:drift/drift.dart';
+import 'package:drift_postgres/drift_postgres.dart' show PgDateTime, PgTypes;
 
 import '../../database/database.dart';
 import '../../shared/autorizacao/identidade.dart';
@@ -89,7 +90,14 @@ class AuthRepository {
       INSERT INTO sessao_auth (jti_hash, papel, id_usuario, expira_em)
       VALUES ($1, $2, $3, $4)
       ''',
-      [token.jtiHash, identidade.papel.name, identidade.id, token.expiraEm],
+      [
+        token.jtiHash,
+        identidade.papel.name,
+        identidade.id,
+        PgTypes.timestampWithTimezone.mapToSqlParameter(
+          PgDateTime(token.expiraEm),
+        ),
+      ],
     );
   }
 
@@ -111,7 +119,10 @@ class AuthRepository {
             Variable.withString(token.jtiHash),
             Variable.withString(token.identidade.papel.name),
             Variable.withInt(token.identidade.id),
-            Variable<DateTime>(token.expiraEm),
+            Variable<PgDateTime>(
+              PgDateTime(token.expiraEm),
+              PgTypes.timestampWithTimezone,
+            ),
           ],
         )
         .getSingleOrNull();

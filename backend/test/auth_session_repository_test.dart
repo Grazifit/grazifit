@@ -2,6 +2,9 @@
 library;
 
 import 'package:grazifit_backend/database/database.dart';
+import 'package:grazifit_backend/features/auth/auth_repository.dart';
+import 'package:grazifit_backend/features/auth/token_service.dart';
+import 'package:grazifit_backend/shared/autorizacao/identidade.dart';
 import 'package:test/test.dart';
 
 void main() {
@@ -15,7 +18,7 @@ void main() {
 
   tearDownAll(() async {
     await db.customStatement(
-      "DELETE FROM sessao_auth WHERE jti_hash IN ('${'a' * 64}', '${'b' * 64}')",
+      "DELETE FROM sessao_auth WHERE jti_hash IN ('${'a' * 64}', '${'b' * 64}', '${'c' * 64}')",
     );
     for (final email in emails) {
       await db.customStatement(
@@ -24,6 +27,29 @@ void main() {
     }
     await db.close();
   });
+
+  test(
+    'repository registra e encontra sessao com expiração TIMESTAMPTZ',
+    () async {
+      final expiraEm = DateTime.utc(2099, 1, 2, 3, 4, 5);
+      const identidade = Identidade(id: 987654, papel: Papel.aluno);
+      final emitido = TokenEmitido(
+        token: 'token-de-teste',
+        jtiHash: 'c' * 64,
+        expiraEm: expiraEm,
+      );
+      final validado = TokenValidado(
+        identidade: identidade,
+        jtiHash: emitido.jtiHash,
+        expiraEm: expiraEm,
+      );
+      final repository = AuthRepository(db);
+
+      await repository.registrarSessao(emitido, identidade);
+
+      expect(await repository.sessaoAtiva(validado), isTrue);
+    },
+  );
 
   test('troca de senha revoga todas as sessoes ativas da identidade', () async {
     final email =
