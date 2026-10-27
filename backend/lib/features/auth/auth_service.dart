@@ -36,12 +36,22 @@ class AuthService {
       throw const CredenciaisInvalidas();
     }
 
+    final token = _tokens.emitir(conta.identidade);
+    await _repository.registrarSessao(token, conta.identidade);
+    try {
+      await _repository.limparSessoesExpiradas();
+    } catch (_) {
+      // Limpeza e manutencao; a sessao atual ja foi persistida.
+    }
+
     return LoginResponseDto(
-      accessToken: _tokens.emitir(conta.identidade),
+      accessToken: token.token,
       expiresIn: TokenService.validade.inSeconds,
       id: conta.identidade.id,
       papel: conta.identidade.papel.name,
       nome: conta.nome,
     );
   }
+
+  Future<bool> logout(TokenValidado token) => _repository.revogarSessao(token);
 }

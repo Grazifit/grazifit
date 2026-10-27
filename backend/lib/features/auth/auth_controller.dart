@@ -7,6 +7,7 @@ import 'package:shared/erros/codigo_erro.dart';
 import 'package:shelf/shelf.dart';
 import 'package:shelf_router/shelf_router.dart';
 
+import '../../shared/middleware/identidade_middleware.dart';
 import 'auth_service.dart';
 import 'protecao_login.dart';
 
@@ -17,7 +18,22 @@ class AuthController {
   AuthController(this._service, {ProtecaoLogin? protecao})
     : _protecao = protecao ?? ProtecaoLogin();
 
-  Router get router => Router()..post('/auth/login', _login);
+  Router get router => Router()
+    ..post('/auth/login', _login)
+    ..post('/auth/logout', _logout);
+
+  Future<Response> _logout(Request request) async {
+    final token = tokenDaRequisicao(request);
+    if (token == null || !await _service.logout(token)) {
+      return _erro(
+        401,
+        CodigoErro.tokenInvalido,
+        'Autenticacao necessaria ou token invalido.',
+      );
+    }
+
+    return Response(204, headers: {'Cache-Control': 'no-store'});
+  }
 
   Future<Response> _login(Request request) async {
     // Nunca confiar em X-Forwarded-For enviado diretamente pelo cliente.
