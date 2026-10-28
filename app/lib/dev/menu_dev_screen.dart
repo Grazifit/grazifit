@@ -11,6 +11,7 @@ import 'package:flutter/material.dart';
 
 import '../features/pessoas/screens/boas_vindas_alunos.dart';
 import '../features/pessoas/screens/criar_cadastro_aluno.dart';
+import '../features/pessoas/screens/cadastro_professor_screen.dart';
 
 
 class MenuDevScreen extends StatelessWidget {
@@ -28,6 +29,7 @@ class MenuDevScreen extends StatelessWidget {
           onContinuar: (restricao, observacoes) {},
         ),
       ),
+      _TelaDev('Cadastro de professor', () => const CadastroProfessorScreen()),
     ]),
     _GrupoDev('Alunos', [
       

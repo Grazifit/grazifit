@@ -1,9 +1,8 @@
 // app/lib/features/pessoas/screens/cadastro_professor_screen.dart
 //
-// PROTÓTIPO VISUAL — sem integração com backend.
-// Construído fora da ordem de fases do projeto (DTO → Repository → Service →
-// Controller → data/ → state/ → screens/), a pedido explícito do usuário,
-// só para visualizar a tela fiel ao mockup antes da Sprint 2.
+// Integrada ao backend: POST /professor (data/professor_repository.dart,
+// state/cadastro_professor_notifier.dart). Só valida a forma; regra de
+// negócio e unicidade são do backend, e o texto do erro vem do código (D64).
 //
 // Decisões aplicadas (confirmadas pelo usuário nesta sessão):
 // - Sem campos profissionais (CREF/especialidade) — nota do mockup (D17)
@@ -24,18 +23,29 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared/erros/codigo_erro.dart';
 
 import '../../../core/design_system/components/fundo_tela.dart';
+import '../../../core/network/api_exception.dart';
+import '../data/professor_repository.dart';
+import '../state/cadastro_professor_notifier.dart';
 
-class CadastroProfessorScreen extends StatefulWidget {
+class CadastroProfessorScreen extends ConsumerStatefulWidget {
   const CadastroProfessorScreen({super.key});
 
   @override
-  State<CadastroProfessorScreen> createState() =>
+  ConsumerState<CadastroProfessorScreen> createState() =>
       _CadastroProfessorScreenState();
 }
 
-class _CadastroProfessorScreenState extends State<CadastroProfessorScreen> {
+class _CadastroProfessorScreenState
+    extends ConsumerState<CadastroProfessorScreen> {
+  // Erros devolvidos pelo backend, exibidos no campo correspondente.
+  // O texto vem do código (D64), nunca da mensagem do servidor.
+  String? _erroCpf;
+  String? _erroEmail;
+
   final _formKey = GlobalKey<FormState>();
 
   final _nomeController = TextEditingController();
@@ -59,8 +69,76 @@ class _CadastroProfessorScreenState extends State<CadastroProfessorScreen> {
     super.dispose();
   }
 
+  Future<void> _salvar() async {
+    setState(() {
+      _erroCpf = null;
+      _erroEmail = null;
+    });
+    if (!(_formKey.currentState?.validate() ?? false)) return;
+
+    await ref.read(cadastroProfessorProvider.notifier).salvar(
+          nome: _nomeController.text,
+          cpf: _cpfController.text.replaceAll(RegExp(r'\D'), ''),
+          email: _emailController.text,
+          senha: _senhaController.text,
+          telefone: _telefoneController.text,
+        );
+  }
+
+  void _aoMudarEstado(
+    AsyncValue<Professor?>? anterior,
+    AsyncValue<Professor?> atual,
+  ) {
+    final professor = atual.valueOrNull;
+    if (professor != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Professor cadastrado.')),
+      );
+      Navigator.of(context).maybePop();
+      return;
+    }
+
+    final erro = atual.error;
+    if (erro is! ApiException) return;
+
+    switch (erro.codigo) {
+      case CodigoErro.cpfEmUso:
+        setState(() => _erroCpf = 'CPF já cadastrado');
+      case CodigoErro.cpfInvalido:
+        setState(() => _erroCpf = 'CPF inválido');
+      case CodigoErro.emailEmUso:
+        setState(() => _erroEmail = 'E-mail já cadastrado');
+      case CodigoErro.emailInvalido:
+        setState(() => _erroEmail = 'E-mail inválido');
+      default:
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(_textoDoErro(erro))),
+        );
+        return;
+    }
+    _formKey.currentState?.validate();
+  }
+
+  String _textoDoErro(ApiException erro) {
+    if (erro.semResposta) {
+      return 'Sem conexão com o servidor. Tente novamente.';
+    }
+    return switch (erro.codigo) {
+      CodigoErro.tokenInvalido => 'Sessão expirada. Entre novamente.',
+      CodigoErro.acessoNegado => 'Você não tem permissão para cadastrar professores.',
+      CodigoErro.campoInvalido ||
+      CodigoErro.campoObrigatorio =>
+        'Confira os dados informados.',
+      _ when erro.status == 400 => 'Confira os dados informados.',
+      _ => 'Não foi possível salvar. Tente novamente.',
+    };
+  }
+
   @override
   Widget build(BuildContext context) {
+    ref.listen(cadastroProfessorProvider, _aoMudarEstado);
+    final enviando = ref.watch(cadastroProfessorProvider).isLoading;
+
     return FundoTela(
       child: Scaffold(
       backgroundColor: Colors.transparent,
@@ -129,7 +207,7 @@ class _CadastroProfessorScreenState extends State<CadastroProfessorScreen> {
                 validator: (v) {
                   final digits = (v ?? '').replaceAll(RegExp(r'\D'), '');
                   if (digits.length != 11) return 'CPF deve ter 11 dígitos';
-                  return null;
+                  return _erroCpf;
                 },
               ),
               const SizedBox(height: 20),
@@ -144,7 +222,7 @@ class _CadastroProfessorScreenState extends State<CadastroProfessorScreen> {
                   final value = (v ?? '').trim();
                   final regex = RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$');
                   if (!regex.hasMatch(value)) return 'E-mail inválido';
-                  return null;
+                  return _erroEmail;
                 },
               ),
               const SizedBox(height: 20),
@@ -154,6 +232,7 @@ class _CadastroProfessorScreenState extends State<CadastroProfessorScreen> {
                 validator: (v) {
                   final value = v ?? '';
                   if (value.length < 8) return 'Mínimo de 8 caracteres';
+                  if (value.length > 12) return 'Máximo de 12 caracteres';
                   if (!RegExp(r'[A-Z]').hasMatch(value)) {
                     return 'Inclua ao menos 1 letra maiúscula';
                   }
@@ -202,15 +281,21 @@ class _CadastroProfessorScreenState extends State<CadastroProfessorScreen> {
               ),
               elevation: 0,
             ),
-            // Protótipo visual: só valida formato local, não salva nada.
-            // Persistência real nasce em data/ + state/ na fatia vertical
-            // de `pessoas`, depois de `auth` (F-01), conforme o guia de
-            // desenvolvimento.
-            onPressed: () => _formKey.currentState?.validate(),
-            child: const Text(
-              'Salvar cadastro',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-            ),
+            onPressed: enviando ? null : _salvar,
+            child: enviando
+                ? const SizedBox(
+                    width: 22,
+                    height: 22,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2.5,
+                      color: Colors.white,
+                    ),
+                  )
+                : const Text(
+                    'Salvar cadastro',
+                    style:
+                        TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                  ),
           ),
         ),
       ),
