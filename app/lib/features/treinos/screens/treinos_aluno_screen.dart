@@ -1,6 +1,7 @@
 // app/lib/features/treinos/screens/treinos_aluno_screen.dart
 //
 // PROTÓTIPO VISUAL — sem integração com backend. Dados fictícios locais.
+// Integração com o backend: ver docs/handoff-front-professor.md
 //
 // Suposição do protótipo: tocar na linha alterna entre "Concluído hoje" e
 // "Não executado", para visualizar os dois estados. O comportamento real de
@@ -26,6 +27,9 @@ class TreinosAlunoScreen extends StatefulWidget {
 }
 
 class _TreinosAlunoScreenState extends State<TreinosAlunoScreen> {
+  // TODO(backend): treinos do aluno montados pelo professor. Confirmar
+  // execução grava em historico_treino, que hoje NÃO registra quem
+  // confirmou (lacuna conhecida, D29): não contornar, levar ao time.
   final _treinos = <_Treino>[
     _Treino('Inferiores A', concluidoHoje: true),
     _Treino('Superiores B', concluidoHoje: false),
@@ -66,7 +70,7 @@ class _TreinosAlunoScreenState extends State<TreinosAlunoScreen> {
         ),
         bottomNavigationBar: BarraAcaoInferior(
           texto: 'Montar novo treino',
-          // TODO: navegar para a tela de montagem de treino quando existir.
+          // TODO: navegar para "Montar treino" (professor) quando existir.
           onPressed: () {},
         ),
       ),
