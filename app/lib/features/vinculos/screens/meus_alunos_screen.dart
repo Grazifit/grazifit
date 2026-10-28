@@ -1,6 +1,7 @@
 // app/lib/features/vinculos/screens/meus_alunos_screen.dart
 //
 // PROTÓTIPO VISUAL — sem integração com backend. Dados fictícios locais.
+// Integração com o backend: ver docs/handoff-front-professor.md
 
 import 'package:flutter/material.dart';
 
@@ -24,6 +25,10 @@ class _MeusAlunosScreenState extends State<MeusAlunosScreen> {
   final _buscaController = TextEditingController();
   String _busca = '';
 
+  // TODO(backend): trocar por alunos com vínculo ATIVO do professor logado
+  // (vinculo_professor_aluno.status = true) + data da última avaliação.
+  // Ainda não há endpoint (feature vinculos só tem README). GET /aluno é
+  // listagem geral do admin, não serve sem decisão. Ver o guia, item L3.
   // Dados fictícios do mockup. O contador do subtítulo ("8 alunos") também é
   // fixo aqui; no real virá do total de vínculos ativos.
   static const _alunos = [
@@ -60,6 +65,7 @@ class _MeusAlunosScreenState extends State<MeusAlunosScreen> {
                 ),
               ),
               const SizedBox(height: 8),
+              // TODO(backend): o "8" vem do total de vínculos ativos.
               const TextoApoio('8 alunos com vínculo ativo'),
               const SizedBox(height: 20),
               CampoBusca(
@@ -83,6 +89,9 @@ class _MeusAlunosScreenState extends State<MeusAlunosScreen> {
                 ],
               ),
               const SizedBox(height: 20),
+              // TODO(backend): hoje a busca filtra a lista local. Decidir se
+              // vai para o servidor (GET /aluno já tem limit/offset).
+              // Estados a cobrir: carregando, vazio, erro, sem conexão.
               if (filtrados.isEmpty)
                 const TextoApoio('Nenhum aluno encontrado')
               else

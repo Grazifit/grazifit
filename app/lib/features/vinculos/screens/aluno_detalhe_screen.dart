@@ -1,6 +1,7 @@
 // app/lib/features/vinculos/screens/aluno_detalhe_screen.dart
 //
 // PROTÓTIPO VISUAL — sem integração com backend. Dados fictícios locais.
+// Integração com o backend: ver docs/handoff-front-professor.md
 
 import 'package:flutter/material.dart';
 
@@ -24,6 +25,9 @@ class AlunoDetalheScreen extends StatefulWidget {
 class _AlunoDetalheScreenState extends State<AlunoDetalheScreen> {
   bool _saudeAberta = true;
 
+  // TODO(backend): vem de aluno.restricao_medica / observacao_saude. O DTO
+  // atual de aluno é a visão do ADMIN e não traz esses campos: falta um DTO
+  // da visão do professor (aprovação). Ver o guia, item L4.
   // Texto fictício do mockup.
   static const _informacoesSaude =
       'Condromalácia patelar leve no joelho direito. Evitar impacto alto.';
@@ -38,6 +42,7 @@ class _AlunoDetalheScreenState extends State<AlunoDetalheScreen> {
           child: ListView(
             padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
             children: [
+              // TODO(backend): vinculo_professor_aluno.data_inicio.
               const TextoApoio('Vínculo ativo desde 12/03/2025'),
               const SizedBox(height: 24),
               InkWell(
@@ -87,6 +92,7 @@ class _AlunoDetalheScreenState extends State<AlunoDetalheScreen> {
                 itens: [
                   ItemLista(
                     titulo: 'Treinos do aluno',
+                    // TODO(backend): contagem real de treinos do aluno.
                     subtitulo: '2 treinos personalizados',
                     onTap: () => Navigator.of(context).push(
                       MaterialPageRoute(
@@ -95,14 +101,16 @@ class _AlunoDetalheScreenState extends State<AlunoDetalheScreen> {
                       ),
                     ),
                   ),
-                  // TODO: a tela de avaliação física não está entre as 5
-                  // telas deste mockup; ligar a navegação quando existir.
+                  // TODO: ligar à tela "Avaliação física" (professor) quando
+                  // existir. Subtítulo vem da última avaliação (IMC é
+                  // calculado no banco: vw_aluno_medida_atual).
                   const ItemLista(
                     titulo: 'Avaliação física',
                     subtitulo: 'Última em 12/08 · IMC 25,7',
                   ),
                   ItemLista(
                     titulo: 'Histórico de treinos',
+                    // TODO(backend): contagem real de execuções em 30 dias.
                     subtitulo: '12 execuções em 30 dias',
                     onTap: () => Navigator.of(context).push(
                       MaterialPageRoute(
