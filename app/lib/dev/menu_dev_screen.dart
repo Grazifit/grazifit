@@ -11,11 +11,23 @@ import 'package:flutter/material.dart';
 
 import '../features/pessoas/screens/boas_vindas_alunos.dart';
 import '../features/pessoas/screens/criar_cadastro_aluno.dart';
+import '../features/pessoas/screens/cadastro_professor_screen.dart';
+import '../features/pessoas/screens/editar_perfil_aluno.dart';
+import '../features/pessoas/screens/editar_perfil_professor_screen.dart';
+import '../features/pessoas/screens/perfil_professor_screen.dart';
+import '../features/pessoas/screens/tela_perfil_aluno.dart';
+
 import '../features/treinos/screens/treinos_aluno_screen.dart';
+import '../features/treinos/screens/historico_treinos_screen.dart';
+
 import '../features/vinculos/screens/meus_alunos_screen.dart';
 import '../features/vinculos/screens/aluno_detalhe_screen.dart';
 import '../features/vinculos/screens/alunos_inativos_screen.dart';
-import '../features/treinos/screens/historico_treinos_screen.dart';
+
+import '../features/auth/screens/login_screen.dart';
+
+import '../features/avaliacoes/screens/tela_registrar_medida_aluno.dart';
+import '../features/avaliacoes/screens/tela_evolucao_aluno.dart';
 
 
 class MenuDevScreen extends StatelessWidget {
@@ -25,38 +37,31 @@ class MenuDevScreen extends StatelessWidget {
   // fictícios só para abrir.
   static final _grupos = <_GrupoDev>[
     _GrupoDev('Pessoas', [
+      _TelaDev('Login', () => const LoginScreen()),
+      
       _TelaDev('Cadastro de aluno', () => const CriarCadastroAlunoScreen()),
-      _TelaDev(
-        'Boas-vindas do aluno',
-        () => TelaBoasVindasAluno(
-          nomeAluno: 'Ana Beatriz',
-          onContinuar: (restricao, observacoes) {},
-        ),
-      ),
+      _TelaDev('Boas-vindas do aluno', () => TelaBoasVindasAluno( nomeAluno: 'Ana Beatriz', onContinuar: (restricao, observacoes) {}, )),
+      _TelaDev('Perfil do aluno', () => const TelaPerfilAluno()),
+      _TelaDev('Editar perfil do aluno', () => const EditarPerfilAlunoScreen()),
+      _TelaDev('Cadastro de professor', () => const CadastroProfessorScreen()),
+      _TelaDev('Perfil do professor', () => const PerfilProfessorScreen()),
+      _TelaDev('Editar perfil do professor', () => const EditarPerfilProfessorScreen()),
     ]),
     _GrupoDev('Alunos', [
       
     ]),
 
     _GrupoDev('Treinos', [
-      _TelaDev(
-        'Treinos do aluno',
-        () => const TreinosAlunoScreen(nomeAluno: 'Ana Beatriz Ramos'),
-    // _GrupoDev('Auth', [
-    //   _TelaDev('Login', () => const LoginScreen()),
-    // ]),
+      _TelaDev('Treinos do aluno', () => const TreinosAlunoScreen(nomeAluno: 'Ana Beatriz Ramos')),
+      _TelaDev('Histórico de treinos', () => const HistoricoTreinosScreen(nomeAluno: 'Ana Beatriz Ramos')),
+      _TelaDev('Registrar medida do aluno', () => const TelaRegistrarMedidaAluno(alturaM: 1.70)),
+      _TelaDev('Evolução do aluno', () => const TelaEvolucaoAluno()),
+    ]),
 
     _GrupoDev('Vínculos', [
       _TelaDev('Meus alunos', () => const MeusAlunosScreen()),
-      _TelaDev(
-        'Detalhe do aluno',
-        () => const AlunoDetalheScreen(nome: 'Ana Beatriz Ramos'),
+      _TelaDev('Detalhe do aluno', () => const AlunoDetalheScreen(nome: 'Ana Beatriz Ramos')),
       _TelaDev('Alunos inativos', () => const AlunosInativosScreen()),
-    _GrupoDev('Treinos', [
-      _TelaDev(
-        'Histórico de treinos',
-        () => const HistoricoTreinosScreen(nomeAluno: 'Ana Beatriz Ramos'),
-      ),
     ]),
   ];
 
