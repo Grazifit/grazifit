@@ -1,11 +1,15 @@
 import 'package:flutter/material.dart';
 
+import '../../agendamentos/screens/tela_agenda_aluno.dart';
+
 /// Tela de boas-vindas / anamnese rápida do aluno.
 /// Exibida antes de iniciar o fluxo de treino, para coletar
 /// restrições médicas e observações de saúde.
 class TelaBoasVindasAluno extends StatefulWidget {
   final String nomeAluno;
-  final void Function(String restricaoMedica, String observacoesSaude)
+  /// Chamado ao tocar em "Continuar", com o que foi digitado (ex.: para
+  /// enviar ao backend). Opcional: a navegação para a Agenda é feita aqui.
+  final void Function(String restricaoMedica, String observacoesSaude)?
       onContinuar;
 
   /// Chamado quando o aluno opta por "Preencher depois".
@@ -16,7 +20,7 @@ class TelaBoasVindasAluno extends StatefulWidget {
   const TelaBoasVindasAluno({
     super.key,
     required this.nomeAluno,
-    required this.onContinuar,
+    this.onContinuar,
     this.onPular,
   });
 
@@ -36,6 +40,30 @@ class _TelaBoasVindasAlunoState extends State<TelaBoasVindasAluno> {
     _restricaoController.dispose();
     _observacoesController.dispose();
     super.dispose();
+  }
+
+  void _irParaAgenda() {
+    // pushReplacement: o botão voltar não retorna para as boas-vindas.
+    Navigator.of(context).pushReplacement(
+      MaterialPageRoute(builder: (_) => const TelaAgendaAluno()),
+    );
+  }
+
+  void _continuar() {
+    widget.onContinuar?.call(
+      _restricaoController.text.trim(),
+      _observacoesController.text.trim(),
+    );
+    _irParaAgenda();
+  }
+
+  void _pular() {
+    if (widget.onPular != null) {
+      widget.onPular!();
+    } else {
+      widget.onContinuar?.call('', '');
+    }
+    _irParaAgenda();
   }
 
   @override
@@ -112,12 +140,7 @@ class _TelaBoasVindasAlunoState extends State<TelaBoasVindasAluno> {
                       borderRadius: BorderRadius.circular(12),
                     ),
                   ),
-                  onPressed: () {
-                    widget.onContinuar(
-                      _restricaoController.text.trim(),
-                      _observacoesController.text.trim(),
-                    );
-                  },
+                  onPressed: _continuar,
                   child: const Text(
                     'Continuar',
                     style: TextStyle(
@@ -131,13 +154,7 @@ class _TelaBoasVindasAlunoState extends State<TelaBoasVindasAluno> {
               const SizedBox(height: 12),
               Center(
                 child: TextButton(
-                  onPressed: () {
-                    if (widget.onPular != null) {
-                      widget.onPular!();
-                    } else {
-                      widget.onContinuar('', '');
-                    }
-                  },
+                  onPressed: _pular,
                   child: const Text(
                     'Preencher depois',
                     style: TextStyle(
