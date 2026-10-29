@@ -31,7 +31,8 @@ class TelaPerfilAluno extends StatefulWidget {
 
 class _TelaPerfilAlunoState extends State<TelaPerfilAluno> {
   static const Color kGreen = Color(0xFF1B5E3C);
-  static const Color kHeader = Color(0xFF2C2A5E);
+  static const Color kHeader = Color(0xFF2A327B); // igual ao fundo da logo
+  static const String kLogoAsset = 'lib/features/pessoas/widgets/logo_perfil.png';
   static const Color kBackground = Color(0xFFECEBEE);
   static const Color kHint = Color(0xFF9AA0A6);
 
@@ -119,31 +120,13 @@ class _TelaPerfilAlunoState extends State<TelaPerfilAluno> {
       ),
       child: Row(
         children: [
-          Container(
-            width: 56,
+          // Proporção da imagem (427 x 242). O fundo dela é o mesmo azul do
+          // cabeçalho, então a logo se mistura sem moldura.
+          Image.asset(
+            kLogoAsset,
+            width: 99,
             height: 56,
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.12),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            alignment: Alignment.center,
-            child: const Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(Icons.ac_unit, color: Colors.white, size: 20),
-                SizedBox(height: 2),
-                Text(
-                  'GRAZI\nBRAZ',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 7,
-                    fontWeight: FontWeight.w700,
-                    height: 1.1,
-                  ),
-                ),
-              ],
-            ),
+            fit: BoxFit.contain,
           ),
           const SizedBox(width: 14),
           Expanded(
