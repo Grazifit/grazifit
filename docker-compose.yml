@@ -107,6 +107,7 @@ services:
     environment:
       DATABASE_URL: ${DATABASE_URL_DOCKER:?defina DATABASE_URL_DOCKER no .env (veja .env.example)}
       SENHA_PEPPER: ${SENHA_PEPPER:?defina SENHA_PEPPER no .env (veja .env.example)}
+      TOKEN_SIGNING_KEY: ${TOKEN_SIGNING_KEY:?defina TOKEN_SIGNING_KEY no .env (veja .env.example)}
       # Fixo: dentro do container o servidor precisa ouvir em todas as
       # interfaces do container para a porta publicada alcanca-lo. A
       # exposicao para fora continua limitada a 127.0.0.1 em "ports".

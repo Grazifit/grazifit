@@ -24,6 +24,8 @@ const Map<String, CodigoErro> _porConstraint = <String, CodigoErro>{
   'uq_avaliacao_aluno_data': CodigoErro.avaliacaoJaRegistrada,
   'uq_aluno_cpf': CodigoErro.cpfEmUso,
   'uq_aluno_email': CodigoErro.emailEmUso,
+
+  // --- Professor ---
   'uq_professor_cpf': CodigoErro.cpfEmUso,
   'uq_professor_email': CodigoErro.emailEmUso,
   'dom_cpf_check': CodigoErro.cpfInvalido,

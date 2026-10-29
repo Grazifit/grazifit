@@ -6,6 +6,8 @@ import 'package:grazifit_backend/database/database.dart';
 import 'package:grazifit_backend/features/pessoas/aluno/aluno_controller.dart';
 import 'package:grazifit_backend/shared/erros/aluno_exception.dart';
 import 'package:grazifit_backend/features/pessoas/aluno/aluno_service.dart';
+import 'package:grazifit_backend/shared/autorizacao/identidade.dart';
+import 'package:grazifit_backend/shared/middleware/identidade_middleware.dart';
 import 'package:shared/erros/codigo_erro.dart';
 import 'package:shelf/shelf.dart';
 import 'package:test/test.dart';
@@ -23,6 +25,7 @@ class _ServicoFalso implements AlunoService {
   /// A data que o controller entregou, ou nulo se ele recusou antes.
   DateTime? dataRecebida;
   bool chamado = false;
+  Identidade? identidadeRecebida;
 
   @override
   String Function(String senha) get hash =>
@@ -43,6 +46,7 @@ class _ServicoFalso implements AlunoService {
     String? observacaoSaude,
   }) async {
     chamado = true;
+    identidadeRecebida = identidade;
     dataRecebida = dataNascimento;
     if (erroDoServico != null) throw erroDoServico!;
 
@@ -63,7 +67,11 @@ class _ServicoFalso implements AlunoService {
   final Map<int, AlunoData> existentes = {};
 
   @override
-  Future<AlunoData> buscarAlunoPorId(int idAluno) async {
+  Future<AlunoData> buscarAlunoPorId(
+    int idAluno, {
+    required Identidade identidade,
+  }) async {
+    identidadeRecebida = identidade;
     final aluno = existentes[idAluno];
     if (aluno == null) throw const AlunoNotFoundException();
     return aluno;
@@ -77,9 +85,11 @@ class _ServicoFalso implements AlunoService {
 
   @override
   Future<({List<AlunoData> itens, int total})> buscarAlunos({
+    required Identidade identidade,
     required int limit,
     required int offset,
   }) async {
+    identidadeRecebida = identidade;
     if (falhar) throw StateError('falha simulada');
     paginaPedida = (limit: limit, offset: offset);
     final todos = existentes.values.toList();
@@ -101,10 +111,12 @@ class _ServicoFalso implements AlunoService {
   @override
   Future<AlunoData> atualizar(
     int idAluno, {
+    required Identidade identidade,
     String? nome,
     String? telefone,
     String? email,
   }) async {
+    identidadeRecebida = identidade;
     atualizacaoRecebida = {'nome': nome, 'telefone': telefone, 'email': email};
     if (erroDoServico != null) throw erroDoServico!;
     final atual = existentes[idAluno];
@@ -117,13 +129,19 @@ class _ServicoFalso implements AlunoService {
   }
 
   @override
-  Future<void> alterarStatus(int idAluno, {required bool status}) async {
+  Future<void> alterarStatus(
+    int idAluno, {
+    required Identidade identidade,
+    required bool status,
+  }) async {
+    identidadeRecebida = identidade;
     statusRecebido = status;
     if (!existentes.containsKey(idAluno)) throw const AlunoNotFoundException();
   }
 
   @override
-  Future<void> excluir(int idAluno) async {
+  Future<void> excluir(int idAluno, {required Identidade identidade}) async {
+    identidadeRecebida = identidade;
     if (existentes.remove(idAluno) == null) {
       throw const AlunoNotFoundException();
     }
@@ -161,9 +179,17 @@ Future<void> _esperaEnvelope(
   expect(corpo.containsKey('erro'), isFalse, reason: 'formato antigo');
 }
 
-Future<Response> _get(AlunoController controller, String caminho) {
+Future<Response> _get(
+  AlunoController controller,
+  String caminho, {
+  Identidade identidade = const Identidade(id: 1, papel: Papel.admin),
+}) {
   return controller.router.call(
-    Request('GET', Uri.parse('http://localhost$caminho')),
+    Request(
+      'GET',
+      Uri.parse('http://localhost$caminho'),
+      context: {chaveIdentidadeContexto: identidade},
+    ),
   );
 }
 
@@ -202,6 +228,17 @@ void main() {
   setUp(() {
     servico = _ServicoFalso();
     controller = AlunoController(servico);
+  });
+
+  test('encaminha a identidade autenticada nas rotas de leitura', () async {
+    const aluno = Identidade(id: 7, papel: Papel.aluno);
+    servico.existentes[7] = _alunoExistente(7);
+
+    expect(
+      (await _get(controller, '/aluno/7', identidade: aluno)).statusCode,
+      200,
+    );
+    expect(servico.identidadeRecebida, same(aluno));
   });
 
   group('data_nascimento — D68 aceita AAAA-MM-DD e nada mais', () {
@@ -543,6 +580,12 @@ void main() {
             Uri.parse('http://localhost$caminho'),
             body: corpo is String ? corpo : jsonEncode(corpo),
             headers: {'Content-Type': 'application/json'},
+            context: {
+              chaveIdentidadeContexto: const Identidade(
+                id: 1,
+                papel: Papel.admin,
+              ),
+            },
           ),
         );
 
@@ -618,6 +661,12 @@ void main() {
             Uri.parse('http://localhost/aluno/$id/status'),
             body: jsonEncode(corpo),
             headers: {'Content-Type': 'application/json'},
+            context: {
+              chaveIdentidadeContexto: const Identidade(
+                id: 1,
+                papel: Papel.admin,
+              ),
+            },
           ),
         );
 
@@ -661,7 +710,13 @@ void main() {
 
   group('DELETE /aluno/<id>', () {
     Future<Response> delete(String id) => controller.router.call(
-      Request('DELETE', Uri.parse('http://localhost/aluno/$id')),
+      Request(
+        'DELETE',
+        Uri.parse('http://localhost/aluno/$id'),
+        context: {
+          chaveIdentidadeContexto: const Identidade(id: 1, papel: Papel.admin),
+        },
+      ),
     );
 
     test('204 e o aluno sai', () async {
@@ -743,6 +798,12 @@ void main() {
           'PATCH',
           Uri.parse('http://localhost/aluno/1'),
           body: jsonEncode({'email': 'outro@exemplo.com'}),
+          context: {
+            chaveIdentidadeContexto: const Identidade(
+              id: 1,
+              papel: Papel.admin,
+            ),
+          },
         ),
       );
 
@@ -784,6 +845,12 @@ void main() {
           'PATCH',
           Uri.parse('http://localhost/aluno/1'),
           body: jsonEncode({'email': emailLongo}),
+          context: {
+            chaveIdentidadeContexto: const Identidade(
+              id: 1,
+              papel: Papel.admin,
+            ),
+          },
         ),
       );
 

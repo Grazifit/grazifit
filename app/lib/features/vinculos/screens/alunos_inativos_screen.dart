@@ -1,6 +1,7 @@
 // app/lib/features/vinculos/screens/alunos_inativos_screen.dart
 //
 // PROTÓTIPO VISUAL — sem integração com backend. Dados fictícios locais.
+// Integração com o backend: ver docs/handoff-front-professor.md
 
 import 'package:flutter/material.dart';
 
@@ -22,6 +23,9 @@ class _AlunosInativosScreenState extends State<AlunosInativosScreen> {
   final _buscaController = TextEditingController();
   String _busca = '';
 
+  // TODO(backend): alunos vinculados sem acesso há 30 dias. A base é
+  // aluno.data_ultimo_acesso (nulo = nunca acessou; tratar esse caso).
+  // A regra dos "30 dias" deve vir do backend, não ser recalculada aqui.
   static const _inativos = [
     _AlunoInativo('Carlos Menezes', 47),
     _AlunoInativo('Júlia Prado', 38),

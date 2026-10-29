@@ -1,6 +1,7 @@
 import 'package:shared/erros/codigo_erro.dart';
 
 import '../../../database/database.dart' show AlunoData;
+import '../../../shared/autorizacao/identidade.dart';
 import '../../auth/validacoes.dart';
 import '../../../shared/erros/aluno_exception.dart';
 import 'aluno_repository.dart';
@@ -27,6 +28,8 @@ class AlunoService {
     String? restricaoMedica,
     String? observacaoSaude,
   }) async {
+    exigirAdmin(identidade);
+
     final cpfNormalizado = cpf.replaceAll(RegExp(r'[^0-9]'), '');
     final emailNormalizado = email.trim().toLowerCase();
 
@@ -105,7 +108,11 @@ class AlunoService {
     }
   }
 
-  Future<AlunoData> buscarAlunoPorId(int idAluno) async {
+  Future<AlunoData> buscarAlunoPorId(
+    int idAluno, {
+    required Identidade identidade,
+  }) async {
+    _exigirAdminOuDono(identidade, idAluno);
     _exigirIdPossivel(idAluno);
 
     final aluno = await _repository.buscarAlunoPorId(idAluno);
@@ -117,9 +124,11 @@ class AlunoService {
 
   /// `limit` e `offset` chegam ja validados pelo controller.
   Future<({List<AlunoData> itens, int total})> buscarAlunos({
+    required Identidade identidade,
     required int limit,
     required int offset,
   }) async {
+    exigirAdmin(identidade);
     final itens = await _repository.buscarAlunos(limit: limit, offset: offset);
     final total = await _repository.countAlunos();
     return (itens: itens, total: total);
@@ -133,10 +142,12 @@ class AlunoService {
   /// que id inexistente seja sempre 404.
   Future<AlunoData> atualizar(
     int idAluno, {
+    required Identidade identidade,
     String? nome,
     String? telefone,
     String? email,
   }) async {
+    _exigirAdminOuDono(identidade, idAluno);
     _exigirIdPossivel(idAluno);
     if (await _repository.buscarAlunoPorId(idAluno) == null) {
       throw const AlunoNotFoundException();
@@ -176,7 +187,12 @@ class AlunoService {
   }
 
   /// `false` inativa e preserva o historico; `true` reativa.
-  Future<void> alterarStatus(int idAluno, {required bool status}) async {
+  Future<void> alterarStatus(
+    int idAluno, {
+    required Identidade identidade,
+    required bool status,
+  }) async {
+    exigirAdmin(identidade);
     _exigirIdPossivel(idAluno);
     if (!await _repository.alterarStatus(idAluno, status: status)) {
       throw const AlunoNotFoundException();
@@ -185,10 +201,17 @@ class AlunoService {
 
   /// Exclusao real. Aluno com historico: o banco recusa e o controller
   /// responde `REGISTRO_EM_USO` — a alternativa e [alterarStatus].
-  Future<void> excluir(int idAluno) async {
+  Future<void> excluir(int idAluno, {required Identidade identidade}) async {
+    exigirAdmin(identidade);
     _exigirIdPossivel(idAluno);
     if (!await _repository.excluir(idAluno)) {
       throw const AlunoNotFoundException();
     }
+  }
+
+  static void _exigirAdminOuDono(Identidade identidade, int idAluno) {
+    final admin = identidade.papel == Papel.admin;
+    final dono = identidade.papel == Papel.aluno && identidade.id == idAluno;
+    if (!admin && !dono) throw const AcessoNegado();
   }
 }

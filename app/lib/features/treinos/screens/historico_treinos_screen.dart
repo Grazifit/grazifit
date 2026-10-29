@@ -1,6 +1,7 @@
 // app/lib/features/treinos/screens/historico_treinos_screen.dart
 //
 // PROTÓTIPO VISUAL — sem integração com backend. Dados fictícios locais.
+// Integração com o backend: ver docs/handoff-front-professor.md
 
 import 'package:flutter/material.dart';
 
@@ -16,6 +17,9 @@ class HistoricoTreinosScreen extends StatelessWidget {
 
   final String nomeAluno;
 
+  // TODO(backend): vem de historico_treino do aluno (últimos 30 dias).
+  // "Ontem, 31/08" é formatação da data: fazer no app a partir da data real.
+  // Estados a cobrir: carregando, vazio, erro, sem conexão.
   static const _execucoes = [
     _Execucao('Inferiores A', 'Ontem, 31/08', true),
     _Execucao('Superiores B', '29/08', true),
@@ -33,6 +37,7 @@ class HistoricoTreinosScreen extends StatelessWidget {
           child: ListView(
             padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
             children: [
+              // TODO(backend): total real de execuções no período.
               const TextoApoio('12 execuções nos últimos 30 dias'),
               const SizedBox(height: 16),
               CartaoLista(
