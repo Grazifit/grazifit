@@ -21,6 +21,8 @@ import '../features/pessoas/screens/tela_perfil_aluno.dart';
 import '../features/treinos/screens/treinos_aluno_screen.dart';
 import '../features/treinos/screens/historico_treinos_screen.dart';
 
+import '../features/aulas/screens/detalhe_aula_screen.dart';
+
 import '../features/vinculos/screens/meus_alunos_screen.dart';
 import '../features/vinculos/screens/aluno_detalhe_screen.dart';
 import '../features/vinculos/screens/alunos_inativos_screen.dart';
@@ -58,6 +60,7 @@ class MenuDevScreen extends StatelessWidget {
       _TelaDev('Registrar medida do aluno', () => const TelaRegistrarMedidaAluno(alturaM: 1.70)),
       _TelaDev('Evolução do aluno', () => const TelaEvolucaoAluno()),
       _TelaDev('Chamada', () => const ChamadaScreen()),
+      _TelaDev('Detalhes da aula', () => const DetalheAulaScreen())
     ]),
 
     _GrupoDev('Vínculos', [
