@@ -28,6 +28,7 @@ import '../features/auth/screens/login_screen.dart';
 
 import '../features/avaliacoes/screens/tela_registrar_medida_aluno.dart';
 import '../features/avaliacoes/screens/tela_evolucao_aluno.dart';
+import '../features/avaliacoes/screens/avaliacao_fisica_screen.dart';
 
 
 class MenuDevScreen extends StatelessWidget {
@@ -56,6 +57,7 @@ class MenuDevScreen extends StatelessWidget {
       _TelaDev('Histórico de treinos', () => const HistoricoTreinosScreen(nomeAluno: 'Ana Beatriz Ramos')),
       _TelaDev('Registrar medida do aluno', () => const TelaRegistrarMedidaAluno(alturaM: 1.70)),
       _TelaDev('Evolução do aluno', () => const TelaEvolucaoAluno()),
+      _TelaDev('Avaliação física', () => const AvaliacaoFisicaScreen())
     ]),
 
     _GrupoDev('Vínculos', [

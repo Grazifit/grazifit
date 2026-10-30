@@ -19,3 +19,11 @@ const corSuperficieSuave = Color(0xFFEAEFED);
 
 /// Divisor entre itens de lista.
 const corDivisor = Color(0xFFE6E6E6);
+
+/// Alerta (ex.: "Últimas vagas", "Faltou", registro do dia em edição).
+/// Valor aproximado, lido do mockup do professor.
+const corAlerta = Color(0xFF8C5A00);
+
+/// Erro e ação destrutiva (ex.: aula cancelada, "Cancelar aula").
+/// Valor aproximado, lido do mockup do professor.
+const corErro = Color(0xFFB3261E);
