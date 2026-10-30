@@ -7,6 +7,7 @@
 // Para registrar uma tela nova: importe-a e adicione UMA linha em [_grupos].
 
 import 'package:flutter/material.dart';
+import 'package:grazifit_app/features/agendamentos/screens/chamada_screen.dart';
 
 
 import '../features/pessoas/screens/boas_vindas_alunos.dart';
@@ -56,6 +57,7 @@ class MenuDevScreen extends StatelessWidget {
       _TelaDev('Histórico de treinos', () => const HistoricoTreinosScreen(nomeAluno: 'Ana Beatriz Ramos')),
       _TelaDev('Registrar medida do aluno', () => const TelaRegistrarMedidaAluno(alturaM: 1.70)),
       _TelaDev('Evolução do aluno', () => const TelaEvolucaoAluno()),
+      _TelaDev('Chamada', () => const ChamadaScreen()),
     ]),
 
     _GrupoDev('Vínculos', [
