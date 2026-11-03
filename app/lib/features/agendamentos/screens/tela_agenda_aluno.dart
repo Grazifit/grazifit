@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'tela_detalhe_aula.dart';
 import 'tela_meus_agendamentos_aluno.dart';
 import '../../treinos/screens/tela_treino_aluno.dart';
+import '../../avaliacoes/screens/tela_evolucao_aluno.dart';
+import '../../pessoas/screens/tela_perfil_aluno.dart';
 import '../../../core/theme/app_colors.dart';
 
 /// Tela de agenda do aluno: abas (Agenda / Meus agendamentos),
@@ -122,6 +124,20 @@ class _TelaAgendaAlunoState extends State<TelaAgendaAluno> {
       // Treinos: abre a tela por cima; a Agenda continua marcada ao voltar.
       Navigator.of(context).push(
         MaterialPageRoute(builder: (_) => const TelaTreinosAluno()),
+      );
+      return;
+    }
+    if (index == 2) {
+      // Evolução: abre a tela por cima; a Agenda continua marcada ao voltar.
+      Navigator.of(context).push(
+        MaterialPageRoute(builder: (_) => const TelaEvolucaoAluno()),
+      );
+      return;
+    }
+    if (index == 3) {
+      // Perfil: abre a tela por cima; a Agenda continua marcada ao voltar.
+      Navigator.of(context).push(
+        MaterialPageRoute(builder: (_) => const TelaPerfilAluno()),
       );
       return;
     }

@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 
 import '../../../core/theme/app_colors.dart';
 import 'tela_detalhe_treino_aluno.dart';
+import '../../pessoas/screens/tela_perfil_aluno.dart';
+import '../../avaliacoes/screens/tela_evolucao_aluno.dart';
 
 /// Tela de treinos do aluno: treinos montados pelo professor,
 /// treinos livres e acesso ao histórico.
@@ -196,6 +198,20 @@ class _TelaTreinosAlunoState extends State<TelaTreinosAluno> {
                   if (index == 0) {
                     // Agenda: volta para a tela anterior.
                     Navigator.of(context).pop();
+                  } else if (index == 2) {
+                    // Evolução: troca esta tela pela de evolução.
+                    Navigator.of(context).pushReplacement(
+                      MaterialPageRoute(
+                        builder: (_) => const TelaEvolucaoAluno(),
+                      ),
+                    );
+                  } else if (index == 3) {
+                    // Perfil: troca esta tela pela de perfil.
+                    Navigator.of(context).pushReplacement(
+                      MaterialPageRoute(
+                        builder: (_) => const TelaPerfilAluno(),
+                      ),
+                    );
                   } else {
                     setState(() => _navSelecionado = index);
                   }
