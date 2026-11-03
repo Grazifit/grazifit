@@ -1,0 +1,24 @@
+$kind: collection
+description: |-
+  CRUD de **Admin**, **Aluno** e **Professor** no estado atual do backend.
+
+  - **Sem autenticação** por enquanto: todas as rotas estão abertas.
+  - `baseUrl` padrão: `http://localhost:8080` (`SERVER_HOST`/`SERVER_PORT` no `.env`).
+  - `GET /health` (pasta **Infra**): rota de infraestrutura, fora da convenção pt-BR (exceção registrada em `docs/arquitetura.md` §10).
+  - Corpo sempre JSON; respostas com `Content-Type: application/json`.
+  - Envelope de erro padrão (D64): `{ "codigo": "CPF_EM_USO", "mensagem": "...", "campo": "cpf" }`. `campo` só vem quando o erro é de um campo. Códigos em `docs/arquitetura.md` §7.
+
+  **Ainda fora do padrão**
+  - Admin responde todo erro como `{ "erro": "..." }`.
+  - Professor usa `{ "erro": "..." }` nos erros de forma e no 500.
+  - Os PATCH de admin e professor ignoram chaves desconhecidas; o de aluno recusa.
+variables:
+  baseUrl: http://localhost:8080
+  loginEmail: ""
+  loginSenha: ""
+  novoCpf: ""
+  novoEmail: ""
+  novaSenha: ""
+  idAdmin: "1"
+  idAluno: "1"
+  idProfessor: "1"

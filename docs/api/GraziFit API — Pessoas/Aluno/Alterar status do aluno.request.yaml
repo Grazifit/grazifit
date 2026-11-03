@@ -1,0 +1,25 @@
+$kind: http-request
+description: |-
+  **Aceita (JSON):** `{ "status": false }` inativa · `{ "status": true }` reativa.
+
+  **Sucesso:** `204`, sem corpo
+
+  **Erros** — Todos os erros vêm no envelope `{ codigo, mensagem, campo? }`.
+  | HTTP | `codigo` | Quando |
+  |---|---|---|
+  | 400 | `JSON_INVALIDO` | corpo não é um objeto JSON |
+  | 400 | `CAMPO_OBRIGATORIO` (`campo: status`) | `status` ausente |
+  | 400 | `CAMPO_INVALIDO` + `campo` | id inválido · `status` não é booleano |
+  | 404 | `REGISTRO_NAO_ENCONTRADO` | aluno não existe |
+  | 500 | `ERRO_INTERNO` | falha não mapeada |
+url: "{{baseUrl}}/aluno/{{idAluno}}/status"
+method: PATCH
+headers:
+  Content-Type: application/json
+body:
+  type: json
+  content: |-
+    {
+      "status": false
+    }
+order: 5000
