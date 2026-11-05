@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
-import 'features/inicio/screens/tela_inicio_admin.dart';
+import 'dev/menu_dev_screen.dart';
 
 void main() {
   runApp(
     MaterialApp(
       debugShowCheckedModeBanner: false,
-      home: const TelaInicioAdmin(),
+      home: const MenuDevScreen(),
     ),
   );
 }
