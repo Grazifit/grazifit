@@ -18,6 +18,11 @@ F-02, F-09, F-16, F-23
 
 `endereco` não é feature: é sub-form opcional de aluno e professor (**D18**). A unicidade de e-mail entre `admin`, `professor` e `aluno` é validação desta feature (**D61**) — o banco só tem `uq_*_email` por tabela.
 
+No CRUD de aluno, admin pode listar, consultar, editar, alterar status e
+excluir. Aluno pode apenas consultar e editar o próprio cadastro. Professor
+não acessa essas rotas. Listagem, status e exclusão são exclusivas de admin;
+a autorização ocorre no Service antes da validação de existência do id.
+
 ## Arquivos
 
 A partir da Fase 4, direto nesta pasta e sem subpastas: `*_table.dart` · `*_repository.dart` · `*_service.dart` · `*_controller.dart`, com o nome de domínio em pt-BR e o papel em inglês (**D67**).

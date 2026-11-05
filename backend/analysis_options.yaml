@@ -1,0 +1,43 @@
+# ============================================================
+# GraziFit — backend
+# ============================================================
+
+include: package:lints/recommended.yaml
+
+analyzer:
+  language:
+    strict-casts: true
+    strict-inference: true
+    strict-raw-types: true
+
+  exclude:
+    - build/**
+    - .dart_tool/**
+    # Codigo gerado pelo Drift. E VERSIONADO (ver .gitignore da raiz),
+    # mas nao e escrito a mao: analisa-lo so produz ruido sobre o qual
+    # nao temos controle — o proprio gerador ja marca o arquivo com
+    # `ignore_for_file: type=lint`, que nao cobre warnings do analisador.
+    - lib/**/*.g.dart
+
+  errors:
+    # Import de pacote nao declarado no pubspec vira ERRO, nao aviso.
+    # E isto que torna a fronteira R2 verificavel: `package:flutter`
+    # nao esta — e nunca estara — nas dependencias deste pacote,
+    # entao qualquer tentativa de importa-lo quebra o `dart analyze`.
+    # Nao existe lint direto para "proibir Flutter"; a proibicao vem
+    # de nao declarar a dependencia e de tratar o import como erro.
+    depend_on_referenced_packages: error
+    uri_does_not_exist: error
+
+    # Codigo gerado pelo Drift nao precisa de doc.
+    public_member_api_docs: ignore
+
+linter:
+  rules:
+    - avoid_dynamic_calls
+    - avoid_slow_async_io
+    - cancel_subscriptions
+    - close_sinks
+    - prefer_final_locals
+    - prefer_single_quotes
+    - unawaited_futures
