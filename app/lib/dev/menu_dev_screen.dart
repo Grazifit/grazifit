@@ -32,6 +32,7 @@ import '../features/auth/screens/login_screen.dart';
 
 import '../features/avaliacoes/screens/tela_registrar_medida_aluno.dart';
 import '../features/avaliacoes/screens/tela_evolucao_aluno.dart';
+import '../features/avaliacoes/screens/avaliacao_fisica_screen.dart';
 
 
 class MenuDevScreen extends StatelessWidget {
@@ -63,6 +64,8 @@ class MenuDevScreen extends StatelessWidget {
       _TelaDev('Chamada', () => const ChamadaScreen()),
       _TelaDev('Detalhes da aula', () => const DetalheAulaScreen()),
       _TelaDev('Minha Agenda', () => const MinhaAgendaScreen()),
+      _TelaDev('Detalhes da aula', () => const DetalheAulaScreen())
+      _TelaDev('Avaliação física', () => const AvaliacaoFisicaScreen())
     ]),
 
     _GrupoDev('Vínculos', [
