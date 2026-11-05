@@ -10,7 +10,7 @@
 import 'package:flutter/services.dart';
 
 String _soDigitos(String texto, int maximo) {
-  final digitos = texto.replaceAll(r'\D', '');
+  final digitos = texto.replaceAll(RegExp(r'\D'), '');
   return digitos.length > maximo ? digitos.substring(0, maximo) : digitos;
 }
 

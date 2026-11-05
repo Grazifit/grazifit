@@ -1,9 +1,8 @@
 // app/lib/features/pessoas/screens/cadastro_professor_screen.dart
 //
-// PROTÓTIPO VISUAL — sem integração com backend.
-// Construído fora da ordem de fases do projeto (DTO → Repository → Service →
-// Controller → data/ → state/ → screens/), a pedido explícito do usuário,
-// só para visualizar a tela fiel ao mockup antes da Sprint 2.
+// Integrada ao backend: POST /professor (data/professor_repository.dart,
+// state/cadastro_professor_notifier.dart). Só valida a forma; regra de
+// negócio e unicidade são do backend, e o texto do erro vem do código (D64).
 //
 // Decisões aplicadas (confirmadas pelo usuário):
 // - Sem campos profissionais (CREF/especialidade) — nota do mockup (D17)
@@ -19,24 +18,35 @@
 //   §7). Aqui há só checagem de formato para UX (core/utils/validadores.dart).
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared/erros/codigo_erro.dart';
 
 import '../../../core/design_system/components/app_bar_interna.dart';
 import '../../../core/design_system/components/botao_primario.dart';
 import '../../../core/design_system/components/campo_texto.dart';
 import '../../../core/design_system/components/fundo_tela.dart';
+import '../../../core/network/api_exception.dart';
 import '../../../core/utils/formatadores.dart';
 import '../../../core/utils/validadores.dart';
+import '../data/professor_repository.dart';
+import '../state/cadastro_professor_notifier.dart';
 import '../widgets/endereco_opcional.dart';
 
-class CadastroProfessorScreen extends StatefulWidget {
+class CadastroProfessorScreen extends ConsumerStatefulWidget {
   const CadastroProfessorScreen({super.key});
 
   @override
-  State<CadastroProfessorScreen> createState() =>
+  ConsumerState<CadastroProfessorScreen> createState() =>
       _CadastroProfessorScreenState();
 }
 
-class _CadastroProfessorScreenState extends State<CadastroProfessorScreen> {
+class _CadastroProfessorScreenState
+    extends ConsumerState<CadastroProfessorScreen> {
+  // Erros devolvidos pelo backend, exibidos no campo correspondente.
+  // O texto vem do código (D64), nunca da mensagem do servidor.
+  String? _erroCpf;
+  String? _erroEmail;
+
   final _formKey = GlobalKey<FormState>();
 
   final _nomeController = TextEditingController();
@@ -55,15 +65,77 @@ class _CadastroProfessorScreenState extends State<CadastroProfessorScreen> {
     super.dispose();
   }
 
-  // Protótipo visual: só valida formato local, não salva nada.
-  // Persistência real nasce em data/ + state/ na fatia vertical de `pessoas`,
-  // depois de `auth` (F-01), conforme o guia de desenvolvimento.
-  void _salvar() {
+  Future<void> _salvar() async {
+    setState(() {
+      _erroCpf = null;
+      _erroEmail = null;
+    });
+    if (!(_formKey.currentState?.validate() ?? false)) return;
+
+    await ref.read(cadastroProfessorProvider.notifier).salvar(
+          nome: _nomeController.text,
+          cpf: _cpfController.text.replaceAll(RegExp(r'\D'), ''),
+          email: _emailController.text,
+          senha: _senhaController.text,
+          telefone: _telefoneController.text,
+        );
+  }
+
+  void _aoMudarEstado(
+    AsyncValue<Professor?>? anterior,
+    AsyncValue<Professor?> atual,
+  ) {
+    final professor = atual.valueOrNull;
+    if (professor != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Professor cadastrado.')),
+      );
+      Navigator.of(context).maybePop();
+      return;
+    }
+
+    final erro = atual.error;
+    if (erro is! ApiException) return;
+
+    switch (erro.codigo) {
+      case CodigoErro.cpfEmUso:
+        setState(() => _erroCpf = 'CPF já cadastrado');
+      case CodigoErro.cpfInvalido:
+        setState(() => _erroCpf = 'CPF inválido');
+      case CodigoErro.emailEmUso:
+        setState(() => _erroEmail = 'E-mail já cadastrado');
+      case CodigoErro.emailInvalido:
+        setState(() => _erroEmail = 'E-mail inválido');
+      default:
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(_textoDoErro(erro))),
+        );
+        return;
+    }
     _formKey.currentState?.validate();
+  }
+
+  String _textoDoErro(ApiException erro) {
+    if (erro.semResposta) {
+      return 'Sem conexão com o servidor. Tente novamente.';
+    }
+    return switch (erro.codigo) {
+      CodigoErro.tokenInvalido => 'Sessão expirada. Entre novamente.',
+      CodigoErro.acessoNegado =>
+        'Você não tem permissão para cadastrar professores.',
+      CodigoErro.campoInvalido ||
+      CodigoErro.campoObrigatorio =>
+        'Confira os dados informados.',
+      _ when erro.status == 400 => 'Confira os dados informados.',
+      _ => 'Não foi possível salvar. Tente novamente.',
+    };
   }
 
   @override
   Widget build(BuildContext context) {
+    ref.listen(cadastroProfessorProvider, _aoMudarEstado);
+    final enviando = ref.watch(cadastroProfessorProvider).isLoading;
+
     return FundoTela(
       child: Scaffold(
         backgroundColor: Colors.transparent,
@@ -90,7 +162,7 @@ class _CadastroProfessorScreenState extends State<CadastroProfessorScreen> {
                   helper: '11 dígitos',
                   keyboardType: TextInputType.number,
                   inputFormatters: [CpfInputFormatter()],
-                  validator: Validadores.cpf,
+                  validator: (v) => Validadores.cpf(v) ?? _erroCpf,
                 ),
                 const SizedBox(height: 20),
                 CampoTexto(
@@ -99,7 +171,7 @@ class _CadastroProfessorScreenState extends State<CadastroProfessorScreen> {
                   hint: 'marina.alves@exemplo.com',
                   helper: 'Será a credencial de acesso',
                   keyboardType: TextInputType.emailAddress,
-                  validator: Validadores.email,
+                  validator: (v) => Validadores.email(v) ?? _erroEmail,
                 ),
                 const SizedBox(height: 20),
                 CampoSenha(
@@ -129,7 +201,7 @@ class _CadastroProfessorScreenState extends State<CadastroProfessorScreen> {
         ),
         bottomNavigationBar: BarraAcaoInferior(
           texto: 'Salvar cadastro',
-          onPressed: _salvar,
+          onPressed: enviando ? null : _salvar,
         ),
       ),
     );
