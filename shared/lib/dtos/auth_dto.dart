@@ -33,6 +33,35 @@ class LoginResponseDto {
     required this.nome,
   });
 
+  factory LoginResponseDto.fromJson(Map<String, dynamic> json) {
+    final accessToken = json['access_token'];
+    final tokenType = json['token_type'];
+    final expiresIn = json['expires_in'];
+    final usuario = json['usuario'];
+
+    if (accessToken is! String ||
+        tokenType != 'Bearer' ||
+        expiresIn is! int ||
+        usuario is! Map<String, dynamic>) {
+      throw const FormatException('Resposta de login invalida');
+    }
+
+    final id = usuario['id'];
+    final papel = usuario['papel'];
+    final nome = usuario['nome'];
+    if (id is! int || papel is! String || nome is! String) {
+      throw const FormatException('Usuario da resposta de login invalido');
+    }
+
+    return LoginResponseDto(
+      accessToken: accessToken,
+      expiresIn: expiresIn,
+      id: id,
+      papel: papel,
+      nome: nome,
+    );
+  }
+
   Map<String, Object> toJson() => {
     'access_token': accessToken,
     'token_type': 'Bearer',

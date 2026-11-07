@@ -1,18 +1,26 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared/dtos/auth_dto.dart';
 
-class LoginScreen extends StatefulWidget {
+import '../../agendamentos/screens/tela_agenda_aluno.dart';
+import '../../inicio/screens/tela_inicio_admin.dart';
+import '../../aulas/screens/minha_agenda_screen.dart';
+import '../state/auth_controller.dart';
+import '../state/auth_state.dart';
+
+class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key, this.iniciarComErro = false});
 
   /// Abre diretamente o estado de credenciais inválidas para inspeção visual.
   final bool iniciarComErro;
 
   @override
-  State<LoginScreen> createState() => _LoginScreenState();
+  ConsumerState<LoginScreen> createState() => _LoginScreenState();
 }
 
-class _LoginScreenState extends State<LoginScreen> {
+class _LoginScreenState extends ConsumerState<LoginScreen> {
   static const _verde = Color(0xFF005B50);
   static const _borda = Color(0xFFBDCECA);
   static const _vermelho = Color(0xFFF21D1D);
@@ -39,6 +47,41 @@ class _LoginScreenState extends State<LoginScreen> {
     if (_credenciaisInvalidas) {
       setState(() => _credenciaisInvalidas = false);
     }
+  }
+
+  Future<void> _entrar() async {
+    _limparErro();
+
+    final sessao = await ref
+        .read(authControllerProvider.notifier)
+        .login(_emailController.text, _senhaController.text);
+
+    if (!mounted) return;
+
+    if (sessao == null) {
+      final credenciaisInvalidas =
+          ref.read(authControllerProvider).status ==
+          AuthStatus.credenciaisInvalidas;
+      if (_credenciaisInvalidas != credenciaisInvalidas) {
+        setState(() => _credenciaisInvalidas = credenciaisInvalidas);
+      }
+      return;
+    }
+
+    _navegarAposLogin(sessao);
+  }
+
+  void _navegarAposLogin(LoginResponseDto sessao) {
+    final destino = switch (sessao.papel) {
+      'admin' => const TelaInicioAdmin(),
+      'aluno' => const TelaAgendaAluno(),
+      'professor' => const MinhaAgendaScreen(),
+      _ => null,
+    };
+
+    if (destino == null) return;
+    Navigator.of(context)
+        .pushReplacement(MaterialPageRoute<void>(builder: (_) => destino));
   }
 
   @override
@@ -146,8 +189,7 @@ class _LoginScreenState extends State<LoginScreen> {
           SizedBox(
             height: 48,
             child: ElevatedButton(
-              // Protótipo visual: sem chamada HTTP, demonstra o estado do mockup.
-              onPressed: () => setState(() => _credenciaisInvalidas = true),
+              onPressed: _entrar,
               style: ElevatedButton.styleFrom(
                 backgroundColor: _verde,
                 foregroundColor: Colors.white,

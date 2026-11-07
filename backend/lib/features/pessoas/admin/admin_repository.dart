@@ -89,7 +89,8 @@ class AdminRepository {
       if (e.constraintName == 'uq_admin_cpf') {
         throw ConflictException('CPF já cadastrado.');
       }
-      if (e.constraintName == 'uq_admin_email') {
+      if (e.constraintName == 'uq_admin_email' ||
+          e.constraintName == 'uq_conta_email') {
         throw ConflictException('E-mail já cadastrado.');
       }
       throw ConflictException('Registro duplicado.');

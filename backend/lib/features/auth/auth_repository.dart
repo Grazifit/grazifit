@@ -5,6 +5,10 @@ import '../../database/database.dart';
 import '../../shared/autorizacao/identidade.dart';
 import 'token_service.dart';
 
+class CredencialAlterada implements Exception {
+  const CredencialAlterada();
+}
+
 class ContaAutenticacao {
   final Identidade identidade;
   final String nome;
@@ -19,14 +23,14 @@ class ContaAutenticacao {
   });
 }
 
-/// Somente leitura das tabelas de pessoas. A feature auth nao possui tabelas.
+/// Le contas e registra/revoga sessoes de autenticacao.
 class AuthRepository {
   final GraziDatabase _db;
 
   AuthRepository(this._db);
 
   /// Retorna ate duas contas para detectar e-mail repetido entre perfis.
-  /// A unicidade entre as tres tabelas ainda nao e garantida pelo schema.
+  /// Mantem a defesa para bases que ainda nao receberam a migration 002.
   Future<List<ContaAutenticacao>> buscarPorEmail(String email) async {
     final linhas = await _db
         .customSelect(
@@ -83,22 +87,41 @@ class AuthRepository {
 
   Future<void> registrarSessao(
     TokenEmitido token,
-    Identidade identidade,
-  ) async {
-    await _db.customStatement(
-      r'''
+    Identidade identidade, {
+    required String senhaHashEsperada,
+  }) async {
+    await _db.transaction(() async {
+      final (tabela, colunaId) = switch (identidade.papel) {
+        Papel.admin => ('admin', 'id_admin'),
+        Papel.professor => ('professor', 'id_professor'),
+        Papel.aluno => ('aluno', 'id_aluno'),
+      };
+      final conta = await _db
+          .customSelect(
+            'SELECT senha_hash FROM $tabela WHERE $colunaId = \$1'
+            '${identidade.papel == Papel.admin ? '' : ' AND status = TRUE'} FOR UPDATE',
+            variables: [Variable.withInt(identidade.id)],
+          )
+          .getSingleOrNull();
+      if (conta == null ||
+          conta.read<String>('senha_hash') != senhaHashEsperada) {
+        throw const CredencialAlterada();
+      }
+      await _db.customStatement(
+        r'''
       INSERT INTO sessao_auth (jti_hash, papel, id_usuario, expira_em)
       VALUES ($1, $2, $3, $4)
       ''',
-      [
-        token.jtiHash,
-        identidade.papel.name,
-        identidade.id,
-        PgTypes.timestampWithTimezone.mapToSqlParameter(
-          PgDateTime(token.expiraEm),
-        ),
-      ],
-    );
+        [
+          token.jtiHash,
+          identidade.papel.name,
+          identidade.id,
+          PgTypes.timestampWithTimezone.mapToSqlParameter(
+            PgDateTime(token.expiraEm),
+          ),
+        ],
+      );
+    });
   }
 
   Future<bool> sessaoAtiva(TokenValidado token) async {
