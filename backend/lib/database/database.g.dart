@@ -1794,17 +1794,876 @@ class ProfessorCompanion extends UpdateCompanion<ProfessorData> {
   }
 }
 
+class $AulaTable extends Aula with TableInfo<$AulaTable, AulaData> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $AulaTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idAulaMeta = const VerificationMeta('idAula');
+  @override
+  late final GeneratedColumn<int> idAula = GeneratedColumn<int>(
+    'id_aula',
+    aliasedName,
+    false,
+    hasAutoIncrement: true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'PRIMARY KEY AUTOINCREMENT',
+    ),
+  );
+  static const VerificationMeta _idAdminCriadorMeta = const VerificationMeta(
+    'idAdminCriador',
+  );
+  @override
+  late final GeneratedColumn<int> idAdminCriador = GeneratedColumn<int>(
+    'id_admin_criador',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _idProfessorMeta = const VerificationMeta(
+    'idProfessor',
+  );
+  @override
+  late final GeneratedColumn<int> idProfessor = GeneratedColumn<int>(
+    'id_professor',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _idCronogramaMeta = const VerificationMeta(
+    'idCronograma',
+  );
+  @override
+  late final GeneratedColumn<int> idCronograma = GeneratedColumn<int>(
+    'id_cronograma',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _dataMeta = const VerificationMeta('data');
+  @override
+  late final GeneratedColumn<PgDate> data = GeneratedColumn<PgDate>(
+    'data',
+    aliasedName,
+    false,
+    type: PgTypes.date,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _horaInicioMeta = const VerificationMeta(
+    'horaInicio',
+  );
+  @override
+  late final GeneratedColumn<pg.Time> horaInicio = GeneratedColumn<pg.Time>(
+    'hora_inicio',
+    aliasedName,
+    false,
+    type: tipoHoraPg,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _horaFimMeta = const VerificationMeta(
+    'horaFim',
+  );
+  @override
+  late final GeneratedColumn<pg.Time> horaFim = GeneratedColumn<pg.Time>(
+    'hora_fim',
+    aliasedName,
+    false,
+    type: tipoHoraPg,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _tipoMeta = const VerificationMeta('tipo');
+  @override
+  late final GeneratedColumn<String> tipo = GeneratedColumn<String>(
+    'tipo',
+    aliasedName,
+    false,
+    additionalChecks: GeneratedColumn.checkTextLength(maxTextLength: 20),
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _categoriaMeta = const VerificationMeta(
+    'categoria',
+  );
+  @override
+  late final GeneratedColumn<String> categoria = GeneratedColumn<String>(
+    'categoria',
+    aliasedName,
+    false,
+    additionalChecks: GeneratedColumn.checkTextLength(maxTextLength: 40),
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _vagasMaximaMeta = const VerificationMeta(
+    'vagasMaxima',
+  );
+  @override
+  late final GeneratedColumn<int> vagasMaxima = GeneratedColumn<int>(
+    'vagas_maxima',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _statusMeta = const VerificationMeta('status');
+  @override
+  late final GeneratedColumn<bool> status = GeneratedColumn<bool>(
+    'status',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("status" IN (0, 1))',
+    ),
+    defaultValue: const Constant(true),
+  );
+  static const VerificationMeta _idProfessorCancelouMeta =
+      const VerificationMeta('idProfessorCancelou');
+  @override
+  late final GeneratedColumn<int> idProfessorCancelou = GeneratedColumn<int>(
+    'id_professor_cancelou',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _idAdminCancelouMeta = const VerificationMeta(
+    'idAdminCancelou',
+  );
+  @override
+  late final GeneratedColumn<int> idAdminCancelou = GeneratedColumn<int>(
+    'id_admin_cancelou',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _dataCancelamentoMeta = const VerificationMeta(
+    'dataCancelamento',
+  );
+  @override
+  late final GeneratedColumn<PgDateTime> dataCancelamento =
+      GeneratedColumn<PgDateTime>(
+        'data_cancelamento',
+        aliasedName,
+        true,
+        type: PgTypes.timestampWithTimezone,
+        requiredDuringInsert: false,
+      );
+  @override
+  List<GeneratedColumn> get $columns => [
+    idAula,
+    idAdminCriador,
+    idProfessor,
+    idCronograma,
+    data,
+    horaInicio,
+    horaFim,
+    tipo,
+    categoria,
+    vagasMaxima,
+    status,
+    idProfessorCancelou,
+    idAdminCancelou,
+    dataCancelamento,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'aula';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<AulaData> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id_aula')) {
+      context.handle(
+        _idAulaMeta,
+        idAula.isAcceptableOrUnknown(data['id_aula']!, _idAulaMeta),
+      );
+    }
+    if (data.containsKey('id_admin_criador')) {
+      context.handle(
+        _idAdminCriadorMeta,
+        idAdminCriador.isAcceptableOrUnknown(
+          data['id_admin_criador']!,
+          _idAdminCriadorMeta,
+        ),
+      );
+    }
+    if (data.containsKey('id_professor')) {
+      context.handle(
+        _idProfessorMeta,
+        idProfessor.isAcceptableOrUnknown(
+          data['id_professor']!,
+          _idProfessorMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_idProfessorMeta);
+    }
+    if (data.containsKey('id_cronograma')) {
+      context.handle(
+        _idCronogramaMeta,
+        idCronograma.isAcceptableOrUnknown(
+          data['id_cronograma']!,
+          _idCronogramaMeta,
+        ),
+      );
+    }
+    if (data.containsKey('data')) {
+      context.handle(
+        _dataMeta,
+        this.data.isAcceptableOrUnknown(data['data']!, _dataMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_dataMeta);
+    }
+    if (data.containsKey('hora_inicio')) {
+      context.handle(
+        _horaInicioMeta,
+        horaInicio.isAcceptableOrUnknown(data['hora_inicio']!, _horaInicioMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_horaInicioMeta);
+    }
+    if (data.containsKey('hora_fim')) {
+      context.handle(
+        _horaFimMeta,
+        horaFim.isAcceptableOrUnknown(data['hora_fim']!, _horaFimMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_horaFimMeta);
+    }
+    if (data.containsKey('tipo')) {
+      context.handle(
+        _tipoMeta,
+        tipo.isAcceptableOrUnknown(data['tipo']!, _tipoMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_tipoMeta);
+    }
+    if (data.containsKey('categoria')) {
+      context.handle(
+        _categoriaMeta,
+        categoria.isAcceptableOrUnknown(data['categoria']!, _categoriaMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_categoriaMeta);
+    }
+    if (data.containsKey('vagas_maxima')) {
+      context.handle(
+        _vagasMaximaMeta,
+        vagasMaxima.isAcceptableOrUnknown(
+          data['vagas_maxima']!,
+          _vagasMaximaMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_vagasMaximaMeta);
+    }
+    if (data.containsKey('status')) {
+      context.handle(
+        _statusMeta,
+        status.isAcceptableOrUnknown(data['status']!, _statusMeta),
+      );
+    }
+    if (data.containsKey('id_professor_cancelou')) {
+      context.handle(
+        _idProfessorCancelouMeta,
+        idProfessorCancelou.isAcceptableOrUnknown(
+          data['id_professor_cancelou']!,
+          _idProfessorCancelouMeta,
+        ),
+      );
+    }
+    if (data.containsKey('id_admin_cancelou')) {
+      context.handle(
+        _idAdminCancelouMeta,
+        idAdminCancelou.isAcceptableOrUnknown(
+          data['id_admin_cancelou']!,
+          _idAdminCancelouMeta,
+        ),
+      );
+    }
+    if (data.containsKey('data_cancelamento')) {
+      context.handle(
+        _dataCancelamentoMeta,
+        dataCancelamento.isAcceptableOrUnknown(
+          data['data_cancelamento']!,
+          _dataCancelamentoMeta,
+        ),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {idAula};
+  @override
+  AulaData map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return AulaData(
+      idAula: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}id_aula'],
+      )!,
+      idAdminCriador: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}id_admin_criador'],
+      ),
+      idProfessor: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}id_professor'],
+      )!,
+      idCronograma: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}id_cronograma'],
+      ),
+      data: attachedDatabase.typeMapping.read(
+        PgTypes.date,
+        data['${effectivePrefix}data'],
+      )!,
+      horaInicio: attachedDatabase.typeMapping.read(
+        tipoHoraPg,
+        data['${effectivePrefix}hora_inicio'],
+      )!,
+      horaFim: attachedDatabase.typeMapping.read(
+        tipoHoraPg,
+        data['${effectivePrefix}hora_fim'],
+      )!,
+      tipo: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}tipo'],
+      )!,
+      categoria: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}categoria'],
+      )!,
+      vagasMaxima: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}vagas_maxima'],
+      )!,
+      status: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}status'],
+      )!,
+      idProfessorCancelou: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}id_professor_cancelou'],
+      ),
+      idAdminCancelou: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}id_admin_cancelou'],
+      ),
+      dataCancelamento: attachedDatabase.typeMapping.read(
+        PgTypes.timestampWithTimezone,
+        data['${effectivePrefix}data_cancelamento'],
+      ),
+    );
+  }
+
+  @override
+  $AulaTable createAlias(String alias) {
+    return $AulaTable(attachedDatabase, alias);
+  }
+}
+
+class AulaData extends DataClass implements Insertable<AulaData> {
+  final int idAula;
+  final int? idAdminCriador;
+  final int idProfessor;
+
+  /// Nulo = aula avulsa. Nesta feature sempre nulo: quem preenche e a geracao
+  /// por cronograma (GRAZ-85).
+  final int? idCronograma;
+  final PgDate data;
+  final pg.Time horaInicio;
+  final pg.Time horaFim;
+  final String tipo;
+  final String categoria;
+  final int vagasMaxima;
+  final bool status;
+  final int? idProfessorCancelou;
+  final int? idAdminCancelou;
+  final PgDateTime? dataCancelamento;
+  const AulaData({
+    required this.idAula,
+    this.idAdminCriador,
+    required this.idProfessor,
+    this.idCronograma,
+    required this.data,
+    required this.horaInicio,
+    required this.horaFim,
+    required this.tipo,
+    required this.categoria,
+    required this.vagasMaxima,
+    required this.status,
+    this.idProfessorCancelou,
+    this.idAdminCancelou,
+    this.dataCancelamento,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id_aula'] = Variable<int>(idAula);
+    if (!nullToAbsent || idAdminCriador != null) {
+      map['id_admin_criador'] = Variable<int>(idAdminCriador);
+    }
+    map['id_professor'] = Variable<int>(idProfessor);
+    if (!nullToAbsent || idCronograma != null) {
+      map['id_cronograma'] = Variable<int>(idCronograma);
+    }
+    map['data'] = Variable<PgDate>(data, PgTypes.date);
+    map['hora_inicio'] = Variable<pg.Time>(horaInicio, tipoHoraPg);
+    map['hora_fim'] = Variable<pg.Time>(horaFim, tipoHoraPg);
+    map['tipo'] = Variable<String>(tipo);
+    map['categoria'] = Variable<String>(categoria);
+    map['vagas_maxima'] = Variable<int>(vagasMaxima);
+    map['status'] = Variable<bool>(status);
+    if (!nullToAbsent || idProfessorCancelou != null) {
+      map['id_professor_cancelou'] = Variable<int>(idProfessorCancelou);
+    }
+    if (!nullToAbsent || idAdminCancelou != null) {
+      map['id_admin_cancelou'] = Variable<int>(idAdminCancelou);
+    }
+    if (!nullToAbsent || dataCancelamento != null) {
+      map['data_cancelamento'] = Variable<PgDateTime>(
+        dataCancelamento,
+        PgTypes.timestampWithTimezone,
+      );
+    }
+    return map;
+  }
+
+  AulaCompanion toCompanion(bool nullToAbsent) {
+    return AulaCompanion(
+      idAula: Value(idAula),
+      idAdminCriador: idAdminCriador == null && nullToAbsent
+          ? const Value.absent()
+          : Value(idAdminCriador),
+      idProfessor: Value(idProfessor),
+      idCronograma: idCronograma == null && nullToAbsent
+          ? const Value.absent()
+          : Value(idCronograma),
+      data: Value(data),
+      horaInicio: Value(horaInicio),
+      horaFim: Value(horaFim),
+      tipo: Value(tipo),
+      categoria: Value(categoria),
+      vagasMaxima: Value(vagasMaxima),
+      status: Value(status),
+      idProfessorCancelou: idProfessorCancelou == null && nullToAbsent
+          ? const Value.absent()
+          : Value(idProfessorCancelou),
+      idAdminCancelou: idAdminCancelou == null && nullToAbsent
+          ? const Value.absent()
+          : Value(idAdminCancelou),
+      dataCancelamento: dataCancelamento == null && nullToAbsent
+          ? const Value.absent()
+          : Value(dataCancelamento),
+    );
+  }
+
+  factory AulaData.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return AulaData(
+      idAula: serializer.fromJson<int>(json['idAula']),
+      idAdminCriador: serializer.fromJson<int?>(json['idAdminCriador']),
+      idProfessor: serializer.fromJson<int>(json['idProfessor']),
+      idCronograma: serializer.fromJson<int?>(json['idCronograma']),
+      data: serializer.fromJson<PgDate>(json['data']),
+      horaInicio: serializer.fromJson<pg.Time>(json['horaInicio']),
+      horaFim: serializer.fromJson<pg.Time>(json['horaFim']),
+      tipo: serializer.fromJson<String>(json['tipo']),
+      categoria: serializer.fromJson<String>(json['categoria']),
+      vagasMaxima: serializer.fromJson<int>(json['vagasMaxima']),
+      status: serializer.fromJson<bool>(json['status']),
+      idProfessorCancelou: serializer.fromJson<int?>(
+        json['idProfessorCancelou'],
+      ),
+      idAdminCancelou: serializer.fromJson<int?>(json['idAdminCancelou']),
+      dataCancelamento: serializer.fromJson<PgDateTime?>(
+        json['dataCancelamento'],
+      ),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'idAula': serializer.toJson<int>(idAula),
+      'idAdminCriador': serializer.toJson<int?>(idAdminCriador),
+      'idProfessor': serializer.toJson<int>(idProfessor),
+      'idCronograma': serializer.toJson<int?>(idCronograma),
+      'data': serializer.toJson<PgDate>(data),
+      'horaInicio': serializer.toJson<pg.Time>(horaInicio),
+      'horaFim': serializer.toJson<pg.Time>(horaFim),
+      'tipo': serializer.toJson<String>(tipo),
+      'categoria': serializer.toJson<String>(categoria),
+      'vagasMaxima': serializer.toJson<int>(vagasMaxima),
+      'status': serializer.toJson<bool>(status),
+      'idProfessorCancelou': serializer.toJson<int?>(idProfessorCancelou),
+      'idAdminCancelou': serializer.toJson<int?>(idAdminCancelou),
+      'dataCancelamento': serializer.toJson<PgDateTime?>(dataCancelamento),
+    };
+  }
+
+  AulaData copyWith({
+    int? idAula,
+    Value<int?> idAdminCriador = const Value.absent(),
+    int? idProfessor,
+    Value<int?> idCronograma = const Value.absent(),
+    PgDate? data,
+    pg.Time? horaInicio,
+    pg.Time? horaFim,
+    String? tipo,
+    String? categoria,
+    int? vagasMaxima,
+    bool? status,
+    Value<int?> idProfessorCancelou = const Value.absent(),
+    Value<int?> idAdminCancelou = const Value.absent(),
+    Value<PgDateTime?> dataCancelamento = const Value.absent(),
+  }) => AulaData(
+    idAula: idAula ?? this.idAula,
+    idAdminCriador: idAdminCriador.present
+        ? idAdminCriador.value
+        : this.idAdminCriador,
+    idProfessor: idProfessor ?? this.idProfessor,
+    idCronograma: idCronograma.present ? idCronograma.value : this.idCronograma,
+    data: data ?? this.data,
+    horaInicio: horaInicio ?? this.horaInicio,
+    horaFim: horaFim ?? this.horaFim,
+    tipo: tipo ?? this.tipo,
+    categoria: categoria ?? this.categoria,
+    vagasMaxima: vagasMaxima ?? this.vagasMaxima,
+    status: status ?? this.status,
+    idProfessorCancelou: idProfessorCancelou.present
+        ? idProfessorCancelou.value
+        : this.idProfessorCancelou,
+    idAdminCancelou: idAdminCancelou.present
+        ? idAdminCancelou.value
+        : this.idAdminCancelou,
+    dataCancelamento: dataCancelamento.present
+        ? dataCancelamento.value
+        : this.dataCancelamento,
+  );
+  AulaData copyWithCompanion(AulaCompanion data) {
+    return AulaData(
+      idAula: data.idAula.present ? data.idAula.value : this.idAula,
+      idAdminCriador: data.idAdminCriador.present
+          ? data.idAdminCriador.value
+          : this.idAdminCriador,
+      idProfessor: data.idProfessor.present
+          ? data.idProfessor.value
+          : this.idProfessor,
+      idCronograma: data.idCronograma.present
+          ? data.idCronograma.value
+          : this.idCronograma,
+      data: data.data.present ? data.data.value : this.data,
+      horaInicio: data.horaInicio.present
+          ? data.horaInicio.value
+          : this.horaInicio,
+      horaFim: data.horaFim.present ? data.horaFim.value : this.horaFim,
+      tipo: data.tipo.present ? data.tipo.value : this.tipo,
+      categoria: data.categoria.present ? data.categoria.value : this.categoria,
+      vagasMaxima: data.vagasMaxima.present
+          ? data.vagasMaxima.value
+          : this.vagasMaxima,
+      status: data.status.present ? data.status.value : this.status,
+      idProfessorCancelou: data.idProfessorCancelou.present
+          ? data.idProfessorCancelou.value
+          : this.idProfessorCancelou,
+      idAdminCancelou: data.idAdminCancelou.present
+          ? data.idAdminCancelou.value
+          : this.idAdminCancelou,
+      dataCancelamento: data.dataCancelamento.present
+          ? data.dataCancelamento.value
+          : this.dataCancelamento,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('AulaData(')
+          ..write('idAula: $idAula, ')
+          ..write('idAdminCriador: $idAdminCriador, ')
+          ..write('idProfessor: $idProfessor, ')
+          ..write('idCronograma: $idCronograma, ')
+          ..write('data: $data, ')
+          ..write('horaInicio: $horaInicio, ')
+          ..write('horaFim: $horaFim, ')
+          ..write('tipo: $tipo, ')
+          ..write('categoria: $categoria, ')
+          ..write('vagasMaxima: $vagasMaxima, ')
+          ..write('status: $status, ')
+          ..write('idProfessorCancelou: $idProfessorCancelou, ')
+          ..write('idAdminCancelou: $idAdminCancelou, ')
+          ..write('dataCancelamento: $dataCancelamento')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    idAula,
+    idAdminCriador,
+    idProfessor,
+    idCronograma,
+    data,
+    horaInicio,
+    horaFim,
+    tipo,
+    categoria,
+    vagasMaxima,
+    status,
+    idProfessorCancelou,
+    idAdminCancelou,
+    dataCancelamento,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is AulaData &&
+          other.idAula == this.idAula &&
+          other.idAdminCriador == this.idAdminCriador &&
+          other.idProfessor == this.idProfessor &&
+          other.idCronograma == this.idCronograma &&
+          other.data == this.data &&
+          other.horaInicio == this.horaInicio &&
+          other.horaFim == this.horaFim &&
+          other.tipo == this.tipo &&
+          other.categoria == this.categoria &&
+          other.vagasMaxima == this.vagasMaxima &&
+          other.status == this.status &&
+          other.idProfessorCancelou == this.idProfessorCancelou &&
+          other.idAdminCancelou == this.idAdminCancelou &&
+          other.dataCancelamento == this.dataCancelamento);
+}
+
+class AulaCompanion extends UpdateCompanion<AulaData> {
+  final Value<int> idAula;
+  final Value<int?> idAdminCriador;
+  final Value<int> idProfessor;
+  final Value<int?> idCronograma;
+  final Value<PgDate> data;
+  final Value<pg.Time> horaInicio;
+  final Value<pg.Time> horaFim;
+  final Value<String> tipo;
+  final Value<String> categoria;
+  final Value<int> vagasMaxima;
+  final Value<bool> status;
+  final Value<int?> idProfessorCancelou;
+  final Value<int?> idAdminCancelou;
+  final Value<PgDateTime?> dataCancelamento;
+  const AulaCompanion({
+    this.idAula = const Value.absent(),
+    this.idAdminCriador = const Value.absent(),
+    this.idProfessor = const Value.absent(),
+    this.idCronograma = const Value.absent(),
+    this.data = const Value.absent(),
+    this.horaInicio = const Value.absent(),
+    this.horaFim = const Value.absent(),
+    this.tipo = const Value.absent(),
+    this.categoria = const Value.absent(),
+    this.vagasMaxima = const Value.absent(),
+    this.status = const Value.absent(),
+    this.idProfessorCancelou = const Value.absent(),
+    this.idAdminCancelou = const Value.absent(),
+    this.dataCancelamento = const Value.absent(),
+  });
+  AulaCompanion.insert({
+    this.idAula = const Value.absent(),
+    this.idAdminCriador = const Value.absent(),
+    required int idProfessor,
+    this.idCronograma = const Value.absent(),
+    required PgDate data,
+    required pg.Time horaInicio,
+    required pg.Time horaFim,
+    required String tipo,
+    required String categoria,
+    required int vagasMaxima,
+    this.status = const Value.absent(),
+    this.idProfessorCancelou = const Value.absent(),
+    this.idAdminCancelou = const Value.absent(),
+    this.dataCancelamento = const Value.absent(),
+  }) : idProfessor = Value(idProfessor),
+       data = Value(data),
+       horaInicio = Value(horaInicio),
+       horaFim = Value(horaFim),
+       tipo = Value(tipo),
+       categoria = Value(categoria),
+       vagasMaxima = Value(vagasMaxima);
+  static Insertable<AulaData> custom({
+    Expression<int>? idAula,
+    Expression<int>? idAdminCriador,
+    Expression<int>? idProfessor,
+    Expression<int>? idCronograma,
+    Expression<PgDate>? data,
+    Expression<pg.Time>? horaInicio,
+    Expression<pg.Time>? horaFim,
+    Expression<String>? tipo,
+    Expression<String>? categoria,
+    Expression<int>? vagasMaxima,
+    Expression<bool>? status,
+    Expression<int>? idProfessorCancelou,
+    Expression<int>? idAdminCancelou,
+    Expression<PgDateTime>? dataCancelamento,
+  }) {
+    return RawValuesInsertable({
+      if (idAula != null) 'id_aula': idAula,
+      if (idAdminCriador != null) 'id_admin_criador': idAdminCriador,
+      if (idProfessor != null) 'id_professor': idProfessor,
+      if (idCronograma != null) 'id_cronograma': idCronograma,
+      if (data != null) 'data': data,
+      if (horaInicio != null) 'hora_inicio': horaInicio,
+      if (horaFim != null) 'hora_fim': horaFim,
+      if (tipo != null) 'tipo': tipo,
+      if (categoria != null) 'categoria': categoria,
+      if (vagasMaxima != null) 'vagas_maxima': vagasMaxima,
+      if (status != null) 'status': status,
+      if (idProfessorCancelou != null)
+        'id_professor_cancelou': idProfessorCancelou,
+      if (idAdminCancelou != null) 'id_admin_cancelou': idAdminCancelou,
+      if (dataCancelamento != null) 'data_cancelamento': dataCancelamento,
+    });
+  }
+
+  AulaCompanion copyWith({
+    Value<int>? idAula,
+    Value<int?>? idAdminCriador,
+    Value<int>? idProfessor,
+    Value<int?>? idCronograma,
+    Value<PgDate>? data,
+    Value<pg.Time>? horaInicio,
+    Value<pg.Time>? horaFim,
+    Value<String>? tipo,
+    Value<String>? categoria,
+    Value<int>? vagasMaxima,
+    Value<bool>? status,
+    Value<int?>? idProfessorCancelou,
+    Value<int?>? idAdminCancelou,
+    Value<PgDateTime?>? dataCancelamento,
+  }) {
+    return AulaCompanion(
+      idAula: idAula ?? this.idAula,
+      idAdminCriador: idAdminCriador ?? this.idAdminCriador,
+      idProfessor: idProfessor ?? this.idProfessor,
+      idCronograma: idCronograma ?? this.idCronograma,
+      data: data ?? this.data,
+      horaInicio: horaInicio ?? this.horaInicio,
+      horaFim: horaFim ?? this.horaFim,
+      tipo: tipo ?? this.tipo,
+      categoria: categoria ?? this.categoria,
+      vagasMaxima: vagasMaxima ?? this.vagasMaxima,
+      status: status ?? this.status,
+      idProfessorCancelou: idProfessorCancelou ?? this.idProfessorCancelou,
+      idAdminCancelou: idAdminCancelou ?? this.idAdminCancelou,
+      dataCancelamento: dataCancelamento ?? this.dataCancelamento,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (idAula.present) {
+      map['id_aula'] = Variable<int>(idAula.value);
+    }
+    if (idAdminCriador.present) {
+      map['id_admin_criador'] = Variable<int>(idAdminCriador.value);
+    }
+    if (idProfessor.present) {
+      map['id_professor'] = Variable<int>(idProfessor.value);
+    }
+    if (idCronograma.present) {
+      map['id_cronograma'] = Variable<int>(idCronograma.value);
+    }
+    if (data.present) {
+      map['data'] = Variable<PgDate>(data.value, PgTypes.date);
+    }
+    if (horaInicio.present) {
+      map['hora_inicio'] = Variable<pg.Time>(horaInicio.value, tipoHoraPg);
+    }
+    if (horaFim.present) {
+      map['hora_fim'] = Variable<pg.Time>(horaFim.value, tipoHoraPg);
+    }
+    if (tipo.present) {
+      map['tipo'] = Variable<String>(tipo.value);
+    }
+    if (categoria.present) {
+      map['categoria'] = Variable<String>(categoria.value);
+    }
+    if (vagasMaxima.present) {
+      map['vagas_maxima'] = Variable<int>(vagasMaxima.value);
+    }
+    if (status.present) {
+      map['status'] = Variable<bool>(status.value);
+    }
+    if (idProfessorCancelou.present) {
+      map['id_professor_cancelou'] = Variable<int>(idProfessorCancelou.value);
+    }
+    if (idAdminCancelou.present) {
+      map['id_admin_cancelou'] = Variable<int>(idAdminCancelou.value);
+    }
+    if (dataCancelamento.present) {
+      map['data_cancelamento'] = Variable<PgDateTime>(
+        dataCancelamento.value,
+        PgTypes.timestampWithTimezone,
+      );
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('AulaCompanion(')
+          ..write('idAula: $idAula, ')
+          ..write('idAdminCriador: $idAdminCriador, ')
+          ..write('idProfessor: $idProfessor, ')
+          ..write('idCronograma: $idCronograma, ')
+          ..write('data: $data, ')
+          ..write('horaInicio: $horaInicio, ')
+          ..write('horaFim: $horaFim, ')
+          ..write('tipo: $tipo, ')
+          ..write('categoria: $categoria, ')
+          ..write('vagasMaxima: $vagasMaxima, ')
+          ..write('status: $status, ')
+          ..write('idProfessorCancelou: $idProfessorCancelou, ')
+          ..write('idAdminCancelou: $idAdminCancelou, ')
+          ..write('dataCancelamento: $dataCancelamento')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$GraziDatabase extends GeneratedDatabase {
   _$GraziDatabase(QueryExecutor e) : super(e);
   $GraziDatabaseManager get managers => $GraziDatabaseManager(this);
   late final $AdminTable admin = $AdminTable(this);
   late final $AlunoTable aluno = $AlunoTable(this);
   late final $ProfessorTable professor = $ProfessorTable(this);
+  late final $AulaTable aula = $AulaTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
   @override
-  List<DatabaseSchemaEntity> get allSchemaEntities => [admin, aluno, professor];
+  List<DatabaseSchemaEntity> get allSchemaEntities => [
+    admin,
+    aluno,
+    professor,
+    aula,
+  ];
 }
 
 typedef $$AdminTableCreateCompanionBuilder = AdminCompanion Function({
@@ -2663,6 +3522,387 @@ typedef $$ProfessorTableProcessedTableManager =
       ProfessorData,
       PrefetchHooks Function()
     >;
+typedef $$AulaTableCreateCompanionBuilder = AulaCompanion Function({
+  Value<int> idAula,
+  Value<int?> idAdminCriador,
+  required int idProfessor,
+  Value<int?> idCronograma,
+  required PgDate data,
+  required pg.Time horaInicio,
+  required pg.Time horaFim,
+  required String tipo,
+  required String categoria,
+  required int vagasMaxima,
+  Value<bool> status,
+  Value<int?> idProfessorCancelou,
+  Value<int?> idAdminCancelou,
+  Value<PgDateTime?> dataCancelamento,
+});
+typedef $$AulaTableUpdateCompanionBuilder = AulaCompanion Function({
+  Value<int> idAula,
+  Value<int?> idAdminCriador,
+  Value<int> idProfessor,
+  Value<int?> idCronograma,
+  Value<PgDate> data,
+  Value<pg.Time> horaInicio,
+  Value<pg.Time> horaFim,
+  Value<String> tipo,
+  Value<String> categoria,
+  Value<int> vagasMaxima,
+  Value<bool> status,
+  Value<int?> idProfessorCancelou,
+  Value<int?> idAdminCancelou,
+  Value<PgDateTime?> dataCancelamento,
+});
+
+class $$AulaTableFilterComposer extends Composer<_$GraziDatabase, $AulaTable> {
+  $$AulaTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get idAula => $composableBuilder(
+    column: $table.idAula,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get idAdminCriador => $composableBuilder(
+    column: $table.idAdminCriador,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get idProfessor => $composableBuilder(
+    column: $table.idProfessor,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get idCronograma => $composableBuilder(
+    column: $table.idCronograma,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<PgDate> get data => $composableBuilder(
+    column: $table.data,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<pg.Time> get horaInicio => $composableBuilder(
+    column: $table.horaInicio,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<pg.Time> get horaFim => $composableBuilder(
+    column: $table.horaFim,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get tipo => $composableBuilder(
+    column: $table.tipo,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get categoria => $composableBuilder(
+    column: $table.categoria,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get vagasMaxima => $composableBuilder(
+    column: $table.vagasMaxima,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get status => $composableBuilder(
+    column: $table.status,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get idProfessorCancelou => $composableBuilder(
+    column: $table.idProfessorCancelou,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get idAdminCancelou => $composableBuilder(
+    column: $table.idAdminCancelou,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<PgDateTime> get dataCancelamento => $composableBuilder(
+    column: $table.dataCancelamento,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$AulaTableOrderingComposer
+    extends Composer<_$GraziDatabase, $AulaTable> {
+  $$AulaTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get idAula => $composableBuilder(
+    column: $table.idAula,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get idAdminCriador => $composableBuilder(
+    column: $table.idAdminCriador,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get idProfessor => $composableBuilder(
+    column: $table.idProfessor,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get idCronograma => $composableBuilder(
+    column: $table.idCronograma,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<PgDate> get data => $composableBuilder(
+    column: $table.data,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<pg.Time> get horaInicio => $composableBuilder(
+    column: $table.horaInicio,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<pg.Time> get horaFim => $composableBuilder(
+    column: $table.horaFim,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get tipo => $composableBuilder(
+    column: $table.tipo,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get categoria => $composableBuilder(
+    column: $table.categoria,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get vagasMaxima => $composableBuilder(
+    column: $table.vagasMaxima,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get status => $composableBuilder(
+    column: $table.status,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get idProfessorCancelou => $composableBuilder(
+    column: $table.idProfessorCancelou,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get idAdminCancelou => $composableBuilder(
+    column: $table.idAdminCancelou,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<PgDateTime> get dataCancelamento => $composableBuilder(
+    column: $table.dataCancelamento,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$AulaTableAnnotationComposer
+    extends Composer<_$GraziDatabase, $AulaTable> {
+  $$AulaTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get idAula =>
+      $composableBuilder(column: $table.idAula, builder: (column) => column);
+
+  GeneratedColumn<int> get idAdminCriador => $composableBuilder(
+    column: $table.idAdminCriador,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get idProfessor => $composableBuilder(
+    column: $table.idProfessor,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get idCronograma => $composableBuilder(
+    column: $table.idCronograma,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<PgDate> get data =>
+      $composableBuilder(column: $table.data, builder: (column) => column);
+
+  GeneratedColumn<pg.Time> get horaInicio => $composableBuilder(
+    column: $table.horaInicio,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<pg.Time> get horaFim =>
+      $composableBuilder(column: $table.horaFim, builder: (column) => column);
+
+  GeneratedColumn<String> get tipo =>
+      $composableBuilder(column: $table.tipo, builder: (column) => column);
+
+  GeneratedColumn<String> get categoria =>
+      $composableBuilder(column: $table.categoria, builder: (column) => column);
+
+  GeneratedColumn<int> get vagasMaxima => $composableBuilder(
+    column: $table.vagasMaxima,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<bool> get status =>
+      $composableBuilder(column: $table.status, builder: (column) => column);
+
+  GeneratedColumn<int> get idProfessorCancelou => $composableBuilder(
+    column: $table.idProfessorCancelou,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get idAdminCancelou => $composableBuilder(
+    column: $table.idAdminCancelou,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<PgDateTime> get dataCancelamento => $composableBuilder(
+    column: $table.dataCancelamento,
+    builder: (column) => column,
+  );
+}
+
+class $$AulaTableTableManager
+    extends
+        RootTableManager<
+          _$GraziDatabase,
+          $AulaTable,
+          AulaData,
+          $$AulaTableFilterComposer,
+          $$AulaTableOrderingComposer,
+          $$AulaTableAnnotationComposer,
+          $$AulaTableCreateCompanionBuilder,
+          $$AulaTableUpdateCompanionBuilder,
+          (AulaData, BaseReferences<_$GraziDatabase, $AulaTable, AulaData>),
+          AulaData,
+          PrefetchHooks Function()
+        > {
+  $$AulaTableTableManager(_$GraziDatabase db, $AulaTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$AulaTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$AulaTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$AulaTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<int> idAula = const Value.absent(),
+                Value<int?> idAdminCriador = const Value.absent(),
+                Value<int> idProfessor = const Value.absent(),
+                Value<int?> idCronograma = const Value.absent(),
+                Value<PgDate> data = const Value.absent(),
+                Value<pg.Time> horaInicio = const Value.absent(),
+                Value<pg.Time> horaFim = const Value.absent(),
+                Value<String> tipo = const Value.absent(),
+                Value<String> categoria = const Value.absent(),
+                Value<int> vagasMaxima = const Value.absent(),
+                Value<bool> status = const Value.absent(),
+                Value<int?> idProfessorCancelou = const Value.absent(),
+                Value<int?> idAdminCancelou = const Value.absent(),
+                Value<PgDateTime?> dataCancelamento = const Value.absent(),
+              }) => AulaCompanion(
+                idAula: idAula,
+                idAdminCriador: idAdminCriador,
+                idProfessor: idProfessor,
+                idCronograma: idCronograma,
+                data: data,
+                horaInicio: horaInicio,
+                horaFim: horaFim,
+                tipo: tipo,
+                categoria: categoria,
+                vagasMaxima: vagasMaxima,
+                status: status,
+                idProfessorCancelou: idProfessorCancelou,
+                idAdminCancelou: idAdminCancelou,
+                dataCancelamento: dataCancelamento,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> idAula = const Value.absent(),
+                Value<int?> idAdminCriador = const Value.absent(),
+                required int idProfessor,
+                Value<int?> idCronograma = const Value.absent(),
+                required PgDate data,
+                required pg.Time horaInicio,
+                required pg.Time horaFim,
+                required String tipo,
+                required String categoria,
+                required int vagasMaxima,
+                Value<bool> status = const Value.absent(),
+                Value<int?> idProfessorCancelou = const Value.absent(),
+                Value<int?> idAdminCancelou = const Value.absent(),
+                Value<PgDateTime?> dataCancelamento = const Value.absent(),
+              }) => AulaCompanion.insert(
+                idAula: idAula,
+                idAdminCriador: idAdminCriador,
+                idProfessor: idProfessor,
+                idCronograma: idCronograma,
+                data: data,
+                horaInicio: horaInicio,
+                horaFim: horaFim,
+                tipo: tipo,
+                categoria: categoria,
+                vagasMaxima: vagasMaxima,
+                status: status,
+                idProfessorCancelou: idProfessorCancelou,
+                idAdminCancelou: idAdminCancelou,
+                dataCancelamento: dataCancelamento,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<$AulaTable, AulaData>(table),
+                  BaseReferences<_$GraziDatabase, $AulaTable, AulaData>(
+                    db,
+                    table,
+                    e,
+                  ),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$AulaTableProcessedTableManager =
+    ProcessedTableManager<
+      _$GraziDatabase,
+      $AulaTable,
+      AulaData,
+      $$AulaTableFilterComposer,
+      $$AulaTableOrderingComposer,
+      $$AulaTableAnnotationComposer,
+      $$AulaTableCreateCompanionBuilder,
+      $$AulaTableUpdateCompanionBuilder,
+      (AulaData, BaseReferences<_$GraziDatabase, $AulaTable, AulaData>),
+      AulaData,
+      PrefetchHooks Function()
+    >;
 
 class $GraziDatabaseManager {
   final _$GraziDatabase _db;
@@ -2673,4 +3913,5 @@ class $GraziDatabaseManager {
       $$AlunoTableTableManager(_db, _db.aluno);
   $$ProfessorTableTableManager get professor =>
       $$ProfessorTableTableManager(_db, _db.professor);
+  $$AulaTableTableManager get aula => $$AulaTableTableManager(_db, _db.aula);
 }
