@@ -6,6 +6,9 @@ import 'package:shelf_router/shelf_router.dart';
 
 import 'package:grazifit_backend/config/config.dart';
 import 'package:grazifit_backend/database/database.dart';
+import 'package:grazifit_backend/features/aulas/aula_controller.dart';
+import 'package:grazifit_backend/features/aulas/aula_repository.dart';
+import 'package:grazifit_backend/features/aulas/aula_service.dart';
 import 'package:grazifit_backend/features/auth/auth_controller.dart';
 import 'package:grazifit_backend/features/auth/auth_repository.dart';
 import 'package:grazifit_backend/features/auth/auth_service.dart';
@@ -52,12 +55,17 @@ void main() async {
   final professorService = ProfessorService(professorRepository, senhaHasher);
   final professorController = ProfessorController(professorService);
 
+  final aulaRepository = AulaRepository(db);
+  final aulaService = AulaService(aulaRepository);
+  final aulaController = AulaController(aulaService);
+
   final rootRouter = Router()
     ..get('/health', (Request _) => _health(db))
     ..mount('/', authController.router.call)
     ..mount('/', adminController.router.call)
     ..mount('/', alunoController.router.call)
-    ..mount('/', professorController.router.call);
+    ..mount('/', professorController.router.call)
+    ..mount('/', aulaController.router.call);
 
   final handler = const Pipeline()
       .addMiddleware(logRequests())
