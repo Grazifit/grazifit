@@ -1,0 +1,824 @@
+{
+  "_type": "export",
+  "__export_format": 4,
+  "__export_date": "2026-11-08T00:00:00.000Z",
+  "__export_source": "grazifit.backend",
+  "resources": [
+    {
+      "_id": "wrk_grazifit_api",
+      "_type": "workspace",
+      "parentId": null,
+      "name": "GraziFit API",
+      "description": "API do backend GraziFit (Postman v2.1 — importavel no Postman e no Insomnia).\n\n- **Autenticacao:** rode **Auth › Login**; o `access_token` vai para a variavel `token` do Base Environment. Todas as rotas usam `Authorization: Bearer {{token}}`, exceto Login e Health.\n- Preencha `loginEmail` e `loginSenha` (vazias de proposito).\n- Rotas de criacao salvam o id criado na variavel correspondente (`idAdmin`, `idAluno`, `idProfessor`, `idAula`).\n- `data` em `AAAA-MM-DD`; horas em `HH:MM`. Aulas so no ano corrente ou no seguinte (`dataAula`).\n- Envelope de erro: `{ \"codigo\": \"...\", \"mensagem\": \"...\", \"campo\"?: \"...\" }`. Admin e parte de professor ainda respondem `{ \"erro\": \"...\" }`.",
+      "scope": "collection",
+      "modified": 1794168000000,
+      "created": 1794168000000
+    },
+    {
+      "_id": "env_grazifit_base",
+      "_type": "environment",
+      "parentId": "wrk_grazifit_api",
+      "name": "Base Environment",
+      "data": {
+        "baseUrl": "http://localhost:8080",
+        "loginEmail": "",
+        "loginSenha": "",
+        "token": "{% response 'body', 'req_auth_login', 'b64::JC5hY2Nlc3NfdG9rZW4=::46b', 'never', 60 %}",
+        "novoCpf": "",
+        "novoEmail": "",
+        "novaSenha": "",
+        "idAdmin": "{% response 'body', 'req_admin_criar_admin', 'b64::JC5pZF9hZG1pbg==::46b', 'never', 60 %}",
+        "idAluno": "{% response 'body', 'req_aluno_criar_aluno', 'b64::JC5pZF9hbHVubw==::46b', 'never', 60 %}",
+        "idProfessor": "{% response 'body', 'req_professor_criar_professor', 'b64::JC5pZF9wcm9mZXNzb3I=::46b', 'never', 60 %}",
+        "idAula": "{% response 'body', 'req_aulas_criar_aula', 'b64::JC5pZF9hdWxh::46b', 'never', 60 %}",
+        "dataAula": "2026-12-15",
+        "idProfessorAula": "1"
+      },
+      "dataPropertyOrder": {
+        "&": [
+          "baseUrl",
+          "loginEmail",
+          "loginSenha",
+          "token",
+          "novoCpf",
+          "novoEmail",
+          "novaSenha",
+          "idAdmin",
+          "idAluno",
+          "idProfessor",
+          "idAula",
+          "dataAula",
+          "idProfessorAula"
+        ]
+      },
+      "color": null,
+      "isPrivate": false,
+      "metaSortKey": 1,
+      "modified": 1794168000000,
+      "created": 1794168000000
+    },
+    {
+      "_id": "fld_auth",
+      "_type": "request_group",
+      "parentId": "wrk_grazifit_api",
+      "name": "Auth",
+      "description": "",
+      "environment": {},
+      "metaSortKey": 1000,
+      "modified": 1794168000000,
+      "created": 1794168000000
+    },
+    {
+      "_id": "fld_admin",
+      "_type": "request_group",
+      "parentId": "wrk_grazifit_api",
+      "name": "Admin",
+      "description": "Rotas `/admin`.",
+      "environment": {},
+      "metaSortKey": 2000,
+      "modified": 1794168000000,
+      "created": 1794168000000
+    },
+    {
+      "_id": "fld_aluno",
+      "_type": "request_group",
+      "parentId": "wrk_grazifit_api",
+      "name": "Aluno",
+      "description": "Rotas `/aluno`. Já segue o envelope de erro em tudo.",
+      "environment": {},
+      "metaSortKey": 3000,
+      "modified": 1794168000000,
+      "created": 1794168000000
+    },
+    {
+      "_id": "fld_professor",
+      "_type": "request_group",
+      "parentId": "wrk_grazifit_api",
+      "name": "Professor",
+      "description": "Rotas `/professor`.",
+      "environment": {},
+      "metaSortKey": 4000,
+      "modified": 1794168000000,
+      "created": 1794168000000
+    },
+    {
+      "_id": "fld_aulas",
+      "_type": "request_group",
+      "parentId": "wrk_grazifit_api",
+      "name": "Aulas",
+      "description": "Rotas `/aulas`.",
+      "environment": {},
+      "metaSortKey": 5000,
+      "modified": 1794168000000,
+      "created": 1794168000000
+    },
+    {
+      "_id": "fld_aulas_cenarios_de_validacao",
+      "_type": "request_group",
+      "parentId": "wrk_grazifit_api",
+      "name": "Aulas — cenarios de validacao",
+      "description": "Requests que devem falhar, um por regra. Rode **Aulas › Criar aula** antes.",
+      "environment": {},
+      "metaSortKey": 6000,
+      "modified": 1794168000000,
+      "created": 1794168000000
+    },
+    {
+      "_id": "fld_infra",
+      "_type": "request_group",
+      "parentId": "wrk_grazifit_api",
+      "name": "Infra",
+      "description": "Rotas de infraestrutura, consumidas pelo healthcheck do compose e não pelo app.",
+      "environment": {},
+      "metaSortKey": 7000,
+      "modified": 1794168000000,
+      "created": 1794168000000
+    },
+    {
+      "_id": "req_auth_login",
+      "_type": "request",
+      "parentId": "fld_auth",
+      "name": "Login",
+      "description": "Admin, professor ou aluno.\n\n**Sucesso:** `200` → `{ access_token, token_type, expires_in, usuario: { id, papel, nome } }`.\n\n**Erros:** `400 REQUISICAO_INVALIDA` · `401 CREDENCIAIS_INVALIDAS` · `429 MUITAS_TENTATIVAS`.",
+      "method": "POST",
+      "url": "{{ _.baseUrl }}/auth/login",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"email\": \"{{ _.loginEmail }}\",\n  \"senha\": \"{{ _.loginSenha }}\"\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": 1000,
+      "settingEncodeUrl": true,
+      "modified": 1794168000000,
+      "created": 1794168000000
+    },
+    {
+      "_id": "req_auth_logout",
+      "_type": "request",
+      "parentId": "fld_auth",
+      "name": "Logout",
+      "description": "Encerra a sessao do token atual. **Sucesso:** `204`. Sem token valido: `401 TOKEN_INVALIDO`.",
+      "method": "POST",
+      "url": "{{ _.baseUrl }}/auth/logout",
+      "body": {},
+      "parameters": [],
+      "headers": [],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token }}"
+      },
+      "metaSortKey": 2000,
+      "settingEncodeUrl": true,
+      "modified": 1794168000000,
+      "created": 1794168000000
+    },
+    {
+      "_id": "req_admin_criar_admin",
+      "_type": "request",
+      "parentId": "fld_admin",
+      "name": "Criar admin",
+      "description": "**Aceita (JSON)**\n| Campo | Obrig. | Regra |\n|---|---|---|\n| `cpf` | sim | CPF válido; pontuação é removida |\n| `senha` | sim | mínimo 8 caracteres |\n| `nome` | sim | texto |\n| `email` | sim | e-mail válido; gravado em minúsculas |\n| `telefone` | não | texto |\n\n**Sucesso:** `201` → `{ id_admin, nome, email, telefone }`\n\n**Erros** — Todos os erros vêm como `{ \"erro\": \"<mensagem>\" }` (ainda sem o envelope D64).\n| HTTP | Quando |\n|---|---|\n| 400 | JSON inválido · campo obrigatório ausente · CPF inválido · e-mail inválido · senha < 8 |\n| 409 | CPF ou e-mail já cadastrado |\n| 500 | qualquer outra falha |",
+      "method": "POST",
+      "url": "{{ _.baseUrl }}/admin",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"cpf\": \"{{ _.novoCpf }}\",\n  \"senha\": \"{{ _.novaSenha }}\",\n  \"nome\": \"Admin Teste\",\n  \"email\": \"{{ _.novoEmail }}\",\n  \"telefone\": \"11999990000\"\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token }}"
+      },
+      "metaSortKey": 1000,
+      "settingEncodeUrl": true,
+      "modified": 1794168000000,
+      "created": 1794168000000
+    },
+    {
+      "_id": "req_admin_buscar_admin_por_id",
+      "_type": "request",
+      "parentId": "fld_admin",
+      "name": "Buscar admin por id",
+      "description": "**Aceita:** `id` inteiro na rota.\n\n**Sucesso:** `200` → `{ id_admin, nome, email, telefone }`\n\n**Erros** — Todos os erros vêm como `{ \"erro\": \"<mensagem>\" }` (ainda sem o envelope D64).\n| HTTP | Quando |\n|---|---|\n| 400 | id não é inteiro |\n| 404 | admin não existe |\n| 500 | qualquer outra falha |",
+      "method": "GET",
+      "url": "{{ _.baseUrl }}/admin/{{ _.idAdmin }}",
+      "body": {},
+      "parameters": [],
+      "headers": [],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token }}"
+      },
+      "metaSortKey": 2000,
+      "settingEncodeUrl": true,
+      "modified": 1794168000000,
+      "created": 1794168000000
+    },
+    {
+      "_id": "req_admin_atualizar_admin",
+      "_type": "request",
+      "parentId": "fld_admin",
+      "name": "Atualizar admin",
+      "description": "**Aceita (JSON):** só os campos que mudam. Chaves desconhecidas são ignoradas.\n| Campo | Regra |\n|---|---|\n| `nome` | texto |\n| `email` | e-mail válido |\n| `telefone` | texto |\n| `senha` | mínimo 8 caracteres |\n\n**Sucesso:** `200` → admin atualizado\n\n**Erros** — Todos os erros vêm como `{ \"erro\": \"<mensagem>\" }` (ainda sem o envelope D64).\n| HTTP | Quando |\n|---|---|\n| 400 | id não é inteiro · JSON inválido · e-mail inválido · senha < 8 |\n| 404 | admin não existe |\n| 409 | e-mail já cadastrado |\n| 500 | qualquer outra falha |",
+      "method": "PATCH",
+      "url": "{{ _.baseUrl }}/admin/{{ _.idAdmin }}",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"nome\": \"Admin Renomeado\",\n  \"telefone\": \"11988887777\"\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token }}"
+      },
+      "metaSortKey": 3000,
+      "settingEncodeUrl": true,
+      "modified": 1794168000000,
+      "created": 1794168000000
+    },
+    {
+      "_id": "req_admin_excluir_admin",
+      "_type": "request",
+      "parentId": "fld_admin",
+      "name": "Excluir admin",
+      "description": "**Aceita:** `id` inteiro na rota.\n\n**Sucesso:** `204`, sem corpo\n\n**Erros** — Todos os erros vêm como `{ \"erro\": \"<mensagem>\" }` (ainda sem o envelope D64).\n| HTTP | Quando |\n|---|---|\n| 400 | id não é inteiro |\n| 404 | admin não existe |\n| 500 | qualquer outra falha |",
+      "method": "DELETE",
+      "url": "{{ _.baseUrl }}/admin/{{ _.idAdmin }}",
+      "body": {},
+      "parameters": [],
+      "headers": [],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token }}"
+      },
+      "metaSortKey": 4000,
+      "settingEncodeUrl": true,
+      "modified": 1794168000000,
+      "created": 1794168000000
+    },
+    {
+      "_id": "req_aluno_criar_aluno",
+      "_type": "request",
+      "parentId": "fld_aluno",
+      "name": "Criar aluno",
+      "description": "**Aceita (JSON)**\n| Campo | Obrig. | Regra |\n|---|---|---|\n| `cpf` | sim | CPF válido; pontuação é removida |\n| `senha` | sim | 8 a 12 caracteres |\n| `nome` | sim | até 150 |\n| `telefone` | sim | até 20 |\n| `email` | sim | e-mail válido, até 255; gravado em minúsculas |\n| `data_nascimento` | sim | `AAAA-MM-DD`, data existente e anterior a hoje |\n| `id_endereco` | não | inteiro |\n| `restricao_medica` | não | texto; em branco vira `null` |\n| `observacao_saude` | não | texto; em branco vira `null` |\n\n**Sucesso:** `201` → `{ id_aluno, nome, email, telefone, status }`\n\n**Erros** — Todos os erros vêm no envelope `{ codigo, mensagem, campo? }`.\n| HTTP | `codigo` | Quando |\n|---|---|---|\n| 400 | `JSON_INVALIDO` | corpo não é um objeto JSON |\n| 400 | `CAMPO_OBRIGATORIO` + `campo` | obrigatório ausente ou em branco |\n| 400 | `CAMPO_INVALIDO` + `campo` | tamanho fora do limite · data fora do formato |\n| 400 | `CPF_INVALIDO` / `EMAIL_INVALIDO` | formato inválido |\n| 400 | `DATA_NASCIMENTO_INVALIDA` | data hoje ou no futuro |\n| 409 | `CPF_EM_USO` / `EMAIL_EM_USO` | já cadastrado |\n| 500 | `ERRO_INTERNO` | falha não mapeada (ex.: `id_endereco` inexistente) |",
+      "method": "POST",
+      "url": "{{ _.baseUrl }}/aluno",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"cpf\": \"{{ _.novoCpf }}\",\n  \"senha\": \"{{ _.novaSenha }}\",\n  \"nome\": \"Aluno Teste\",\n  \"telefone\": \"11999990000\",\n  \"email\": \"{{ _.novoEmail }}\",\n  \"data_nascimento\": \"1995-04-20\",\n  \"restricao_medica\": \"\",\n  \"observacao_saude\": \"\"\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token }}"
+      },
+      "metaSortKey": 1000,
+      "settingEncodeUrl": true,
+      "modified": 1794168000000,
+      "created": 1794168000000
+    },
+    {
+      "_id": "req_aluno_listar_alunos",
+      "_type": "request",
+      "parentId": "fld_aluno",
+      "name": "Listar alunos",
+      "description": "**Aceita (query)**\n| Parâmetro | Padrão | Regra |\n|---|---|---|\n| `limit` | 20 | inteiro de 1 a 100 |\n| `offset` | 0 | inteiro ≥ 0 |\n\n**Sucesso:** `200` → `{ itens: [aluno], limit, offset, total }`. Há próxima página se `offset + itens.length < total`.\n\n**Erros** — Todos os erros vêm no envelope `{ codigo, mensagem, campo? }`.\n| HTTP | `codigo` | Quando |\n|---|---|---|\n| 400 | `CAMPO_INVALIDO` + `campo` | `limit` ou `offset` fora da regra |\n| 500 | `ERRO_INTERNO` | falha não mapeada |",
+      "method": "GET",
+      "url": "{{ _.baseUrl }}/aluno?limit=20&offset=0",
+      "body": {},
+      "parameters": [],
+      "headers": [],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token }}"
+      },
+      "metaSortKey": 2000,
+      "settingEncodeUrl": true,
+      "modified": 1794168000000,
+      "created": 1794168000000
+    },
+    {
+      "_id": "req_aluno_buscar_aluno_por_id",
+      "_type": "request",
+      "parentId": "fld_aluno",
+      "name": "Buscar aluno por id",
+      "description": "**Aceita:** `id` inteiro na rota.\n\n**Sucesso:** `200` → `{ id_aluno, nome, email, telefone, status }`\n\n**Erros** — Todos os erros vêm no envelope `{ codigo, mensagem, campo? }`.\n| HTTP | `codigo` | Quando |\n|---|---|---|\n| 400 | `CAMPO_INVALIDO` (`campo: id`) | id não é inteiro |\n| 404 | `REGISTRO_NAO_ENCONTRADO` | aluno não existe |\n| 500 | `ERRO_INTERNO` | falha não mapeada |",
+      "method": "GET",
+      "url": "{{ _.baseUrl }}/aluno/{{ _.idAluno }}",
+      "body": {},
+      "parameters": [],
+      "headers": [],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token }}"
+      },
+      "metaSortKey": 3000,
+      "settingEncodeUrl": true,
+      "modified": 1794168000000,
+      "created": 1794168000000
+    },
+    {
+      "_id": "req_aluno_atualizar_aluno",
+      "_type": "request",
+      "parentId": "fld_aluno",
+      "name": "Atualizar aluno",
+      "description": "**Aceita (JSON):** só `nome`, `telefone` e `email`, ao menos um. Mesmos limites do cadastro.\nQualquer outra chave é **recusada** (status tem rota própria).\n\n**Sucesso:** `200` → aluno atualizado\n\n**Erros** — Todos os erros vêm no envelope `{ codigo, mensagem, campo? }`.\n| HTTP | `codigo` | Quando |\n|---|---|---|\n| 400 | `JSON_INVALIDO` | corpo não é um objeto JSON |\n| 400 | `CAMPO_OBRIGATORIO` | corpo vazio `{}` |\n| 400 | `CAMPO_INVALIDO` + `campo` | id inválido · chave não editável · valor `null`/vazio · tamanho |\n| 400 | `EMAIL_INVALIDO` | formato inválido |\n| 404 | `REGISTRO_NAO_ENCONTRADO` | aluno não existe |\n| 409 | `EMAIL_EM_USO` | e-mail de outro aluno |\n| 500 | `ERRO_INTERNO` | falha não mapeada |",
+      "method": "PATCH",
+      "url": "{{ _.baseUrl }}/aluno/{{ _.idAluno }}",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"nome\": \"Aluno Renomeado\",\n  \"telefone\": \"11988887777\"\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token }}"
+      },
+      "metaSortKey": 4000,
+      "settingEncodeUrl": true,
+      "modified": 1794168000000,
+      "created": 1794168000000
+    },
+    {
+      "_id": "req_aluno_alterar_status_do_aluno",
+      "_type": "request",
+      "parentId": "fld_aluno",
+      "name": "Alterar status do aluno",
+      "description": "**Aceita (JSON):** `{ \"status\": false }` inativa · `{ \"status\": true }` reativa.\n\n**Sucesso:** `204`, sem corpo\n\n**Erros** — Todos os erros vêm no envelope `{ codigo, mensagem, campo? }`.\n| HTTP | `codigo` | Quando |\n|---|---|---|\n| 400 | `JSON_INVALIDO` | corpo não é um objeto JSON |\n| 400 | `CAMPO_OBRIGATORIO` (`campo: status`) | `status` ausente |\n| 400 | `CAMPO_INVALIDO` + `campo` | id inválido · `status` não é booleano |\n| 404 | `REGISTRO_NAO_ENCONTRADO` | aluno não existe |\n| 500 | `ERRO_INTERNO` | falha não mapeada |",
+      "method": "PATCH",
+      "url": "{{ _.baseUrl }}/aluno/{{ _.idAluno }}/status",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"status\": false\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token }}"
+      },
+      "metaSortKey": 5000,
+      "settingEncodeUrl": true,
+      "modified": 1794168000000,
+      "created": 1794168000000
+    },
+    {
+      "_id": "req_aluno_excluir_aluno",
+      "_type": "request",
+      "parentId": "fld_aluno",
+      "name": "Excluir aluno",
+      "description": "**Aceita:** `id` inteiro na rota. Exclusão definitiva; para manter o histórico, inative.\n\n**Sucesso:** `204`, sem corpo\n\n**Erros** — Todos os erros vêm no envelope `{ codigo, mensagem, campo? }`.\n| HTTP | `codigo` | Quando |\n|---|---|---|\n| 400 | `CAMPO_INVALIDO` (`campo: id`) | id não é inteiro |\n| 404 | `REGISTRO_NAO_ENCONTRADO` | aluno não existe |\n| 409 | `REGISTRO_EM_USO` | aluno tem avaliação, vínculo, agendamento ou histórico |\n| 500 | `ERRO_INTERNO` | falha não mapeada |",
+      "method": "DELETE",
+      "url": "{{ _.baseUrl }}/aluno/{{ _.idAluno }}",
+      "body": {},
+      "parameters": [],
+      "headers": [],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token }}"
+      },
+      "metaSortKey": 6000,
+      "settingEncodeUrl": true,
+      "modified": 1794168000000,
+      "created": 1794168000000
+    },
+    {
+      "_id": "req_professor_criar_professor",
+      "_type": "request",
+      "parentId": "fld_professor",
+      "name": "Criar professor",
+      "description": "**Aceita (JSON)**\n| Campo | Obrig. | Regra |\n|---|---|---|\n| `cpf` | sim | CPF válido; pontuação é removida |\n| `senha` | sim | 8 a 12 caracteres |\n| `nome` | sim | até 150 |\n| `telefone` | sim | até 20 |\n| `email` | sim | e-mail válido; gravado em minúsculas |\n\n**Sucesso:** `201` → `{ id_professor, nome, email, telefone, status }`\n\n**Erros** — Dois formatos: erro de **forma** (JSON, obrigatório, tamanho, id) e o 500 vêm como `{ \"erro\": \"<mensagem>\" }`; erro de **regra/banco** vem no envelope `{ codigo, mensagem, campo? }`.\n| HTTP | Retorno | Quando |\n|---|---|---|\n| 400 | `{ erro }` | JSON inválido · obrigatório ausente · tamanho fora do limite |\n| 400 | `CPF_INVALIDO` / `EMAIL_INVALIDO` | formato inválido |\n| 409 | `CPF_EM_USO` / `EMAIL_EM_USO` | já cadastrado |\n| 500 | `{ erro }` | falha não mapeada |",
+      "method": "POST",
+      "url": "{{ _.baseUrl }}/professor",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"cpf\": \"{{ _.novoCpf }}\",\n  \"senha\": \"{{ _.novaSenha }}\",\n  \"nome\": \"Professor Teste\",\n  \"telefone\": \"11999990000\",\n  \"email\": \"{{ _.novoEmail }}\"\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token }}"
+      },
+      "metaSortKey": 1000,
+      "settingEncodeUrl": true,
+      "modified": 1794168000000,
+      "created": 1794168000000
+    },
+    {
+      "_id": "req_professor_buscar_professor_por_id",
+      "_type": "request",
+      "parentId": "fld_professor",
+      "name": "Buscar professor por id",
+      "description": "**Aceita:** `id` inteiro na rota.\n\n**Sucesso:** `200` → `{ id_professor, nome, email, telefone, status }`\n\n**Erros** — Dois formatos: erro de **forma** (JSON, obrigatório, tamanho, id) e o 500 vêm como `{ \"erro\": \"<mensagem>\" }`; erro de **regra/banco** vem no envelope `{ codigo, mensagem, campo? }`.\n| HTTP | Retorno | Quando |\n|---|---|---|\n| 400 | `{ erro }` | id não é inteiro |\n| 404 | `REGISTRO_NAO_ENCONTRADO` | professor não existe |\n| 500 | `{ erro }` | falha não mapeada |",
+      "method": "GET",
+      "url": "{{ _.baseUrl }}/professor/{{ _.idProfessor }}",
+      "body": {},
+      "parameters": [],
+      "headers": [],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token }}"
+      },
+      "metaSortKey": 2000,
+      "settingEncodeUrl": true,
+      "modified": 1794168000000,
+      "created": 1794168000000
+    },
+    {
+      "_id": "req_professor_atualizar_professor",
+      "_type": "request",
+      "parentId": "fld_professor",
+      "name": "Atualizar professor",
+      "description": "**Aceita (JSON):** só os campos que mudam. Chaves desconhecidas são ignoradas.\n| Campo | Regra |\n|---|---|\n| `nome` | 1 a 150 |\n| `telefone` | 1 a 20 |\n| `email` | e-mail válido, não vazio |\n| `senha` | 8 a 12 |\n| `status` | booleano (`false` inativa, `true` reativa) |\n\n**Sucesso:** `200` → professor atualizado\n\n**Erros** — Dois formatos: erro de **forma** (JSON, obrigatório, tamanho, id) e o 500 vêm como `{ \"erro\": \"<mensagem>\" }`; erro de **regra/banco** vem no envelope `{ codigo, mensagem, campo? }`.\n| HTTP | Retorno | Quando |\n|---|---|---|\n| 400 | `{ erro }` | id inválido · JSON inválido · campo fora da regra |\n| 400 | `EMAIL_INVALIDO` | formato inválido |\n| 404 | `REGISTRO_NAO_ENCONTRADO` | professor não existe |\n| 409 | `EMAIL_EM_USO` | e-mail de outro professor |\n| 500 | `{ erro }` | falha não mapeada |",
+      "method": "PATCH",
+      "url": "{{ _.baseUrl }}/professor/{{ _.idProfessor }}",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"nome\": \"Professor Renomeado\",\n  \"status\": true\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token }}"
+      },
+      "metaSortKey": 3000,
+      "settingEncodeUrl": true,
+      "modified": 1794168000000,
+      "created": 1794168000000
+    },
+    {
+      "_id": "req_professor_excluir_professor",
+      "_type": "request",
+      "parentId": "fld_professor",
+      "name": "Excluir professor",
+      "description": "**Aceita:** `id` inteiro na rota. Exclusão definitiva; para manter o histórico, use `status: false` no PATCH.\n\n**Sucesso:** `204`, sem corpo\n\n**Erros** — Dois formatos: erro de **forma** (JSON, obrigatório, tamanho, id) e o 500 vêm como `{ \"erro\": \"<mensagem>\" }`; erro de **regra/banco** vem no envelope `{ codigo, mensagem, campo? }`.\n| HTTP | Retorno | Quando |\n|---|---|---|\n| 400 | `{ erro }` | id não é inteiro |\n| 404 | `REGISTRO_NAO_ENCONTRADO` | professor não existe |\n| 409 | `REGISTRO_EM_USO` | professor tem vínculo, cronograma, aula ou treino |\n| 500 | `{ erro }` | falha não mapeada |",
+      "method": "DELETE",
+      "url": "{{ _.baseUrl }}/professor/{{ _.idProfessor }}",
+      "body": {},
+      "parameters": [],
+      "headers": [],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token }}"
+      },
+      "metaSortKey": 4000,
+      "settingEncodeUrl": true,
+      "modified": 1794168000000,
+      "created": 1794168000000
+    },
+    {
+      "_id": "req_aulas_criar_aula",
+      "_type": "request",
+      "parentId": "fld_aulas",
+      "name": "Criar aula",
+      "description": "**Só admin.**\n\n**Aceita (JSON)** — todos obrigatórios; chave desconhecida é recusada.\n| Campo | Regra |\n|---|---|\n| `id_professor` | inteiro; professor existente e ativo |\n| `data` | `AAAA-MM-DD`, ano corrente ou seguinte |\n| `hora_inicio` / `hora_fim` | `HH:MM`; fim depois do início |\n| `tipo` | `coletiva`, `individual` ou `experimental` |\n| `categoria` | `musculacao`, `funcional`, `pilates`, `crossfit`, `danca`, `spinning` |\n| `vagas_maxima` | inteiro > 0; `individual` de 1 a 3 |\n\n**Sucesso:** `201` → `{ id_aula, id_professor, id_cronograma, data, hora_inicio, hora_fim, tipo, categoria, vagas_maxima, status }`. Copie `id_aula` para `idAula`.\n\n**Erros** — Todos os erros vêm no envelope `{ codigo, mensagem, campo? }`.\n| HTTP | `codigo` | Quando |\n|---|---|---|\n| 400 | `JSON_INVALIDO` | corpo não é objeto JSON |\n| 400 | `CAMPO_OBRIGATORIO` + `campo` | campo ausente |\n| 400 | `CAMPO_INVALIDO` + `campo` | formato, regra ou professor inativo |\n| 401 | `TOKEN_INVALIDO` | sem token |\n| 403 | `ACESSO_NEGADO` | não é admin |\n| 409 | `HORARIO_CONFLITANTE` | professor já tem aula na mesma data e hora |",
+      "method": "POST",
+      "url": "{{ _.baseUrl }}/aulas",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"id_professor\": {{ _.idProfessorAula }},\n  \"data\": \"{{ _.dataAula }}\",\n  \"hora_inicio\": \"07:00\",\n  \"hora_fim\": \"08:00\",\n  \"tipo\": \"coletiva\",\n  \"categoria\": \"pilates\",\n  \"vagas_maxima\": 10\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token }}"
+      },
+      "metaSortKey": 1000,
+      "settingEncodeUrl": true,
+      "modified": 1794168000000,
+      "created": 1794168000000
+    },
+    {
+      "_id": "req_aulas_listar_aulas",
+      "_type": "request",
+      "parentId": "fld_aulas",
+      "name": "Listar aulas",
+      "description": "**Todos os perfis.**\n\n**Aceita (query)**\n| Parâmetro | Padrão | Regra |\n|---|---|---|\n| `limit` | 20 | 1 a 100 |\n| `offset` | 0 | ≥ 0 |\n| `data` | — | `AAAA-MM-DD` |\n| `categoria` | — | uma das 6 categorias |\n| `idProfessor` | — | inteiro |\n\n**Sucesso:** `200` → `{ itens: [aula], limit, offset, total }`, em ordem de data e hora.\n\n**Erros** — Todos os erros vêm no envelope `{ codigo, mensagem, campo? }`.\n| HTTP | `codigo` | Quando |\n|---|---|---|\n| 400 | `CAMPO_INVALIDO` + `campo` | parâmetro fora da regra |",
+      "method": "GET",
+      "url": "{{ _.baseUrl }}/aulas?limit=20&offset=0",
+      "body": {},
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token }}"
+      },
+      "metaSortKey": 2000,
+      "settingEncodeUrl": true,
+      "modified": 1794168000000,
+      "created": 1794168000000
+    },
+    {
+      "_id": "req_aulas_buscar_aula_por_id",
+      "_type": "request",
+      "parentId": "fld_aulas",
+      "name": "Buscar aula por id",
+      "description": "**Todos os perfis.**\n\n**Sucesso:** `200` → aula.\n\n**Erros** — Todos os erros vêm no envelope `{ codigo, mensagem, campo? }`.\n| HTTP | `codigo` | Quando |\n|---|---|---|\n| 400 | `CAMPO_INVALIDO` (`id`) | id não numérico |\n| 404 | `REGISTRO_NAO_ENCONTRADO` | aula não existe |",
+      "method": "GET",
+      "url": "{{ _.baseUrl }}/aulas/{{ _.idAula }}",
+      "body": {},
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token }}"
+      },
+      "metaSortKey": 3000,
+      "settingEncodeUrl": true,
+      "modified": 1794168000000,
+      "created": 1794168000000
+    },
+    {
+      "_id": "req_aulas_atualizar_aula",
+      "_type": "request",
+      "parentId": "fld_aulas",
+      "name": "Atualizar aula",
+      "description": "**Admin** em qualquer aula; **professor** só na própria, ainda não realizada.\n\n**Aceita (JSON):** os mesmos campos do cadastro, ao menos um; só os enviados mudam. `null` e chave desconhecida são recusados.\n\n**Regras**\n- Aula cancelada não é editável.\n- Com agendamentos ativos: data, horários e professor travados; vagas não descem abaixo da ocupação.\n- Professor não troca o professor nem move a aula para o passado (data ou horário).\n- Nova data: ano corrente ou seguinte.\n\n**Sucesso:** `200` → aula atualizada.\n\n**Erros** — Todos os erros vêm no envelope `{ codigo, mensagem, campo? }`.\n| HTTP | `codigo` | Quando |\n|---|---|---|\n| 400 | `CAMPO_OBRIGATORIO` | corpo `{}` |\n| 400 | `CAMPO_INVALIDO` + `campo` | formato, regra ou data/horário no passado (professor) |\n| 403 | `ACESSO_NEGADO` | aluno · aula de outro professor · aula realizada · troca de professor |\n| 404 | `REGISTRO_NAO_ENCONTRADO` | aula não existe |\n| 409 | `AULA_INATIVA` | aula cancelada |\n| 409 | `REGISTRO_EM_USO` + `campo` | alteração travada por agendamentos |\n| 409 | `HORARIO_CONFLITANTE` | novo horário conflita |\n| 409 | `AULA_CATEGORIA_DIVERGENTE` / `AULA_PROFESSOR_DIVERGENTE` | aula de cronograma |",
+      "method": "PATCH",
+      "url": "{{ _.baseUrl }}/aulas/{{ _.idAula }}",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"vagas_maxima\": 12,\n  \"hora_fim\": \"09:00\"\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token }}"
+      },
+      "metaSortKey": 4000,
+      "settingEncodeUrl": true,
+      "modified": 1794168000000,
+      "created": 1794168000000
+    },
+    {
+      "_id": "req_aulas_cenarios_de_validacao_sem_token_401",
+      "_type": "request",
+      "parentId": "fld_aulas_cenarios_de_validacao",
+      "name": "Sem token (401)",
+      "description": "Esperado: `401` `TOKEN_INVALIDO`.",
+      "method": "GET",
+      "url": "{{ _.baseUrl }}/aulas",
+      "body": {},
+      "parameters": [],
+      "headers": [],
+      "authentication": {},
+      "metaSortKey": 1000,
+      "settingEncodeUrl": true,
+      "modified": 1794168000000,
+      "created": 1794168000000
+    },
+    {
+      "_id": "req_aulas_cenarios_de_validacao_data_fora_do_ano_de_vigencia_400",
+      "_type": "request",
+      "parentId": "fld_aulas_cenarios_de_validacao",
+      "name": "Data fora do ano de vigencia (400)",
+      "description": "Esperado: `400` `CAMPO_INVALIDO`, `campo: data`.",
+      "method": "POST",
+      "url": "{{ _.baseUrl }}/aulas",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"id_professor\": {{ _.idProfessorAula }},\n  \"data\": \"2020-01-10\",\n  \"hora_inicio\": \"10:00\",\n  \"hora_fim\": \"11:00\",\n  \"tipo\": \"coletiva\",\n  \"categoria\": \"pilates\",\n  \"vagas_maxima\": 10\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token }}"
+      },
+      "metaSortKey": 2000,
+      "settingEncodeUrl": true,
+      "modified": 1794168000000,
+      "created": 1794168000000
+    },
+    {
+      "_id": "req_aulas_cenarios_de_validacao_individual_com_4_vagas_400",
+      "_type": "request",
+      "parentId": "fld_aulas_cenarios_de_validacao",
+      "name": "Individual com 4 vagas (400)",
+      "description": "Esperado: `400` `CAMPO_INVALIDO`, `campo: vagas_maxima`.",
+      "method": "POST",
+      "url": "{{ _.baseUrl }}/aulas",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"id_professor\": {{ _.idProfessorAula }},\n  \"data\": \"{{ _.dataAula }}\",\n  \"hora_inicio\": \"10:00\",\n  \"hora_fim\": \"11:00\",\n  \"tipo\": \"individual\",\n  \"categoria\": \"pilates\",\n  \"vagas_maxima\": 4\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token }}"
+      },
+      "metaSortKey": 3000,
+      "settingEncodeUrl": true,
+      "modified": 1794168000000,
+      "created": 1794168000000
+    },
+    {
+      "_id": "req_aulas_cenarios_de_validacao_hora_com_segundos_400",
+      "_type": "request",
+      "parentId": "fld_aulas_cenarios_de_validacao",
+      "name": "Hora com segundos (400)",
+      "description": "Esperado: `400` `CAMPO_INVALIDO`, `campo: hora_inicio`.",
+      "method": "POST",
+      "url": "{{ _.baseUrl }}/aulas",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"id_professor\": {{ _.idProfessorAula }},\n  \"data\": \"{{ _.dataAula }}\",\n  \"hora_inicio\": \"10:00:00\",\n  \"hora_fim\": \"11:00\",\n  \"tipo\": \"coletiva\",\n  \"categoria\": \"pilates\",\n  \"vagas_maxima\": 10\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token }}"
+      },
+      "metaSortKey": 4000,
+      "settingEncodeUrl": true,
+      "modified": 1794168000000,
+      "created": 1794168000000
+    },
+    {
+      "_id": "req_aulas_cenarios_de_validacao_horario_conflitante_409",
+      "_type": "request",
+      "parentId": "fld_aulas_cenarios_de_validacao",
+      "name": "Horario conflitante (409)",
+      "description": "Mesmo professor, data e hora de **Criar aula**. Esperado: `409` `HORARIO_CONFLITANTE`.",
+      "method": "POST",
+      "url": "{{ _.baseUrl }}/aulas",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"id_professor\": {{ _.idProfessorAula }},\n  \"data\": \"{{ _.dataAula }}\",\n  \"hora_inicio\": \"07:00\",\n  \"hora_fim\": \"08:00\",\n  \"tipo\": \"coletiva\",\n  \"categoria\": \"pilates\",\n  \"vagas_maxima\": 10\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token }}"
+      },
+      "metaSortKey": 5000,
+      "settingEncodeUrl": true,
+      "modified": 1794168000000,
+      "created": 1794168000000
+    },
+    {
+      "_id": "req_aulas_cenarios_de_validacao_campo_nao_aceito_no_patch_400",
+      "_type": "request",
+      "parentId": "fld_aulas_cenarios_de_validacao",
+      "name": "Campo nao aceito no PATCH (400)",
+      "description": "Esperado: `400` `CAMPO_INVALIDO`, `campo: status`.",
+      "method": "PATCH",
+      "url": "{{ _.baseUrl }}/aulas/{{ _.idAula }}",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"status\": false\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token }}"
+      },
+      "metaSortKey": 6000,
+      "settingEncodeUrl": true,
+      "modified": 1794168000000,
+      "created": 1794168000000
+    },
+    {
+      "_id": "req_aulas_cenarios_de_validacao_aula_inexistente_404",
+      "_type": "request",
+      "parentId": "fld_aulas_cenarios_de_validacao",
+      "name": "Aula inexistente (404)",
+      "description": "Esperado: `404` `REGISTRO_NAO_ENCONTRADO`.",
+      "method": "GET",
+      "url": "{{ _.baseUrl }}/aulas/999999999",
+      "body": {},
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token }}"
+      },
+      "metaSortKey": 7000,
+      "settingEncodeUrl": true,
+      "modified": 1794168000000,
+      "created": 1794168000000
+    },
+    {
+      "_id": "req_infra_health_check",
+      "_type": "request",
+      "parentId": "fld_infra",
+      "name": "Health check",
+      "description": "**Aceita:** nada (sem corpo, sem parâmetros, sem autenticação).\n\n**Sucesso:** `200` → `{ \"status\": \"ok\" }` — processo no ar e o banco respondeu a um `SELECT 1` em até 2 s.\n\n**Falha:** `503` → `{ \"status\": \"indisponivel\" }` — banco fora do ar ou lento. O corpo é fixo e não revela a causa.\n\nNo Docker, a porta publicada é `BACKEND_PUBLIC_PORT` (padrão `8080`) em `127.0.0.1`.",
+      "method": "GET",
+      "url": "{{ _.baseUrl }}/health",
+      "body": {},
+      "parameters": [],
+      "headers": [],
+      "authentication": {},
+      "metaSortKey": 1000,
+      "settingEncodeUrl": true,
+      "modified": 1794168000000,
+      "created": 1794168000000
+    }
+  ]
+}
