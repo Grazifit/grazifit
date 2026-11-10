@@ -1,0 +1,15 @@
+$kind: http-request
+description: |-
+  **Aceita:** `id` inteiro na rota.
+
+  **Sucesso:** `204`, sem corpo
+
+  **Erros** — Todos os erros vêm como `{ "erro": "<mensagem>" }` (ainda sem o envelope D64).
+  | HTTP | Quando |
+  |---|---|
+  | 400 | id não é inteiro |
+  | 404 | admin não existe |
+  | 500 | qualquer outra falha |
+url: "{{baseUrl}}/admin/{{idAdmin}}"
+method: DELETE
+order: 4000

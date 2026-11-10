@@ -9,7 +9,7 @@ import 'package:grazifit_app/features/auth/data/auth_repository.dart';
 import 'package:grazifit_app/features/auth/screens/login_screen.dart';
 import 'package:grazifit_app/features/auth/state/auth_controller.dart';
 import 'package:grazifit_app/features/inicio/screens/tela_inicio_admin.dart';
-import 'package:grazifit_app/features/vinculos/screens/meus_alunos_screen.dart';
+import 'package:grazifit_app/features/aulas/screens/minha_agenda_screen.dart';
 import 'package:shared/dtos/auth_dto.dart';
 
 class _Repository implements AuthRepository {
@@ -103,7 +103,7 @@ void main() {
   for (final caso in <String, Type>{
     'admin': TelaInicioAdmin,
     'aluno': TelaAgendaAluno,
-    'professor': MeusAlunosScreen,
+    'professor': MinhaAgendaScreen,
   }.entries) {
     testWidgets('${caso.key} abre a tela correspondente', (tester) async {
       final repository = _Repository((_, _) async => sessao(caso.key));
@@ -125,6 +125,6 @@ void main() {
     expect(find.byType(LoginScreen), findsOneWidget);
     expect(find.byType(TelaInicioAdmin), findsNothing);
     expect(find.byType(TelaAgendaAluno), findsNothing);
-    expect(find.byType(MeusAlunosScreen), findsNothing);
+    expect(find.byType(MinhaAgendaScreen), findsNothing);
   });
 }

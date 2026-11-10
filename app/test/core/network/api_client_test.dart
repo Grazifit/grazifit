@@ -6,8 +6,49 @@ import 'package:grazifit_app/core/network/api_client.dart';
 import 'package:grazifit_app/core/network/api_exception.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
+import 'package:shared/erros/codigo_erro.dart';
 
 void main() {
+  test('erro de cadastro preserva campo e codigo tipado', () async {
+    final api = ApiClient(
+      baseUrl: 'http://localhost:8080',
+      client: MockClient(
+        (_) async =>
+            http.Response('{"codigo":"EMAIL_EM_USO","campo":"email"}', 409),
+      ),
+    );
+    await expectLater(
+      api.post('/professor', {}),
+      throwsA(
+        isA<ApiException>()
+            .having((e) => e.codigoErro, 'codigoErro', CodigoErro.emailEmUso)
+            .having((e) => e.campo, 'campo', 'email')
+            .having((e) => e.status, 'status', 409)
+            .having((e) => e.semResposta, 'semResposta', false),
+      ),
+    );
+  });
+
+  test('post do cadastro usa token atual e login nao envia Bearer', () async {
+    final requests = <http.Request>[];
+    String? token = 'sessao-1';
+    final api = ApiClient(
+      baseUrl: 'http://localhost:8080',
+      token: () => token,
+      client: MockClient((request) async {
+        requests.add(request);
+        return http.Response('{}', 200);
+      }),
+    );
+    await api.post('/professor', {});
+    token = 'sessao-2';
+    await api.post('/professor', {});
+    await api.postJson('/auth/login', {});
+    expect(requests[0].headers['Authorization'], 'Bearer sessao-1');
+    expect(requests[1].headers['Authorization'], 'Bearer sessao-2');
+    expect(requests[2].headers.containsKey('Authorization'), isFalse);
+  });
+
   test('envia JSON ao endpoint correto e converte resposta 200', () async {
     late http.Request requisicao;
     final client = MockClient((request) async {

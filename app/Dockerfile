@@ -47,6 +47,8 @@ RUN flutter config --no-analytics --no-cli-animations \
 # ------------------------------------------------------------
 FROM sdk AS dependencias
 
+# `shared/` entra aqui porque o app o referencia por path (../shared).
+COPY --chown=grazifit:grazifit shared/ /app/shared/
 COPY --chown=grazifit:grazifit app/pubspec.yaml app/pubspec.lock ./
 RUN flutter pub get --enforce-lockfile
 

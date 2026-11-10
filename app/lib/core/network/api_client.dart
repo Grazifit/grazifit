@@ -2,12 +2,29 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:http/http.dart' as http;
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../../features/auth/state/auth_controller.dart';
 
 import 'api_exception.dart';
+
+final httpClientProvider = Provider<http.Client>((ref) {
+  final client = http.Client();
+  ref.onDispose(client.close);
+  return client;
+});
+
+final apiClientProvider = Provider<ApiClient>(
+  (ref) => ApiClient(
+    client: ref.watch(httpClientProvider),
+    token: () => ref.read(authControllerProvider).sessao?.accessToken,
+  ),
+);
 
 class ApiClient {
   ApiClient({
     http.Client? client,
+    this.token,
     this.baseUrl = const String.fromEnvironment('API_BASE_URL'),
     this.timeout = const Duration(seconds: 15),
   }) : _client = client ?? http.Client();
@@ -15,6 +32,10 @@ class ApiClient {
   final http.Client _client;
   final String baseUrl;
   final Duration timeout;
+  final String? Function()? token;
+
+  Future<Map<String, dynamic>> post(String path, Map<String, dynamic> body) =>
+      postJson(path, body);
 
   Future<Map<String, dynamic>> postJson(
     String path,
@@ -26,10 +47,15 @@ class ApiClient {
 
     try {
       final uri = Uri.parse('${baseUrl.replaceFirst(RegExp(r'/$'), '')}$path');
+      final token = path == '/auth/login' ? null : this.token?.call();
       final response = await _client
           .post(
             uri,
-            headers: const {'Content-Type': 'application/json'},
+            headers: {
+              'Content-Type': 'application/json',
+              if (token != null && token.isNotEmpty)
+                'Authorization': 'Bearer $token',
+            },
             body: jsonEncode(body),
           )
           .timeout(timeout);
@@ -38,6 +64,7 @@ class ApiClient {
         final erro = _decodeObjectOrEmpty(response.body);
         throw ApiException(
           statusCode: response.statusCode,
+          campo: erro['campo'] is String ? erro['campo'] as String : null,
           codigo: erro['codigo'] is String ? erro['codigo'] as String : null,
           mensagem: erro['mensagem'] is String
               ? erro['mensagem'] as String
