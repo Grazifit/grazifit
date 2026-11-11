@@ -24,6 +24,7 @@ class TelaUsuariosAdmin extends StatefulWidget {
     this.onSelecionarUsuario,
     this.onAbrirVinculos,
     this.onNavegar,
+    this.mostrarNavegacaoInferior = true,
   });
 
   final UsuariosAdminData dados;
@@ -32,6 +33,7 @@ class TelaUsuariosAdmin extends StatefulWidget {
   final ValueChanged<UsuarioAdminData>? onSelecionarUsuario;
   final VoidCallback? onAbrirVinculos;
   final ValueChanged<DestinoUsuariosAdmin>? onNavegar;
+  final bool mostrarNavegacaoInferior;
 
   static const _verde = Color(0xFF005B50);
   static const _texto = Color(0xFF33413F);
@@ -78,7 +80,9 @@ class _TelaUsuariosAdminState extends State<TelaUsuariosAdmin> {
             ],
           ),
         ),
-        bottomNavigationBar: _navegacaoInferior(context),
+        bottomNavigationBar: mostrarNavegacaoInferior
+            ? _navegacaoInferior(context)
+            : null,
       ),
     );
   }

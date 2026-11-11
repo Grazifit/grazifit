@@ -19,6 +19,7 @@ class TelaInicioAdmin extends StatelessWidget {
     this.onTentarNovamente,
     this.onNavegar,
     this.onAbrirAula,
+    this.mostrarNavegacaoInferior = true,
   });
 
   final InicioAdminData dados;
@@ -26,6 +27,7 @@ class TelaInicioAdmin extends StatelessWidget {
   final VoidCallback? onTentarNovamente;
   final ValueChanged<DestinoInicioAdmin>? onNavegar;
   final ValueChanged<AulaAdminData>? onAbrirAula;
+  final bool mostrarNavegacaoInferior;
 
   static const _verde = Color(0xFF005B50);
   static const _texto = Color(0xFF33413F);
@@ -66,7 +68,9 @@ class TelaInicioAdmin extends StatelessWidget {
               ),
           },
         ),
-        bottomNavigationBar: _navegacaoInferior(context),
+        bottomNavigationBar: mostrarNavegacaoInferior
+            ? _navegacaoInferior(context)
+            : null,
       ),
     );
   }

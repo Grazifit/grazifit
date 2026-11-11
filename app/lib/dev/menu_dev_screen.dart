@@ -34,6 +34,7 @@ import '../features/auth/screens/login_screen.dart';
 import '../features/avaliacoes/screens/tela_registrar_medida_aluno.dart';
 import '../features/avaliacoes/screens/tela_evolucao_aluno.dart';
 import '../features/avaliacoes/screens/avaliacao_fisica_screen.dart';
+import '../core/routing/admin_shell_screen.dart';
 
 
 class MenuDevScreen extends StatelessWidget {
@@ -42,6 +43,9 @@ class MenuDevScreen extends StatelessWidget {
   // Telas agrupadas por feature. Telas que recebem parâmetros usam dados
   // fictícios só para abrir.
   static final _grupos = <_GrupoDev>[
+    _GrupoDev('Admin', [
+      _TelaDev('Navegação Admin', () => const AdminShellScreen()),
+    ]),
     _GrupoDev('Pessoas', [
       _TelaDev('Login', () => const LoginScreen()),
       
