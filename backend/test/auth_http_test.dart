@@ -33,8 +33,9 @@ class _Repo implements AuthRepository {
   @override
   Future<void> registrarSessao(
     TokenEmitido token,
-    Identidade identidade,
-  ) async {
+    Identidade identidade, {
+    required String senhaHashEsperada,
+  }) async {
     sessoes[token.jtiHash] = TokenValidado(
       identidade: identidade,
       jtiHash: token.jtiHash,
