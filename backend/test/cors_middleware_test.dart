@@ -18,7 +18,7 @@ void main() {
           Uri.parse('http://localhost/recurso'),
           headers: {
             'origin': origin,
-            'access-control-request-method': 'GET',
+            'access-control-request-method': 'PUT',
             'access-control-request-headers': 'authorization,content-type',
           },
         ),
@@ -30,6 +30,10 @@ void main() {
           contains('Authorization'),
         );
         expect(response.headers['access-control-allow-origin'], origin);
+        expect(
+          response.headers['access-control-allow-methods'],
+          contains('PUT'),
+        );
       } else {
         expect(
           response.headers.containsKey('access-control-allow-origin'),
