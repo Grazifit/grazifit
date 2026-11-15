@@ -26,6 +26,7 @@ import '../features/treinos/screens/montar_treino_screen.dart';
 
 import '../features/aulas/screens/detalhe_aula_screen.dart';
 import '../features/aulas/screens/minha_agenda_screen.dart';
+import '../features/cronogramas/screens/gerar_aulas_admin_screen.dart';
 
 import '../features/vinculos/screens/meus_alunos_screen.dart';
 import '../features/vinculos/screens/aluno_detalhe_screen.dart';
@@ -71,6 +72,10 @@ class MenuDevScreen extends StatelessWidget {
       _TelaDev('Detalhes da aula', () => const DetalheAulaScreen()),
       _TelaDev('Minha Agenda', () => const MinhaAgendaScreen()),
       _TelaDev('Avaliação física', () => const AvaliacaoFisicaScreen())
+    ]),
+
+    _GrupoDev('Cronogramas', [
+      _TelaDev('Gerar aulas (Admin)', () => const GerarAulasAdminScreen()),
     ]),
 
     _GrupoDev('Vínculos', [
