@@ -29,7 +29,8 @@
         "nova_senha": "",
         "admin_id": 1,
         "aluno_id": 1,
-        "professor_id": 1
+        "professor_id": 1,
+        "aula_id": 1
       },
       "dataPropertyOrder": {
         "&": [
@@ -41,7 +42,8 @@
           "nova_senha",
           "admin_id",
           "aluno_id",
-          "professor_id"
+          "professor_id",
+          "aula_id"
         ]
       },
       "color": null,
@@ -632,6 +634,74 @@
       ],
       "authentication": {},
       "metaSortKey": -1000,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global",
+      "_type": "request"
+    },
+    {
+      "_id": "fld_aula",
+      "parentId": "wrk_grazifit_backend",
+      "modified": 1792540800000,
+      "created": 1792540800000,
+      "name": "Aula",
+      "description": "Rotas de aula. Admin em qualquer aula; professor so nas proprias.",
+      "environment": {},
+      "environmentPropertyOrder": null,
+      "metaSortKey": -500,
+      "_type": "request_group"
+    },
+    {
+      "_id": "req_aula_cancelar",
+      "parentId": "fld_aula",
+      "modified": 1792540800000,
+      "created": 1792540800000,
+      "url": "{{ _.base_url }}/aulas/{{ _.aula_id }}/cancelar",
+      "name": "Cancelar aula",
+      "description": "Sem corpo. Admin cancela qualquer aula; professor so a propria. A aula fica status false, com data_cancelamento (UTC ISO-8601) e cancelado_por (admin ou professor); os agendamentos 'agendado' viram 'cancelado' na mesma transacao. Ja cancelada: 200 com o estado atual. Erros: 403 ACESSO_NEGADO, 404 REGISTRO_NAO_ENCONTRADO, 409 AULA_DATA_PASSADA (aula ja realizada). Resposta esperada: 200.",
+      "method": "POST",
+      "body": {},
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {% response 'body', 'req_login', 'b64::JC5hY2Nlc3NfdG9rZW4=::46b', 'never', 60 %}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1000,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global",
+      "_type": "request"
+    },
+    {
+      "_id": "req_aula_listar_agendados",
+      "parentId": "fld_aula",
+      "modified": 1792540800000,
+      "created": 1792540800000,
+      "url": "{{ _.base_url }}/aulas/{{ _.aula_id }}/agendamentos?limit=20&offset=0",
+      "name": "Listar agendados da aula",
+      "description": "Admin ve de qualquer aula; professor so da propria; aluno recebe 403. Vale para aula ativa ou cancelada. Pagina { itens, limit, offset, total } (limit 1 a 100, padrao 20; offset >= 0). Cada item: id_agendamento, id_aluno, nome_aluno, status; sem os 'cancelado', em ordem de nome_aluno e id_agendamento. Sem CPF, contato ou dados de saude. Erros: 400 CAMPO_INVALIDO (id, limit, offset), 403 ACESSO_NEGADO, 404 REGISTRO_NAO_ENCONTRADO. Resposta esperada: 200.",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {% response 'body', 'req_login', 'b64::JC5hY2Nlc3NfdG9rZW4=::46b', 'never', 60 %}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -900,
       "isPrivate": false,
       "settingStoreCookies": true,
       "settingSendCookies": true,

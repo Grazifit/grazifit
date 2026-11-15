@@ -31,6 +31,7 @@
         "idAluno": "{% response 'body', 'req_aluno_criar_aluno', 'b64::JC5pZF9hbHVubw==::46b', 'never', 60 %}",
         "idProfessor": "{% response 'body', 'req_professor_criar_professor', 'b64::JC5pZF9wcm9mZXNzb3I=::46b', 'never', 60 %}",
         "idAula": "{% response 'body', 'req_aulas_criar_aula', 'b64::JC5pZF9hdWxh::46b', 'never', 60 %}",
+        "idAgendamento": "{% response 'body', 'req_agendamentos_reservar_vaga', 'b64::JC5pZF9hZ2VuZGFtZW50bw==::46b', 'never', 60 %}",
         "dataAula": "2026-12-15",
         "idProfessorAula": "1"
       },
@@ -47,6 +48,7 @@
           "idAluno",
           "idProfessor",
           "idAula",
+          "idAgendamento",
           "dataAula",
           "idProfessorAula"
         ]
@@ -109,6 +111,17 @@
       "description": "Rotas `/aulas`.",
       "environment": {},
       "metaSortKey": 5000,
+      "modified": 1794168000000,
+      "created": 1794168000000
+    },
+    {
+      "_id": "fld_agendamentos",
+      "_type": "request_group",
+      "parentId": "wrk_grazifit_api",
+      "name": "Agendamentos",
+      "description": "Rotas `/agendamentos`. Só o aluno opera os próprios agendamentos; professor e admin recebem `403`.",
+      "environment": {},
+      "metaSortKey": 5500,
       "modified": 1794168000000,
       "created": 1794168000000
     },
@@ -520,7 +533,7 @@
       "_type": "request",
       "parentId": "fld_aulas",
       "name": "Criar aula",
-      "description": "**Só admin.**\n\n**Aceita (JSON)** — todos obrigatórios; chave desconhecida é recusada.\n| Campo | Regra |\n|---|---|\n| `id_professor` | inteiro; professor existente e ativo |\n| `data` | `AAAA-MM-DD`, ano corrente ou seguinte |\n| `hora_inicio` / `hora_fim` | `HH:MM`; fim depois do início |\n| `tipo` | `coletiva`, `individual` ou `experimental` |\n| `categoria` | `musculacao`, `funcional`, `pilates`, `crossfit`, `danca`, `spinning` |\n| `vagas_maxima` | inteiro > 0; `individual` de 1 a 3 |\n\n**Sucesso:** `201` → `{ id_aula, id_professor, id_cronograma, data, hora_inicio, hora_fim, tipo, categoria, vagas_maxima, status }`. Copie `id_aula` para `idAula`.\n\n**Erros** — Todos os erros vêm no envelope `{ codigo, mensagem, campo? }`.\n| HTTP | `codigo` | Quando |\n|---|---|---|\n| 400 | `JSON_INVALIDO` | corpo não é objeto JSON |\n| 400 | `CAMPO_OBRIGATORIO` + `campo` | campo ausente |\n| 400 | `CAMPO_INVALIDO` + `campo` | formato, regra ou professor inativo |\n| 401 | `TOKEN_INVALIDO` | sem token |\n| 403 | `ACESSO_NEGADO` | não é admin |\n| 409 | `HORARIO_CONFLITANTE` | professor já tem aula na mesma data e hora |",
+      "description": "**Só admin.**\n\n**Aceita (JSON)** — todos obrigatórios; chave desconhecida é recusada.\n| Campo | Regra |\n|---|---|\n| `id_professor` | inteiro; professor existente e ativo |\n| `data` | `AAAA-MM-DD`, ano corrente ou seguinte |\n| `hora_inicio` / `hora_fim` | `HH:MM`; fim depois do início |\n| `tipo` | `coletiva`, `individual` ou `experimental` |\n| `categoria` | `musculacao`, `funcional`, `pilates`, `crossfit`, `danca`, `spinning` |\n| `vagas_maxima` | inteiro > 0; `individual` de 1 a 3 |\n\n**Sucesso:** `201` → `{ id_aula, id_professor, id_cronograma, data, hora_inicio, hora_fim, tipo, categoria, vagas_maxima, vagas_ocupadas, vagas_livres, status, data_cancelamento, cancelado_por }` (`data_cancelamento` e `cancelado_por` `null` em aula ativa; `vagas_ocupadas` = 0 e `vagas_livres` = `vagas_maxima` na criação). Toda rota que devolve aula traz os mesmos campos; `vagas_ocupadas` não conta `cancelado` nem `faltou`. Copie `id_aula` para `idAula`.\n\n**Erros** — Todos os erros vêm no envelope `{ codigo, mensagem, campo? }`.\n| HTTP | `codigo` | Quando |\n|---|---|---|\n| 400 | `JSON_INVALIDO` | corpo não é objeto JSON |\n| 400 | `CAMPO_OBRIGATORIO` + `campo` | campo ausente |\n| 400 | `CAMPO_INVALIDO` + `campo` | formato, regra ou professor inativo |\n| 401 | `TOKEN_INVALIDO` | sem token |\n| 403 | `ACESSO_NEGADO` | não é admin |\n| 409 | `HORARIO_CONFLITANTE` | professor já tem aula na mesma data e hora |",
       "method": "POST",
       "url": "{{ _.baseUrl }}/aulas",
       "body": {
@@ -617,6 +630,51 @@
         "token": "{{ _.token }}"
       },
       "metaSortKey": 4000,
+      "settingEncodeUrl": true,
+      "modified": 1794168000000,
+      "created": 1794168000000
+    },
+    {
+      "_id": "req_aulas_cancelar_aula",
+      "_type": "request",
+      "parentId": "fld_aulas",
+      "name": "Cancelar aula",
+      "description": "**Admin** em qualquer aula; **professor** só na própria.\n\n**Sem corpo.** A aula não é apagada: fica `status: false` com quem cancelou e quando.\n\n**Regras**\n- Na mesma transação, os agendamentos `agendado` da aula viram `cancelado`; `presente` e `faltou` não mudam.\n- Sem janela mínima de antecedência.\n- Aula já cancelada: `200` com o estado atual, sem alterar nada. Não há reativação.\n\n**Sucesso:** `200` → aula, com `data_cancelamento` (UTC ISO-8601) e `cancelado_por` (`admin` ou `professor`).\n\n**Erros** — Todos os erros vêm no envelope `{ codigo, mensagem, campo? }`.\n| HTTP | `codigo` | Quando |\n|---|---|---|\n| 400 | `CAMPO_INVALIDO` (`id`) | id não numérico |\n| 401 | `TOKEN_INVALIDO` | sem token |\n| 403 | `ACESSO_NEGADO` | aluno · aula de outro professor |\n| 404 | `REGISTRO_NAO_ENCONTRADO` | aula não existe |\n| 409 | `AULA_DATA_PASSADA` | aula já realizada (data + `hora_fim` ≤ agora) |",
+      "method": "POST",
+      "url": "{{ _.baseUrl }}/aulas/{{ _.idAula }}/cancelar",
+      "body": {},
+      "parameters": [],
+      "headers": [],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token }}"
+      },
+      "metaSortKey": 5000,
+      "settingEncodeUrl": true,
+      "modified": 1794168000000,
+      "created": 1794168000000
+    },
+    {
+      "_id": "req_aulas_listar_agendados_da_aula",
+      "_type": "request",
+      "parentId": "fld_aulas",
+      "name": "Listar agendados da aula",
+      "description": "**Admin** em qualquer aula; **professor** só na própria. Aluno não acessa. Vale para aula ativa ou cancelada.\n\n**Aceita (query)**\n| Parâmetro | Padrão | Regra |\n|---|---|---|\n| `limit` | 20 | 1 a 100 |\n| `offset` | 0 | ≥ 0 |\n\n**Sucesso:** `200` → `{ itens: [{ id_agendamento, id_aluno, nome_aluno, status }], limit, offset, total }`, sem os `cancelado`, em ordem de `nome_aluno` e depois `id_agendamento`. Sem CPF, contato ou dados de saúde.\n\n**Erros** — Todos os erros vêm no envelope `{ codigo, mensagem, campo? }`.\n| HTTP | `codigo` | Quando |\n|---|---|---|\n| 400 | `CAMPO_INVALIDO` + `campo` | `id` não numérico · `limit`/`offset` fora da regra |\n| 401 | `TOKEN_INVALIDO` | sem token |\n| 403 | `ACESSO_NEGADO` | aluno · aula de outro professor |\n| 404 | `REGISTRO_NAO_ENCONTRADO` | aula não existe |",
+      "method": "GET",
+      "url": "{{ _.baseUrl }}/aulas/{{ _.idAula }}/agendamentos?limit=20&offset=0",
+      "body": {},
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token }}"
+      },
+      "metaSortKey": 6000,
       "settingEncodeUrl": true,
       "modified": 1794168000000,
       "created": 1794168000000
@@ -799,6 +857,87 @@
         "token": "{{ _.token }}"
       },
       "metaSortKey": 7000,
+      "settingEncodeUrl": true,
+      "modified": 1794168000000,
+      "created": 1794168000000
+    },
+    {
+      "_id": "req_agendamentos_reservar_vaga",
+      "_type": "request",
+      "parentId": "fld_agendamentos",
+      "name": "Reservar vaga",
+      "description": "**Só aluno** (token de aluno).\n\n**Aceita (JSON):** `{ id_aula }` (inteiro, obrigatório); chave desconhecida é recusada.\n\n**Regras** (nesta ordem): aula existe → ativa → data não passada → ano corrente ou seguinte → ao menos 2 h antes do início → sem agendamento ativo do aluno na aula → com vaga.\n\n**Sucesso:** `201` → `{ id_agendamento, id_aluno, id_aula, data_agendamento, status, data_presenca, data_cancelamento }`. Copie `id_agendamento` para `idAgendamento`.\n\n**Erros** — Todos os erros vêm no envelope `{ codigo, mensagem, campo? }`.\n| HTTP | `codigo` | Quando |\n|---|---|---|\n| 400 | `JSON_INVALIDO` | corpo não é objeto JSON |\n| 400 | `CAMPO_OBRIGATORIO` (`id_aula`) | campo ausente |\n| 400 | `CAMPO_INVALIDO` + `campo` | `id_aula` não inteiro · chave desconhecida · ano fora da vigência (`data`) |\n| 401 | `TOKEN_INVALIDO` | sem token |\n| 403 | `ACESSO_NEGADO` | não é aluno |\n| 404 | `REGISTRO_NAO_ENCONTRADO` | aula não existe |\n| 409 | `AULA_INATIVA` | aula cancelada |\n| 409 | `AULA_DATA_PASSADA` | data anterior a hoje |\n| 409 | `AGENDAMENTO_FORA_DA_JANELA` | menos de 2 h para o início |\n| 409 | `AGENDAMENTO_DUPLICADO` | aluno já tem agendamento na aula |\n| 409 | `AULA_SEM_VAGAS` | aula lotada |\n| 429 | `MUITAS_TENTATIVAS` | limite por usuário (header `Retry-After`) |",
+      "method": "POST",
+      "url": "{{ _.baseUrl }}/agendamentos",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"id_aula\": {{ _.idAula }}\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token }}"
+      },
+      "metaSortKey": 1000,
+      "settingEncodeUrl": true,
+      "modified": 1794168000000,
+      "created": 1794168000000
+    },
+    {
+      "_id": "req_agendamentos_listar_meus_agendamentos",
+      "_type": "request",
+      "parentId": "fld_agendamentos",
+      "name": "Listar meus agendamentos",
+      "description": "**Só aluno:** lista os próprios agendamentos, de qualquer status.\n\n**Aceita (query)**\n| Parâmetro | Padrão | Regra |\n|---|---|---|\n| `limit` | 20 | 1 a 100 |\n| `offset` | 0 | ≥ 0 |\n\n**Sucesso:** `200` → `{ itens: [agendamento], limit, offset, total }`, em ordem de `id_agendamento`.\n\n**Erros** — Todos os erros vêm no envelope `{ codigo, mensagem, campo? }`.\n| HTTP | `codigo` | Quando |\n|---|---|---|\n| 400 | `CAMPO_INVALIDO` + `campo` | `limit`/`offset` fora da regra |\n| 401 | `TOKEN_INVALIDO` | sem token |\n| 403 | `ACESSO_NEGADO` | não é aluno |",
+      "method": "GET",
+      "url": "{{ _.baseUrl }}/agendamentos?limit=20&offset=0",
+      "body": {},
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token }}"
+      },
+      "metaSortKey": 2000,
+      "settingEncodeUrl": true,
+      "modified": 1794168000000,
+      "created": 1794168000000
+    },
+    {
+      "_id": "req_agendamentos_cancelar_agendamento",
+      "_type": "request",
+      "parentId": "fld_agendamentos",
+      "name": "Cancelar agendamento",
+      "description": "**Só aluno**, no próprio agendamento.\n\n**Aceita (JSON):** só `{ \"status\": \"cancelado\" }`.\n\n**Regras**\n- Ao menos 2 h antes do início da aula.\n- Já cancelado: `200` com o estado atual.\n- Agendamento de outro aluno responde como inexistente (`404`).\n\n**Sucesso:** `200` → agendamento, com `data_cancelamento` (UTC ISO-8601).\n\n**Erros** — Todos os erros vêm no envelope `{ codigo, mensagem, campo? }`.\n| HTTP | `codigo` | Quando |\n|---|---|---|\n| 400 | `JSON_INVALIDO` | corpo não é objeto JSON |\n| 400 | `CAMPO_OBRIGATORIO` (`status`) | campo ausente |\n| 400 | `CAMPO_INVALIDO` + `campo` | `id` não numérico · `status` diferente de `cancelado` · chave desconhecida |\n| 401 | `TOKEN_INVALIDO` | sem token |\n| 403 | `ACESSO_NEGADO` | não é aluno |\n| 404 | `REGISTRO_NAO_ENCONTRADO` | agendamento ou aula não existe, ou é de outro aluno |\n| 409 | `AGENDAMENTO_FORA_DA_JANELA` | menos de 2 h para o início |\n| 429 | `MUITAS_TENTATIVAS` | limite por usuário (header `Retry-After`) |",
+      "method": "PATCH",
+      "url": "{{ _.baseUrl }}/agendamentos/{{ _.idAgendamento }}",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"status\": \"cancelado\"\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token }}"
+      },
+      "metaSortKey": 3000,
       "settingEncodeUrl": true,
       "modified": 1794168000000,
       "created": 1794168000000
