@@ -7,8 +7,13 @@
 // Para registrar uma tela nova: importe-a e adicione UMA linha em [_grupos].
 
 import 'package:flutter/material.dart';
+import 'package:grazifit_app/features/inicio/screens/tela_inicio_admin.dart';
 import 'package:grazifit_app/features/agendamentos/screens/chamada_screen.dart';
 
+<<<<<<< HEAD
+=======
+//import '../features/inicio/screens/tela_inicio_admin.dart';
+>>>>>>> origin/dev
 import '../features/pessoas/screens/boas_vindas_alunos.dart';
 import '../features/pessoas/screens/criar_cadastro_aluno.dart';
 import '../features/pessoas/screens/cadastro_professor_screen.dart';
@@ -16,6 +21,7 @@ import '../features/pessoas/screens/editar_perfil_aluno.dart';
 import '../features/pessoas/screens/editar_perfil_professor_screen.dart';
 import '../features/pessoas/screens/perfil_professor_screen.dart';
 import '../features/pessoas/screens/tela_perfil_aluno.dart';
+import '../features/pessoas/screens/tela_usuarios_admin.dart';
 
 import '../features/treinos/screens/treinos_aluno_screen.dart';
 import '../features/treinos/screens/historico_treinos_screen.dart';
@@ -51,7 +57,12 @@ class MenuDevScreen extends StatelessWidget {
     ]),
     _GrupoDev('Pessoas', [
       _TelaDev('Login', () => const LoginScreen()),
+<<<<<<< HEAD
 
+=======
+      _TelaDev('Home admin', () => const TelaInicioAdmin()),
+      
+>>>>>>> origin/dev
       _TelaDev('Cadastro de aluno', () => const CriarCadastroAlunoScreen()),
       _TelaDev(
         'Boas-vindas do aluno',
@@ -64,10 +75,18 @@ class MenuDevScreen extends StatelessWidget {
       _TelaDev('Editar perfil do aluno', () => const EditarPerfilAlunoScreen()),
       _TelaDev('Cadastro de professor', () => const CadastroProfessorScreen()),
       _TelaDev('Perfil do professor', () => const PerfilProfessorScreen()),
+<<<<<<< HEAD
       _TelaDev(
         'Editar perfil do professor',
         () => const EditarPerfilProfessorScreen(),
       ),
+=======
+      _TelaDev('Editar perfil do professor', () => const EditarPerfilProfessorScreen()),
+      _TelaDev('Tela Usuarios admin', () => const TelaUsuariosAdmin()),
+    ]),
+    _GrupoDev('Alunos', [
+      
+>>>>>>> origin/dev
     ]),
     _GrupoDev('Alunos', []),
 
@@ -89,8 +108,12 @@ class MenuDevScreen extends StatelessWidget {
       _TelaDev('Chamada', () => const ChamadaScreen()),
       _TelaDev('Detalhes da aula', () => const DetalheAulaScreen()),
       _TelaDev('Minha Agenda', () => const MinhaAgendaScreen()),
+<<<<<<< HEAD
       _TelaDev('Detalhes da aula', () => const DetalheAulaScreen()),
       _TelaDev('Avaliação física', () => const AvaliacaoFisicaScreen()),
+=======
+      _TelaDev('Avaliação física', () => const AvaliacaoFisicaScreen())
+>>>>>>> origin/dev
     ]),
 
     _GrupoDev('Vínculos', [
@@ -144,6 +167,7 @@ class _TelaDev {
   final String nome;
   final Widget Function() builder;
 }
+<<<<<<< HEAD
 
 class _FluxoCronogramasAdminDev extends StatelessWidget {
   const _FluxoCronogramasAdminDev();
@@ -157,3 +181,5 @@ class _FluxoCronogramasAdminDev extends StatelessWidget {
     );
   }
 }
+=======
+>>>>>>> origin/dev

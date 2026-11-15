@@ -1,25 +1,12 @@
+import 'dart:async';
 import 'dart:convert';
 
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../../features/auth/state/auth_controller.dart';
 
 import 'api_exception.dart';
-
-/// Base da API, injetada em build: `--dart-define=API_BASE_URL=...`.
-const apiBaseUrl = String.fromEnvironment(
-  'API_BASE_URL',
-  defaultValue: 'http://localhost:8080',
-);
-
-/// Token Bearer da sessão. Ponto de injeção: quem implementar o login
-/// (F-01 no app) grava aqui o token devolvido por `POST /auth/login`.
-///
-/// Em desenvolvimento, `--dart-define=DEV_TOKEN=...` preenche o valor
-/// inicial. Atalho de dev: remover quando o login estiver integrado.
-final tokenProvider = StateProvider<String?>((ref) {
-  const tokenDev = String.fromEnvironment('DEV_TOKEN');
-  return tokenDev.isEmpty ? null : tokenDev;
-});
 
 final httpClientProvider = Provider<http.Client>((ref) {
   final client = http.Client();
@@ -27,71 +14,96 @@ final httpClientProvider = Provider<http.Client>((ref) {
   return client;
 });
 
-final apiClientProvider = Provider<ApiClient>((ref) {
-  return ApiClient(
+final apiClientProvider = Provider<ApiClient>(
+  (ref) => ApiClient(
     client: ref.watch(httpClientProvider),
-    token: () => ref.read(tokenProvider),
-  );
-});
+    token: () => ref.read(authControllerProvider).sessao?.accessToken,
+  ),
+);
 
 class ApiClient {
   ApiClient({
-    required this._client,
-    required this._token,
-    this._baseUrl = apiBaseUrl,
-  });
+    http.Client? client,
+    this.token,
+    this.baseUrl = const String.fromEnvironment('API_BASE_URL'),
+    this.timeout = const Duration(seconds: 15),
+  }) : _client = client ?? http.Client();
 
   final http.Client _client;
-  final String? Function() _token;
-  final String _baseUrl;
+  final String baseUrl;
+  final Duration timeout;
+  final String? Function()? token;
 
-  static const _prazo = Duration(seconds: 15);
+  Future<Map<String, dynamic>> post(String path, Map<String, dynamic> body) =>
+      postJson(path, body);
 
-  /// POST com corpo JSON. Devolve o JSON de objeto da resposta 2xx; qualquer
-  /// outra coisa vira [ApiException].
-  Future<Map<String, dynamic>> post(
-    String caminho,
-    Map<String, dynamic> corpo,
+  Future<Map<String, dynamic>> postJson(
+    String path,
+    Map<String, Object?> body,
   ) async {
-    final token = _token();
-    final http.Response resposta;
+    if (baseUrl.trim().isEmpty) {
+      throw const ApiException(codigo: 'CONFIGURACAO');
+    }
+
     try {
-      resposta = await _client
+      final uri = Uri.parse('${baseUrl.replaceFirst(RegExp(r'/$'), '')}$path');
+      final token = path == '/auth/login' ? null : this.token?.call();
+      final response = await _client
           .post(
-            Uri.parse('$_baseUrl$caminho'),
+            uri,
             headers: {
               'Content-Type': 'application/json',
-              'Accept': 'application/json',
-              if (token != null) 'Authorization': 'Bearer $token',
+              if (token != null && token.isNotEmpty)
+                'Authorization': 'Bearer $token',
             },
-            body: jsonEncode(corpo),
+            body: jsonEncode(body),
           )
-          .timeout(_prazo);
-    } catch (_) {
-      throw const ApiException.semConexao();
-    }
+          .timeout(timeout);
 
-    final json = _decodificar(resposta.body);
-    if (resposta.statusCode >= 200 && resposta.statusCode < 300) {
-      if (json == null) throw ApiException(status: resposta.statusCode);
-      return json;
-    }
+      if (response.statusCode < 200 || response.statusCode >= 300) {
+        final erro = _decodeObjectOrEmpty(response.body);
+        throw ApiException(
+          statusCode: response.statusCode,
+          campo: erro['campo'] is String ? erro['campo'] as String : null,
+          codigo: erro['codigo'] is String ? erro['codigo'] as String : null,
+          mensagem: erro['mensagem'] is String
+              ? erro['mensagem'] as String
+              : null,
+          retryAfter: int.tryParse(
+            response.headers.entries
+                    .where((entry) => entry.key.toLowerCase() == 'retry-after')
+                    .map((entry) => entry.value)
+                    .firstOrNull ??
+                '',
+          ),
+        );
+      }
 
-    throw ApiException(
-      status: resposta.statusCode,
-      codigo: ApiException.codigoDe(json?['codigo']),
-      campo: json?['campo'] as String?,
-      mensagem: (json?['mensagem'] ?? json?['erro']) as String?,
-    );
+      return _decodeObject(response.body);
+    } on ApiException {
+      rethrow;
+    } on TimeoutException {
+      throw const ApiException(codigo: 'TIMEOUT');
+    } on http.ClientException {
+      throw const ApiException(codigo: 'REDE');
+    } on FormatException {
+      throw const ApiException(codigo: 'RESPOSTA_INVALIDA');
+    }
   }
 
-  Map<String, dynamic>? _decodificar(String corpo) {
-    if (corpo.isEmpty) return null;
+  Map<String, dynamic> _decodeObject(String source) {
+    final decoded = jsonDecode(source);
+    if (decoded is! Map<String, dynamic>) {
+      throw const FormatException('Resposta JSON não é um objeto');
+    }
+    return decoded;
+  }
+
+  Map<String, dynamic> _decodeObjectOrEmpty(String source) {
     try {
-      final decodificado = jsonDecode(corpo);
-      return decodificado is Map<String, dynamic> ? decodificado : null;
-    } catch (_) {
-      return null;
+      return _decodeObject(source);
+    } on FormatException {
+      return const {};
     }
   }
 }

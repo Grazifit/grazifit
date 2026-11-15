@@ -73,7 +73,13 @@ class AlunoRepository {
       ..where(_db.admin.email.equals(email))
       ..limit(1);
 
-    return await emAdmin.getSingleOrNull() != null;
+    if (await emAdmin.getSingleOrNull() != null) return true;
+
+    final emProfessor = _db.selectOnly(_db.professor)
+      ..addColumns([_db.professor.idProfessor])
+      ..where(_db.professor.email.equals(email))
+      ..limit(1);
+    return await emProfessor.getSingleOrNull() != null;
   }
 
   static PgDate _comoDataCivil(DateTime data) =>
