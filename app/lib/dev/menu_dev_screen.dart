@@ -36,6 +36,7 @@ import '../features/auth/screens/login_screen.dart';
 import '../features/avaliacoes/screens/tela_registrar_medida_aluno.dart';
 import '../features/avaliacoes/screens/tela_evolucao_aluno.dart';
 import '../features/avaliacoes/screens/avaliacao_fisica_screen.dart';
+import '../features/exercicios/screens/novo_exercicio_admin_screen.dart';
 
 
 class MenuDevScreen extends StatelessWidget {
@@ -67,6 +68,10 @@ class MenuDevScreen extends StatelessWidget {
       _TelaDev('Registrar medida do aluno', () => const TelaRegistrarMedidaAluno(alturaM: 1.70)),
       _TelaDev('Evolução do aluno', () => const TelaEvolucaoAluno()),
       _TelaDev('Montar treino', () => const MontarTreinoScreen()),
+      _TelaDev(
+        'Novo exercício (Admin)',
+        () => const NovoExercicioAdminScreen(),
+      ),
       _TelaDev('Chamada', () => const ChamadaScreen()),
       _TelaDev('Detalhes da aula', () => const DetalheAulaScreen()),
       _TelaDev('Minha Agenda', () => const MinhaAgendaScreen()),
