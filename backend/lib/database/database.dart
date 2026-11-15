@@ -4,6 +4,7 @@ import 'package:drift/drift.dart';
 import 'package:drift_postgres/drift_postgres.dart';
 import 'package:postgres/postgres.dart' as pg;
 
+import '../features/agendamentos/agendamento_table.dart';
 import '../features/aulas/aula_table.dart';
 import '../features/pessoas/admin/admin_tables.dart';
 import '../features/pessoas/aluno/aluno_tables.dart';
@@ -11,46 +12,54 @@ import '../features/pessoas/professor/professor_tables.dart';
 
 part 'database.g.dart';
 
+/// Mensagens de erro da `DATABASE_URL`.
+///
+/// **Nenhuma mensagem de erro deste arquivo pode receber ou interpolar a URL,
+/// o usuario ou a senha.** Excecoes vao para log e stack trace; a
+/// `FormatException` do `Uri.parse` carrega a URL inteira, por isso ela e
+/// capturada e substituida pelas constantes abaixo.
+const _erroFormato =
+    'DATABASE_URL invalida: formato esperado '
+    'postgresql://USUARIO:SENHA@HOST:PORTA/BANCO?sslmode=disable';
+const _erroEsquema =
+    'DATABASE_URL invalida: esquema esperado postgresql:// ou postgres://';
+const _erroSslMode =
+    'DATABASE_URL invalida: sslmode aceita apenas disable ou require';
+
 /// Monta o `Endpoint` do Drift a partir de uma URL de conexao.
 ///
 /// Formato:
-///   postgresql://USUARIO:SENHA@HOST:PORTA/BANCO?sslmode=disable
+///   postgresql://USUARIO:***@HOST:PORTA/BANCO?sslmode=disable
 ///
 /// O pacote `postgres` tem `Connection.openFromUrl`, mas ele devolve uma
 /// conexao ja aberta — e o `PgDatabase` do Drift quer um `Endpoint`, para
 /// abrir e reabrir por conta propria. Por isso a URL e traduzida aqui.
-({pg.Endpoint endpoint, pg.SslMode sslMode}) _daUrl(String url) {
-  final uri = Uri.parse(url);
+///
+/// Publica apenas para teste sem banco. Os erros nunca contem [url].
+({pg.Endpoint endpoint, pg.SslMode sslMode}) traduzirDatabaseUrl(String url) {
+  final Uri uri;
+  try {
+    uri = Uri.parse(url);
+  } on FormatException {
+    throw ArgumentError(_erroFormato);
+  }
 
   if (uri.scheme != 'postgresql' && uri.scheme != 'postgres') {
-    throw ArgumentError.value(
-      url,
-      'DATABASE_URL',
-      'esquema invalido: use postgresql:// ou postgres://',
-    );
+    throw ArgumentError(_erroEsquema);
   }
 
   final credenciais = uri.userInfo.split(':');
   final banco = uri.pathSegments.isEmpty ? '' : uri.pathSegments.first;
 
   if (credenciais.length != 2 || banco.isEmpty) {
-    throw ArgumentError.value(
-      url,
-      'DATABASE_URL',
-      'formato esperado: '
-          'postgresql://USUARIO:SENHA@HOST:PORTA/BANCO?sslmode=disable',
-    );
+    throw ArgumentError(_erroFormato);
   }
 
   final sslMode = switch (uri.queryParameters['sslmode']) {
     'disable' => pg.SslMode.disable,
     'require' => pg.SslMode.require,
     null => pg.SslMode.require,
-    final outro => throw ArgumentError.value(
-      outro,
-      'sslmode',
-      'valor nao suportado: use disable ou require',
-    ),
+    _ => throw ArgumentError(_erroSslMode),
   };
 
   return (
@@ -74,7 +83,7 @@ part 'database.g.dart';
 /// para consultas tipadas. Elas nunca definem o banco.
 ///
 /// Ver docs/arquitetura.md secao 1 (D58) e secao 4.
-@DriftDatabase(tables: [Admin, Aluno, Professor, Aula])
+@DriftDatabase(tables: [Admin, Aluno, Professor, Aula, Agendamento])
 class GraziDatabase extends _$GraziDatabase {
   GraziDatabase(super.executor);
 
@@ -104,7 +113,7 @@ class GraziDatabase extends _$GraziDatabase {
 
   /// Usa a URL ja validada pela configuracao da aplicacao.
   factory GraziDatabase.fromUrl(String url) {
-    final conexao = _daUrl(url);
+    final conexao = traduzirDatabaseUrl(url);
 
     return GraziDatabase(
       PgDatabase(

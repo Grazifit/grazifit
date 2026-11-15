@@ -6,6 +6,9 @@ import 'package:shelf_router/shelf_router.dart';
 
 import 'package:grazifit_backend/config/config.dart';
 import 'package:grazifit_backend/database/database.dart';
+import 'package:grazifit_backend/features/agendamentos/agendamento_controller.dart';
+import 'package:grazifit_backend/features/agendamentos/agendamento_repository.dart';
+import 'package:grazifit_backend/features/agendamentos/agendamento_service.dart';
 import 'package:grazifit_backend/features/aulas/aula_controller.dart';
 import 'package:grazifit_backend/features/aulas/aula_repository.dart';
 import 'package:grazifit_backend/features/aulas/aula_service.dart';
@@ -59,13 +62,18 @@ void main() async {
   final aulaService = AulaService(aulaRepository);
   final aulaController = AulaController(aulaService);
 
+  final agendamentoRepository = AgendamentoRepository(db);
+  final agendamentoService = AgendamentoService(agendamentoRepository);
+  final agendamentoController = AgendamentoController(agendamentoService);
+
   final rootRouter = Router()
     ..get('/health', (Request _) => _health(db))
     ..mount('/', authController.router.call)
     ..mount('/', adminController.router.call)
     ..mount('/', alunoController.router.call)
     ..mount('/', professorController.router.call)
-    ..mount('/', aulaController.router.call);
+    ..mount('/', aulaController.router.call)
+    ..mount('/', agendamentoController.router.call);
 
   final handler = const Pipeline()
       .addMiddleware(logRequests())
