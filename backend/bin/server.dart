@@ -58,13 +58,14 @@ void main() async {
   final professorService = ProfessorService(professorRepository, senhaHasher);
   final professorController = ProfessorController(professorService);
 
-  final aulaRepository = AulaRepository(db);
-  final aulaService = AulaService(aulaRepository);
-  final aulaController = AulaController(aulaService);
-
   final agendamentoRepository = AgendamentoRepository(db);
   final agendamentoService = AgendamentoService(agendamentoRepository);
   final agendamentoController = AgendamentoController(agendamentoService);
+
+  // Mesmo `db` nos dois repositories: a cascata entra na transacao da aula.
+  final aulaRepository = AulaRepository(db);
+  final aulaService = AulaService(aulaRepository, agendamentoService);
+  final aulaController = AulaController(aulaService);
 
   final rootRouter = Router()
     ..get('/health', (Request _) => _health(db))

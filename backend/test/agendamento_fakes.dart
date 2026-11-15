@@ -50,8 +50,12 @@ class RepositorioAgendamentoFalso implements AgendamentoRepository {
     );
   }
 
+  /// Quantas transacoes foram abertas por este repositorio.
+  int transacoes = 0;
+
   @override
   Future<T> transacao<T>(Future<T> Function() acao) async {
+    transacoes++;
     emTransacao = true;
     try {
       return await acao();
@@ -154,6 +158,28 @@ class RepositorioAgendamentoFalso implements AgendamentoRepository {
       status: 'cancelado',
       dataCancelamento: Value(PgDateTime(agora)),
     );
+  }
+
+  /// Chamadas de [cancelarAgendadosDaAula]: (idAula, agora).
+  final List<(int, DateTime)> cascatas = [];
+
+  @override
+  Future<int> cancelarAgendadosDaAula(
+    int idAula, {
+    required DateTime agora,
+  }) async {
+    cascatas.add((idAula, agora));
+    var alterados = 0;
+    for (var i = 0; i < agendamentos.length; i++) {
+      final a = agendamentos[i];
+      if (a.idAula != idAula || a.status != 'agendado') continue;
+      agendamentos[i] = a.copyWith(
+        status: 'cancelado',
+        dataCancelamento: Value(PgDateTime(agora)),
+      );
+      alterados++;
+    }
+    return alterados;
   }
 
   @override

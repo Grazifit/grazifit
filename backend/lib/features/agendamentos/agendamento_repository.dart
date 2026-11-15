@@ -109,7 +109,7 @@ class AgendamentoRepository {
   /// A subconsulta de vagas usa o snapshot do inicio do comando. Se a trava
   /// esperou outra transacao, o numero pode estar um commit atras. O
   /// INSERT/UPDATE seguinte roda com snapshot novo: o trigger
-  /// `fn_valida_vagas_aula` (GF001, GF002) e a unique
+  /// `fn_valida_vagas_aula` e a unique
   /// `uq_agendamento_aluno_aula` continuam sendo a defesa final.
   Future<SituacaoReserva?> travarSituacaoParaReserva(
     int idAula,
@@ -278,6 +278,20 @@ class AgendamentoRepository {
           ),
         );
     return linhas.single;
+  }
+
+  /// Cancela em lote os `agendado` da aula com o instante dado; `presente`,
+  /// `faltou` e `cancelado` ficam como estao. Devolve quantos mudaram. Nao
+  /// abre transacao: roda na de quem chama.
+  Future<int> cancelarAgendadosDaAula(int idAula, {required DateTime agora}) {
+    return (_db.update(_db.agendamento)
+          ..where((t) => t.idAula.equals(idAula) & t.status.equals('agendado')))
+        .write(
+          AgendamentoCompanion(
+            status: const Value('cancelado'),
+            dataCancelamento: Value<PgDateTime?>(PgDateTime(agora)),
+          ),
+        );
   }
 
   /// Ordem por id, com desempate estavel para paginacao.

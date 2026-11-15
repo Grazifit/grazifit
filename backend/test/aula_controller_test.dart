@@ -1,8 +1,9 @@
 import 'dart:convert';
 
-import 'package:drift_postgres/drift_postgres.dart' show PgDate;
+import 'package:drift_postgres/drift_postgres.dart' show PgDate, PgDateTime;
 import 'package:grazifit_backend/database/database.dart';
 import 'package:grazifit_backend/features/aulas/aula_controller.dart';
+import 'package:grazifit_backend/features/aulas/aula_repository.dart';
 import 'package:grazifit_backend/features/aulas/aula_service.dart';
 import 'package:grazifit_backend/shared/autorizacao/identidade.dart';
 import 'package:grazifit_backend/shared/erros/aula_exception.dart';
@@ -99,6 +100,64 @@ class _ServicoFalso implements AulaService {
     'categoria': ?categoria,
     'vagasMaxima': ?vagasMaxima,
   });
+
+  /// Aula devolvida pelo cancelamento; `null` usa a aula ativa padrao.
+  AulaData? cancelada;
+
+  @override
+  Future<AulaData> cancelar({
+    required Identidade identidade,
+    required int idAula,
+  }) async {
+    recebido = {'idAula': idAula, 'papel': identidade.papel};
+    if (erro != null) throw erro!;
+    return cancelada ?? _aula;
+  }
+
+  /// Ocupacao por aula devolvida pelo service; ids pedidos a cada chamada.
+  Map<int, int> ocupacao = {7: 3};
+  final List<List<int>> idsOcupacao = [];
+
+  @override
+  Future<Map<int, int>> vagasOcupadas(
+    Identidade identidade,
+    List<int> idsAulas,
+  ) async {
+    idsOcupacao.add(idsAulas);
+    return {for (final id in idsAulas) id: ocupacao[id] ?? 0};
+  }
+
+  List<AgendadoDaAula> agendados = const [
+    AgendadoDaAula(
+      idAgendamento: 3,
+      idAluno: 40,
+      nomeAluno: 'Ana',
+      status: 'presente',
+    ),
+    AgendadoDaAula(
+      idAgendamento: 1,
+      idAluno: 41,
+      nomeAluno: 'Bia',
+      status: 'agendado',
+    ),
+  ];
+
+  @override
+  Future<({List<AgendadoDaAula> itens, int total})> listarAgendados(
+    Identidade identidade,
+    int idAula, {
+    required int limit,
+    required int offset,
+  }) async {
+    recebido = {
+      'idAula': idAula,
+      'limit': limit,
+      'offset': offset,
+      'papel': identidade.papel,
+    };
+    if (erro != null) throw erro!;
+    return (itens: agendados, total: 23);
+  }
 }
 
 const _admin = Identidade(id: 1, papel: Papel.admin);
@@ -172,8 +231,13 @@ void main() {
         'tipo': 'coletiva',
         'categoria': 'pilates',
         'vagas_maxima': 10,
+        'vagas_ocupadas': 0,
+        'vagas_livres': 10,
         'status': true,
+        'data_cancelamento': null,
+        'cancelado_por': null,
       });
+      expect(servico.idsOcupacao, isEmpty, reason: 'aula nova nao consulta');
       expect(servico.recebido!['data'], DateTime(2026, 6, 20));
       expect(
         servico.recebido!['horaInicio'],
@@ -403,6 +467,261 @@ void main() {
       final r = await chamar('PATCH', '/aulas/7', corpo: {'vagas_maxima': 5});
       esperaErro(r, 500, CodigoErro.erroInterno);
       expect(jsonEncode(r.$2), isNot(contains('detalhe interno')));
+    });
+  });
+
+  group('POST /aulas/<id>/cancelar', () {
+    AulaData canceladaPor({int? idProfessor, int? idAdmin}) => AulaData(
+      idAula: 7,
+      idProfessor: 10,
+      data: PgDate(year: 2026, month: 6, day: 20),
+      horaInicio: pg.Time(7, 5),
+      horaFim: pg.Time(8),
+      tipo: 'coletiva',
+      categoria: 'pilates',
+      vagasMaxima: 10,
+      status: false,
+      idProfessorCancelou: idProfessor,
+      idAdminCancelou: idAdmin,
+      // 12:30 em Brasilia (-03:00) = 15:30 UTC.
+      dataCancelamento: PgDateTime(DateTime.parse('2026-06-10T12:30:00-03:00')),
+    );
+
+    test('200 com a aula cancelada; sem corpo; ids de quem cancelou nao '
+        'saem no JSON', () async {
+      servico.cancelada = canceladaPor(idAdmin: 1);
+      final r = await chamar('POST', '/aulas/7/cancelar');
+      expect(r.$1, 200, reason: jsonEncode(r.$2));
+      expect(servico.recebido, {'idAula': 7, 'papel': Papel.admin});
+      expect(r.$2, {
+        'id_aula': 7,
+        'id_professor': 10,
+        'id_cronograma': null,
+        'data': '2026-06-20',
+        'hora_inicio': '07:05',
+        'hora_fim': '08:00',
+        'tipo': 'coletiva',
+        'categoria': 'pilates',
+        'vagas_maxima': 10,
+        'vagas_ocupadas': 3,
+        'vagas_livres': 7,
+        'status': false,
+        'data_cancelamento': '2026-06-10T15:30:00.000Z',
+        'cancelado_por': 'admin',
+      });
+      expect(r.$2.keys, isNot(contains('id_admin_cancelou')));
+      expect(r.$2.keys, isNot(contains('id_professor_cancelou')));
+    });
+
+    test('cancelado_por = professor quando o professor cancelou', () async {
+      servico.cancelada = canceladaPor(idProfessor: 10);
+      final r = await chamar(
+        'POST',
+        '/aulas/7/cancelar',
+        identidade: const Identidade(id: 10, papel: Papel.professor),
+      );
+      expect(r.$1, 200);
+      expect(r.$2['cancelado_por'], 'professor');
+      expect(r.$2['data_cancelamento'], '2026-06-10T15:30:00.000Z');
+      expect(servico.recebido, {'idAula': 7, 'papel': Papel.professor});
+    });
+
+    test('corpo enviado e ignorado', () async {
+      final r = await chamar('POST', '/aulas/7/cancelar', corpo: '{');
+      expect(r.$1, 200);
+    });
+
+    test('sem identidade e 401; id nao numerico e 400', () async {
+      esperaErro(
+        await chamar('POST', '/aulas/7/cancelar', identidade: null),
+        401,
+        CodigoErro.tokenInvalido,
+      );
+      esperaErro(
+        await chamar('POST', '/aulas/abc/cancelar'),
+        400,
+        CodigoErro.campoInvalido,
+        'id',
+      );
+      expect(servico.recebido, isNull);
+    });
+
+    test('erros do service: 403, 404 e 409 AULA_DATA_PASSADA', () async {
+      servico.erro = const AcessoNegado();
+      esperaErro(
+        await chamar('POST', '/aulas/7/cancelar'),
+        403,
+        CodigoErro.acessoNegado,
+      );
+
+      servico.erro = const AulaNotFoundException();
+      esperaErro(
+        await chamar('POST', '/aulas/9/cancelar'),
+        404,
+        CodigoErro.registroNaoEncontrado,
+      );
+
+      servico.erro = const AulaConflictException(CodigoErro.aulaDataPassada);
+      final r = await chamar('POST', '/aulas/7/cancelar');
+      esperaErro(r, 409, CodigoErro.aulaDataPassada);
+      expect(r.$2['mensagem'], 'Aula ja realizada nao pode ser cancelada.');
+    });
+
+    test(
+      'GET de aula ativa traz data_cancelamento e cancelado_por nulos',
+      () async {
+        final r = await chamar('GET', '/aulas/7');
+        expect(r.$2['data_cancelamento'], isNull);
+        expect(r.$2['cancelado_por'], isNull);
+        expect(r.$2.containsKey('data_cancelamento'), isTrue);
+        expect(r.$2.containsKey('cancelado_por'), isTrue);
+      },
+    );
+  });
+
+  group('ocupacao no JSON da aula', () {
+    void esperaOcupacao(Map<String, dynamic> aula, int ocupadas) {
+      expect(aula['vagas_ocupadas'], ocupadas);
+      expect(aula['vagas_livres'], (aula['vagas_maxima'] as int) - ocupadas);
+    }
+
+    test('GET por id, PATCH e cancelar trazem ocupadas e livres', () async {
+      servico.ocupacao = {7: 4};
+      esperaOcupacao((await chamar('GET', '/aulas/7')).$2, 4);
+      esperaOcupacao(
+        (await chamar('PATCH', '/aulas/7', corpo: {'tipo': 'coletiva'})).$2,
+        4,
+      );
+      esperaOcupacao((await chamar('POST', '/aulas/7/cancelar')).$2, 4);
+      expect(servico.idsOcupacao, [
+        [7],
+        [7],
+        [7],
+      ]);
+    });
+
+    test(
+      'GET /aulas: uma consulta de ocupacao para a pagina inteira',
+      () async {
+        servico.ocupacao = {7: 9};
+        final r = await chamar('GET', '/aulas');
+        final itens = (r.$2['itens'] as List).cast<Map<String, dynamic>>();
+        esperaOcupacao(itens.single, 9);
+        expect(itens.single['vagas_livres'], 1);
+        expect(servico.idsOcupacao, [
+          [7],
+        ]);
+      },
+    );
+
+    test('aula sem agendamento: 0 ocupadas, livres = maxima', () async {
+      servico.ocupacao = {};
+      final r = await chamar('GET', '/aulas/7');
+      expect(r.$2['vagas_ocupadas'], 0);
+      expect(r.$2['vagas_livres'], 10);
+    });
+
+    test('POST /aulas: ocupadas 0, sem consultar', () async {
+      final r = await chamar('POST', '/aulas', corpo: _corpoValido);
+      esperaOcupacao(r.$2, 0);
+      expect(servico.idsOcupacao, isEmpty);
+    });
+  });
+
+  group('GET /aulas/<id>/agendamentos', () {
+    test('200 com pagina; itens so com as quatro chaves', () async {
+      final r = await chamar('GET', '/aulas/7/agendamentos');
+      expect(r.$1, 200, reason: jsonEncode(r.$2));
+      expect(r.$2.keys.toSet(), {'itens', 'limit', 'offset', 'total'});
+      expect(r.$2['limit'], 20);
+      expect(r.$2['offset'], 0);
+      expect(r.$2['total'], 23);
+      final itens = (r.$2['itens'] as List).cast<Map<String, dynamic>>();
+      expect(itens, [
+        {
+          'id_agendamento': 3,
+          'id_aluno': 40,
+          'nome_aluno': 'Ana',
+          'status': 'presente',
+        },
+        {
+          'id_agendamento': 1,
+          'id_aluno': 41,
+          'nome_aluno': 'Bia',
+          'status': 'agendado',
+        },
+      ]);
+      for (final item in itens) {
+        expect(item.keys.toSet(), {
+          'id_agendamento',
+          'id_aluno',
+          'nome_aluno',
+          'status',
+        });
+      }
+      expect(servico.recebido, {
+        'idAula': 7,
+        'limit': 20,
+        'offset': 0,
+        'papel': Papel.admin,
+      });
+    });
+
+    test('repassa limit, offset e o papel do professor', () async {
+      final r = await chamar(
+        'GET',
+        '/aulas/7/agendamentos?limit=5&offset=10',
+        identidade: const Identidade(id: 10, papel: Papel.professor),
+      );
+      expect(r.$1, 200);
+      expect(servico.recebido, {
+        'idAula': 7,
+        'limit': 5,
+        'offset': 10,
+        'papel': Papel.professor,
+      });
+    });
+
+    test('sem identidade 401; id ou paginacao invalidos 400', () async {
+      esperaErro(
+        await chamar('GET', '/aulas/7/agendamentos', identidade: null),
+        401,
+        CodigoErro.tokenInvalido,
+      );
+      esperaErro(
+        await chamar('GET', '/aulas/abc/agendamentos'),
+        400,
+        CodigoErro.campoInvalido,
+        'id',
+      );
+      for (final (query, campo) in [
+        ('limit=0', 'limit'),
+        ('limit=101', 'limit'),
+        ('offset=-1', 'offset'),
+      ]) {
+        esperaErro(
+          await chamar('GET', '/aulas/7/agendamentos?$query'),
+          400,
+          CodigoErro.campoInvalido,
+          campo,
+        );
+      }
+      expect(servico.recebido, isNull);
+    });
+
+    test('erros do service: 403 e 404', () async {
+      servico.erro = const AcessoNegado();
+      esperaErro(
+        await chamar('GET', '/aulas/7/agendamentos'),
+        403,
+        CodigoErro.acessoNegado,
+      );
+      servico.erro = const AulaNotFoundException();
+      esperaErro(
+        await chamar('GET', '/aulas/9/agendamentos'),
+        404,
+        CodigoErro.registroNaoEncontrado,
+      );
     });
   });
 }

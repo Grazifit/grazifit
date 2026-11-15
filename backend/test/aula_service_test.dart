@@ -1,4 +1,5 @@
-import 'package:drift_postgres/drift_postgres.dart' show PgDate;
+import 'package:drift/drift.dart' show Value;
+import 'package:drift_postgres/drift_postgres.dart' show PgDate, PgDateTime;
 import 'package:grazifit_backend/database/database.dart';
 import 'package:grazifit_backend/features/aulas/aula_repository.dart';
 import 'package:grazifit_backend/features/aulas/aula_service.dart';
@@ -14,6 +15,10 @@ class _RepositorioFalso implements AulaRepository {
   int ocupadas = 0;
   bool emTransacao = false;
   Map<String, Object?>? ultimaAtualizacao;
+
+  /// Ordem das chamadas que importam para o cancelamento.
+  final List<String> chamadas = [];
+  Map<String, Object?>? ultimoCancelamento;
 
   @override
   Future<AulaData> create({
@@ -45,17 +50,43 @@ class _RepositorioFalso implements AulaRepository {
   @override
   Future<AulaData?> buscarParaAtualizar(int idAula) async {
     expect(emTransacao, isTrue, reason: 'leitura com trava fora da transacao');
+    chamadas.add('buscarParaAtualizar');
     return buscarPorId(idAula);
   }
 
   @override
   Future<T> transacao<T>(Future<T> Function() acao) async {
     emTransacao = true;
+    chamadas.add('inicio');
     try {
       return await acao();
     } finally {
       emTransacao = false;
+      chamadas.add('fim');
     }
+  }
+
+  @override
+  Future<AulaData> cancelar(
+    int idAula, {
+    required DateTime agora,
+    int? idAdminCancelou,
+    int? idProfessorCancelou,
+  }) async {
+    expect(emTransacao, isTrue, reason: 'cancelamento fora da transacao');
+    chamadas.add('cancelar');
+    ultimoCancelamento = {
+      'idAula': idAula,
+      'agora': agora,
+      'idAdminCancelou': idAdminCancelou,
+      'idProfessorCancelou': idProfessorCancelou,
+    };
+    return aula = aula!.copyWith(
+      status: false,
+      dataCancelamento: Value(PgDateTime(agora)),
+      idAdminCancelou: Value(idAdminCancelou),
+      idProfessorCancelou: Value(idProfessorCancelou),
+    );
   }
 
   @override
@@ -110,9 +141,61 @@ class _RepositorioFalso implements AulaRepository {
   @override
   Future<int> contarAgendamentosAtivos(int idAula) async => ocupadas;
 
+  /// Ocupacao devolvida por [contarOcupadasPorAula] e os ids pedidos.
+  Map<int, int> ocupacao = {};
+  List<int>? idsOcupacaoPedidos;
+
+  @override
+  Future<Map<int, int>> contarOcupadasPorAula(Iterable<int> idsAulas) async {
+    idsOcupacaoPedidos = idsAulas.toList();
+    return {
+      for (final id in idsAulas)
+        if (ocupacao.containsKey(id)) id: ocupacao[id]!,
+    };
+  }
+
+  List<AgendadoDaAula> agendados = [];
+  Map<String, int>? paginaAgendados;
+
+  @override
+  Future<List<AgendadoDaAula>> listarAgendados(
+    int idAula, {
+    required int limit,
+    required int offset,
+  }) async {
+    chamadas.add('listarAgendados');
+    paginaAgendados = {'idAula': idAula, 'limit': limit, 'offset': offset};
+    return agendados;
+  }
+
+  @override
+  Future<int> contarAgendados(int idAula) async {
+    chamadas.add('contarAgendados');
+    return agendados.length + 30;
+  }
+
   @override
   Future<bool> professorAtivoExiste(int idProfessor) async =>
       professoresAtivos.contains(idProfessor);
+}
+
+/// Cascata do agendamento: registra na lista de chamadas do repositorio e
+/// exige a transacao dele aberta.
+class _CascataFalsa implements CancelamentoDeAgendamentos {
+  final _RepositorioFalso repo;
+  int? idAula;
+  DateTime? instante;
+
+  _CascataFalsa(this.repo);
+
+  @override
+  Future<int> cancelarEmCascata(int idAula, {required DateTime agora}) async {
+    expect(repo.emTransacao, isTrue, reason: 'cascata fora da transacao');
+    repo.chamadas.add('cascata');
+    this.idAula = idAula;
+    instante = agora;
+    return 2;
+  }
 }
 
 const admin = Identidade(id: 1, papel: Papel.admin);
@@ -156,11 +239,13 @@ Matcher conflito(CodigoErro codigo, [String? campo]) =>
 
 void main() {
   late _RepositorioFalso repo;
+  late _CascataFalsa cascata;
   late AulaService service;
 
   setUp(() {
     repo = _RepositorioFalso();
-    service = AulaService(repo, agora: () => agora);
+    cascata = _CascataFalsa(repo);
+    service = AulaService(repo, cascata, agora: () => agora);
   });
 
   Future<AulaData> criar({
@@ -199,10 +284,60 @@ void main() {
       await expectLater(criar(identidade: aluno), throwsA(isA<AcessoNegado>()));
     });
 
-    test('admin pode criar em data passada do ano de vigencia', () async {
-      final aula = await criar(data: DateTime(2026, 1, 1));
-      expect(aula.data, PgDate(year: 2026, month: 1, day: 1));
+    test('recusa data anterior a hoje, mesmo no ano de vigencia', () async {
+      for (final data in [DateTime(2026, 6, 9), DateTime(2026, 1, 1)]) {
+        await expectLater(criar(data: data), throwsA(invalido('data')));
+      }
+      expect(repo.aula, isNull, reason: 'nada pode ter sido gravado');
     });
+
+    test('hoje: recusa hora de inicio passada ou exatamente agora', () async {
+      for (final inicio in [
+        const Duration(hours: 7),
+        const Duration(hours: 12),
+      ]) {
+        await expectLater(
+          criar(
+            data: DateTime(2026, 6, 10),
+            horaInicio: inicio,
+            horaFim: const Duration(hours: 13),
+          ),
+          throwsA(invalido('hora_inicio')),
+        );
+      }
+      expect(repo.aula, isNull, reason: 'nada pode ter sido gravado');
+    });
+
+    test('hoje: aceita hora de inicio futura', () async {
+      final aula = await criar(
+        data: DateTime(2026, 6, 10),
+        horaInicio: const Duration(hours: 12, minutes: 1),
+        horaFim: const Duration(hours: 13),
+      );
+      expect(aula.data, PgDate(year: 2026, month: 6, day: 10));
+    });
+
+    test(
+      'logo apos a meia-noite aceita aula hoje com horario futuro',
+      () async {
+        final aula =
+            await AulaService(
+              repo,
+              cascata,
+              agora: () => DateTime(2026, 6, 10, 0, 5),
+            ).criar(
+              identidade: admin,
+              idProfessor: 10,
+              data: DateTime(2026, 6, 10),
+              horaInicio: const Duration(hours: 7),
+              horaFim: const Duration(hours: 8),
+              tipo: 'coletiva',
+              categoria: 'pilates',
+              vagasMaxima: 5,
+            );
+        expect(aula.data, PgDate(year: 2026, month: 6, day: 10));
+      },
+    );
 
     test(
       'recusa data fora do ano de vigencia (anterior, posterior, extrema)',
@@ -383,15 +518,73 @@ void main() {
       );
     });
 
-    test('professor nao move para data passada; admin pode', () async {
-      repo.aula = aulaDe();
+    test('professor e admin nao movem para data passada', () async {
+      for (final quem in [professor, admin]) {
+        repo.aula = aulaDe();
+        await expectLater(
+          atualizar(quem, data: DateTime(2026, 6, 9)),
+          throwsA(invalido('data')),
+        );
+        expect(repo.ultimaAtualizacao, isNull);
+      }
+    });
+
+    test('admin nao poe inicio ou fim no passado', () async {
+      // Aula de hoje, 13:00-14:00; agora sao 12:00.
+      repo.aula = aulaDe(
+        data: DateTime(2026, 6, 10),
+        horaInicio: const Duration(hours: 13),
+        horaFim: const Duration(hours: 14),
+      );
       await expectLater(
-        atualizar(professor, data: DateTime(2026, 6, 9)),
+        atualizar(admin, horaInicio: const Duration(hours: 12)),
+        throwsA(invalido('hora_inicio')),
+      );
+
+      // Em andamento: 11:00-13:00.
+      repo.aula = aulaDe(
+        data: DateTime(2026, 6, 10),
+        horaInicio: const Duration(hours: 11),
+        horaFim: const Duration(hours: 13),
+      );
+      await expectLater(
+        atualizar(admin, horaFim: const Duration(hours: 11, minutes: 30)),
+        throwsA(invalido('hora_fim')),
+      );
+
+      // Trazer para hoje uma aula das 07:00.
+      repo.aula = aulaDe(horaInicio: const Duration(hours: 7));
+      await expectLater(
+        atualizar(admin, data: DateTime(2026, 6, 10)),
         throwsA(invalido('data')),
       );
-      final aula = await atualizar(admin, data: DateTime(2026, 6, 9));
-      expect(aula.data, PgDate(year: 2026, month: 6, day: 9));
+      expect(repo.ultimaAtualizacao, isNull);
     });
+
+    test('admin altera so as vagas de aula ja realizada', () async {
+      repo.aula = aulaDe(data: DateTime(2026, 6, 1));
+      expect((await atualizar(admin, vagas: 12)).vagasMaxima, 12);
+    });
+
+    test(
+      'logo apos a meia-noite, professor e admin trazem para hoje',
+      () async {
+        final service = AulaService(
+          repo,
+          cascata,
+          agora: () => DateTime(2026, 6, 10, 0, 5),
+        );
+        for (final quem in [professor, admin]) {
+          repo.aula = aulaDe();
+          final aula = await service.atualizar(
+            identidade: quem,
+            idAula: 1,
+            data: DateTime(2026, 6, 10),
+          );
+          expect(aula.data, PgDate(year: 2026, month: 6, day: 10));
+        }
+      },
+    );
 
     group('regra do ano de vigencia e do horario passado', () {
       test('admin nao leva a aula para outro ano', () async {
@@ -459,6 +652,49 @@ void main() {
         expect(aula.horaFim, pg.Time(14));
       });
 
+      test('admin nao encerra a aula em andamento no passado', () async {
+        // Em andamento: 11:00-13:00, agora sao 12:00.
+        repo.aula = aulaDe(
+          data: DateTime(2026, 6, 10),
+          horaInicio: const Duration(hours: 11),
+          horaFim: const Duration(hours: 13),
+        );
+        await expectLater(
+          atualizar(admin, horaFim: const Duration(hours: 11, minutes: 30)),
+          throwsA(invalido('hora_fim')),
+        );
+        expect(repo.ultimaAtualizacao, isNull);
+        final aula = await atualizar(
+          admin,
+          horaFim: const Duration(hours: 12, minutes: 30),
+        );
+        expect(aula.horaFim, pg.Time(12, 30));
+      });
+
+      test('data do banco em UTC nao vira o dia anterior', () async {
+        // Hoje, 13:00-14:00, com a data lida como meia-noite UTC.
+        for (final quem in [professor, admin]) {
+          repo.aula = aulaDe(
+            data: DateTime.utc(2026, 6, 10),
+            horaInicio: const Duration(hours: 13),
+            horaFim: const Duration(hours: 14),
+          );
+          final aula = await atualizar(
+            quem,
+            horaInicio: const Duration(hours: 12, minutes: 30),
+          );
+          expect(aula.horaInicio, pg.Time(12, 30));
+          expect(repo.ultimaAtualizacao, {'horaInicio': pg.Time(12, 30)});
+        }
+
+        // Ontem em UTC: mexer so no fim continua sendo passado.
+        repo.aula = aulaDe(data: DateTime.utc(2026, 6, 9));
+        await expectLater(
+          atualizar(admin, horaFim: const Duration(hours: 20)),
+          throwsA(invalido('hora_fim')),
+        );
+      });
+
       test('quem nao pode editar recebe 403 antes da regra do ano', () async {
         repo.aula = aulaDe();
         await expectLater(
@@ -470,6 +706,33 @@ void main() {
           throwsA(isA<AcessoNegado>()),
         );
       });
+
+      test(
+        'quem nao pode editar recebe 403 antes da regra do passado',
+        () async {
+          repo.aula = aulaDe();
+          await expectLater(
+            atualizar(outroProfessor, data: DateTime(2026, 6, 9)),
+            throwsA(isA<AcessoNegado>()),
+          );
+
+          // Propria aula, ja realizada hoje (10:00-11:00).
+          repo.aula = aulaDe(
+            data: DateTime(2026, 6, 10),
+            horaInicio: const Duration(hours: 10),
+            horaFim: const Duration(hours: 11),
+          );
+          await expectLater(
+            atualizar(professor, data: DateTime(2026, 6, 9)),
+            throwsA(isA<AcessoNegado>()),
+          );
+          await expectLater(
+            atualizar(professor, horaInicio: const Duration(hours: 9)),
+            throwsA(isA<AcessoNegado>()),
+          );
+          expect(repo.ultimaAtualizacao, isNull);
+        },
+      );
 
       test('professor dono tambem nao sai do ano de vigencia', () async {
         repo.aula = aulaDe();
@@ -505,7 +768,7 @@ void main() {
 
       test('virada do ano: o ano de vigencia segue o relogio', () async {
         Future<void> criarCom(DateTime agora, DateTime data) =>
-            AulaService(repo, agora: () => agora).criar(
+            AulaService(repo, cascata, agora: () => agora).criar(
               identidade: admin,
               idProfessor: 10,
               data: data,
@@ -526,20 +789,24 @@ void main() {
           criarCom(DateTime(2027, 1, 1), DateTime(2026, 12, 31)),
           throwsA(invalido('data')),
         );
-        await criarCom(DateTime(2026, 12, 31, 23, 59), DateTime(2026, 12, 31));
+        await criarCom(DateTime(2026, 12, 31, 6), DateTime(2026, 12, 31));
       });
 
-      test('admin pode ajustar horario passado no ano de vigencia', () async {
+      test('admin pode mover para mais tarde no proprio dia', () async {
         repo.aula = aulaDe(
           data: DateTime(2026, 6, 10),
           horaInicio: const Duration(hours: 13),
           horaFim: const Duration(hours: 14),
         );
+        await expectLater(
+          atualizar(admin, horaInicio: const Duration(hours: 9)),
+          throwsA(invalido('hora_inicio')),
+        );
         final aula = await atualizar(
           admin,
-          horaInicio: const Duration(hours: 9),
+          horaInicio: const Duration(hours: 12, minutes: 30),
         );
-        expect(aula.horaInicio, pg.Time(9));
+        expect(aula.horaInicio, pg.Time(12, 30));
       });
     });
 
@@ -609,6 +876,268 @@ void main() {
         );
         expect(aula.idAula, 1);
       });
+    });
+  });
+
+  group('cancelar', () {
+    Future<AulaData> cancelar(Identidade identidade, {int idAula = 1}) =>
+        service.cancelar(identidade: identidade, idAula: idAula);
+
+    final realizadaHoje = (DateTime(2026, 6, 10), 10, 11);
+
+    test('admin cancela: status false, id_admin_cancelou e data', () async {
+      repo.aula = aulaDe(idProfessor: 20);
+      final aula = await cancelar(admin);
+
+      expect(aula.status, isFalse);
+      expect(aula.idAdminCancelou, admin.id);
+      expect(aula.idProfessorCancelou, isNull);
+      expect(aula.dataCancelamento!.dateTime, agora.toUtc());
+      expect(repo.ultimoCancelamento, {
+        'idAula': 1,
+        'agora': agora.toUtc(),
+        'idAdminCancelou': admin.id,
+        'idProfessorCancelou': null,
+      });
+      expect((repo.ultimoCancelamento!['agora'] as DateTime).isUtc, isTrue);
+    });
+
+    test(
+      'professor cancela a propria aula com id_professor_cancelou',
+      () async {
+        repo.aula = aulaDe(idProfessor: professor.id);
+        final aula = await cancelar(professor);
+
+        expect(aula.status, isFalse);
+        expect(aula.idProfessorCancelou, professor.id);
+        expect(aula.idAdminCancelou, isNull);
+        expect(aula.dataCancelamento!.dateTime, agora.toUtc());
+      },
+    );
+
+    test('cascata roda na mesma transacao, depois da trava, com o mesmo '
+        'instante', () async {
+      repo.aula = aulaDe();
+      await cancelar(admin);
+
+      expect(repo.chamadas, [
+        'inicio',
+        'buscarParaAtualizar',
+        'cancelar',
+        'cascata',
+        'fim',
+      ]);
+      expect(cascata.idAula, 1);
+      expect(cascata.instante, repo.ultimoCancelamento!['agora']);
+      expect(cascata.instante!.isUtc, isTrue);
+    });
+
+    test('depois de cancelada, PATCH recusa com AULA_INATIVA', () async {
+      repo.aula = aulaDe();
+      await cancelar(admin);
+      await expectLater(
+        service.atualizar(identidade: admin, idAula: 1, vagasMaxima: 5),
+        throwsA(conflito(CodigoErro.aulaInativa)),
+      );
+    });
+
+    test('professor de outra aula e aluno recebem 403; nada muda', () async {
+      repo.aula = aulaDe(idProfessor: professor.id);
+      await expectLater(cancelar(outroProfessor), throwsA(isA<AcessoNegado>()));
+      await expectLater(cancelar(aluno), throwsA(isA<AcessoNegado>()));
+      expect(repo.ultimoCancelamento, isNull);
+      expect(repo.chamadas, isNot(contains('cascata')));
+      expect(repo.aula!.status, isTrue);
+    });
+
+    test('aluno recebe 403 antes do 404, sem abrir transacao', () async {
+      repo.aula = null;
+      await expectLater(
+        cancelar(aluno, idAula: 99),
+        throwsA(isA<AcessoNegado>()),
+      );
+      expect(repo.chamadas, isEmpty);
+      expect(repo.ultimoCancelamento, isNull);
+    });
+
+    test('aula inexistente e 404', () async {
+      repo.aula = aulaDe();
+      await expectLater(
+        cancelar(admin, idAula: 99),
+        throwsA(isA<AulaNotFoundException>()),
+      );
+      await expectLater(
+        cancelar(professor, idAula: 99),
+        throwsA(isA<AulaNotFoundException>()),
+      );
+      expect(repo.ultimoCancelamento, isNull);
+    });
+
+    test(
+      'aula realizada: 409 AULA_DATA_PASSADA para admin e professor dono',
+      () async {
+        final (dia, inicio, fim) = realizadaHoje;
+        for (final identidade in [admin, professor]) {
+          repo.aula = aulaDe(
+            data: dia,
+            horaInicio: Duration(hours: inicio),
+            horaFim: Duration(hours: fim),
+          );
+          await expectLater(
+            cancelar(identidade),
+            throwsA(conflito(CodigoErro.aulaDataPassada)),
+          );
+        }
+
+        // Fim exatamente agora conta como realizada; de ontem tambem.
+        repo.aula = aulaDe(
+          data: DateTime(2026, 6, 10),
+          horaInicio: const Duration(hours: 11),
+          horaFim: const Duration(hours: 12),
+        );
+        await expectLater(
+          cancelar(admin),
+          throwsA(conflito(CodigoErro.aulaDataPassada)),
+        );
+        repo.aula = aulaDe(data: DateTime(2026, 6, 9));
+        await expectLater(
+          cancelar(professor),
+          throwsA(conflito(CodigoErro.aulaDataPassada)),
+        );
+
+        expect(repo.ultimoCancelamento, isNull);
+        expect(repo.chamadas, isNot(contains('cascata')));
+        expect(repo.aula!.status, isTrue);
+      },
+    );
+
+    test('aula em andamento ainda pode ser cancelada', () async {
+      repo.aula = aulaDe(
+        data: DateTime(2026, 6, 10),
+        horaInicio: const Duration(hours: 11),
+        horaFim: const Duration(hours: 13),
+      );
+      expect((await cancelar(professor)).status, isFalse);
+    });
+
+    test('403 vem antes do 409 de aula realizada', () async {
+      final (dia, inicio, fim) = realizadaHoje;
+      repo.aula = aulaDe(
+        idProfessor: professor.id,
+        data: dia,
+        horaInicio: Duration(hours: inicio),
+        horaFim: Duration(hours: fim),
+      );
+      await expectLater(cancelar(outroProfessor), throwsA(isA<AcessoNegado>()));
+    });
+
+    test('ja cancelada devolve o estado atual sem gravar nada', () async {
+      final antes = aulaDe(status: false).copyWith(
+        idProfessorCancelou: const Value(10),
+        dataCancelamento: Value(PgDateTime(DateTime.utc(2026, 6, 1, 15))),
+      );
+      for (final identidade in [admin, professor]) {
+        repo.aula = antes;
+        repo.chamadas.clear();
+        final aula = await cancelar(identidade);
+        expect(aula, antes);
+        expect(repo.chamadas, ['inicio', 'buscarParaAtualizar', 'fim']);
+      }
+      expect(repo.ultimoCancelamento, isNull);
+
+      // Ja cancelada e realizada: continua devolvendo o estado, sem 409.
+      repo.aula = antes.copyWith(data: PgDate(year: 2026, month: 6, day: 9));
+      expect((await cancelar(admin)).status, isFalse);
+
+      // Professor de outra aula recebe 403 mesmo com a aula ja cancelada.
+      await expectLater(cancelar(outroProfessor), throwsA(isA<AcessoNegado>()));
+    });
+  });
+
+  group('listarAgendados', () {
+    Future<({List<AgendadoDaAula> itens, int total})> listar(
+      Identidade identidade, {
+      int idAula = 1,
+    }) => service.listarAgendados(identidade, idAula, limit: 5, offset: 10);
+
+    const itens = [
+      AgendadoDaAula(
+        idAgendamento: 3,
+        idAluno: 40,
+        nomeAluno: 'Ana',
+        status: 'presente',
+      ),
+      AgendadoDaAula(
+        idAgendamento: 1,
+        idAluno: 41,
+        nomeAluno: 'Bia',
+        status: 'agendado',
+      ),
+    ];
+
+    test('admin ve de qualquer aula; repassa a pagina e o total', () async {
+      repo.aula = aulaDe(idProfessor: 20);
+      repo.agendados = itens;
+      final pagina = await listar(admin);
+      expect(pagina.itens, itens);
+      expect(pagina.total, 32);
+      expect(repo.paginaAgendados, {'idAula': 1, 'limit': 5, 'offset': 10});
+    });
+
+    test('professor dono ve os agendados da propria aula', () async {
+      repo.aula = aulaDe(idProfessor: professor.id);
+      repo.agendados = itens;
+      expect((await listar(professor)).itens, itens);
+    });
+
+    test('professor de outra aula e aluno recebem 403', () async {
+      repo.aula = aulaDe(idProfessor: professor.id);
+      await expectLater(listar(outroProfessor), throwsA(isA<AcessoNegado>()));
+      await expectLater(listar(aluno), throwsA(isA<AcessoNegado>()));
+      expect(repo.chamadas, isNot(contains('listarAgendados')));
+      expect(repo.chamadas, isNot(contains('contarAgendados')));
+    });
+
+    test('aula inexistente e 404 para admin e professor', () async {
+      repo.aula = aulaDe();
+      for (final quem in [admin, professor, outroProfessor]) {
+        await expectLater(
+          listar(quem, idAula: 99),
+          throwsA(isA<AulaNotFoundException>()),
+        );
+      }
+      expect(repo.chamadas, isNot(contains('listarAgendados')));
+    });
+
+    test('ordem: aluno 403 antes do 404; 404 antes do 403 de outro '
+        'professor', () async {
+      repo.aula = null;
+      await expectLater(
+        listar(aluno, idAula: 99),
+        throwsA(isA<AcessoNegado>()),
+      );
+      await expectLater(
+        listar(outroProfessor, idAula: 99),
+        throwsA(isA<AulaNotFoundException>()),
+      );
+    });
+
+    test('aula cancelada tambem lista', () async {
+      repo.aula = aulaDe(status: false);
+      repo.agendados = [itens.first];
+      expect((await listar(admin)).itens, [itens.first]);
+      expect((await listar(professor)).itens, [itens.first]);
+    });
+  });
+
+  group('vagasOcupadas', () {
+    test('todos os perfis leem; aula sem ocupacao vem com 0', () async {
+      repo.ocupacao = {1: 4};
+      for (final quem in [admin, professor, aluno]) {
+        expect(await service.vagasOcupadas(quem, [1, 2]), {1: 4, 2: 0});
+      }
+      expect(repo.idsOcupacaoPedidos, [1, 2]);
+      expect(await service.vagasOcupadas(admin, []), isEmpty);
     });
   });
 }

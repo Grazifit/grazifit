@@ -1,7 +1,7 @@
 @Timeout(Duration(minutes: 2))
 library;
 
-import 'package:drift_postgres/drift_postgres.dart' show PgDate;
+import 'package:drift_postgres/drift_postgres.dart' show PgDate, PgDateTime;
 import 'package:grazifit_backend/database/database.dart';
 import 'package:grazifit_backend/features/agendamentos/agendamento_repository.dart';
 import 'package:grazifit_backend/features/agendamentos/agendamento_service.dart';
@@ -26,6 +26,8 @@ void main() {
   late int idProfessor;
   late int idAluno1;
   late int idAluno2;
+  late int idAluno3;
+  late int idAluno4;
 
   final agora = DateTime(2099, 1, 1, 6);
   final hoje = PgDate(year: 2099, month: 1, day: 1);
@@ -38,6 +40,8 @@ void main() {
     idProfessor = await inserirProfessor(db, tag: tag, cpfBase: 700000021);
     idAluno1 = await inserirAluno(db, tag: tag, indice: 1, cpfBase: 210000001);
     idAluno2 = await inserirAluno(db, tag: tag, indice: 2, cpfBase: 210000002);
+    idAluno3 = await inserirAluno(db, tag: tag, indice: 3, cpfBase: 210000003);
+    idAluno4 = await inserirAluno(db, tag: tag, indice: 4, cpfBase: 210000004);
   });
 
   tearDownAll(() async {
@@ -250,6 +254,73 @@ void main() {
     );
     expect(pagina.total, greaterThanOrEqualTo(1));
     expect(pagina.itens.every((a) => a.idAluno == idAluno1), isTrue);
+  });
+
+  test('cancelarAgendadosDaAula: so agendado da aula vira cancelado, com o '
+      'instante dado', () async {
+    // Precisao de microssegundo, igual ao TIMESTAMPTZ.
+    final instante = DateTime.utc(2099, 1, 5, 13, 45, 7, 123, 456);
+    final idAula = await inserirAula(
+      db,
+      idProfessor: idProfessor,
+      dataIso: await dataRelativaIso(db, 12),
+      horaInicio: '10:00',
+      horaFim: '11:00',
+    );
+    final outraAula = await inserirAula(
+      db,
+      idProfessor: idProfessor,
+      dataIso: await dataRelativaIso(db, 13),
+      horaInicio: '10:00',
+      horaFim: '11:00',
+    );
+    Future<void> agendar(int aula, int aluno, String status) =>
+        db.customStatement(
+          '''
+          INSERT INTO agendamento (id_aluno, id_aula, status, data_presenca,
+                                   data_cancelamento)
+          VALUES ($aluno, $aula, '$status',
+                  ${status == 'presente' ? "'2099-01-04T10:00:00Z'" : 'NULL'},
+                  ${status == 'cancelado' ? "'2099-01-03T10:00:00Z'" : 'NULL'})''',
+        );
+    Future<Map<int, Map<String, Object?>>> ler(int aula) async => {
+      for (final l in await db.customSelect('''
+            SELECT id_aluno, status, data_presenca, data_cancelamento
+              FROM agendamento WHERE id_aula = $aula''').get())
+        l.read<int>('id_aluno'): l.data,
+    };
+    DateTime? utc(Object? valor) => switch (valor) {
+      final DateTime d => d.toUtc(),
+      final PgDateTime d => d.dateTime.toUtc(),
+      _ => null,
+    };
+
+    await agendar(idAula, idAluno1, 'agendado');
+    await agendar(idAula, idAluno2, 'presente');
+    await agendar(idAula, idAluno3, 'faltou');
+    await agendar(idAula, idAluno4, 'cancelado');
+    await agendar(outraAula, idAluno1, 'agendado');
+    final antes = await ler(idAula);
+    final outraAntes = await ler(outraAula);
+
+    final alterados = await repo.cancelarAgendadosDaAula(
+      idAula,
+      agora: instante,
+    );
+
+    expect(alterados, 1);
+    final depois = await ler(idAula);
+    expect(depois[idAluno1]!['status'], 'cancelado');
+    expect(utc(depois[idAluno1]!['data_cancelamento']), instante);
+    for (final aluno in [idAluno2, idAluno3, idAluno4]) {
+      expect(depois[aluno], antes[aluno], reason: 'aluno $aluno mudou');
+    }
+    expect(await ler(outraAula), outraAntes);
+    expect(
+      await repo.cancelarAgendadosDaAula(idAula, agora: instante),
+      0,
+      reason: 'sem agendado restante',
+    );
   });
 
   group('fuso: regras de tempo calculadas no Postgres', () {

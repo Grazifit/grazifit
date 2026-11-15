@@ -17,15 +17,28 @@ void exigirAnoDeVigencia(int ano, DateTime agora) {
   }
 }
 
-/// Regras e permissoes de aula: criar (admin), ler (todos) e atualizar
-/// (admin; professor so nas proprias).
+/// O que o cancelamento da aula precisa da feature de agendamento.
+/// Declarada aqui porque o agendamento ja importa a aula; quem implementa e
+/// o `AgendamentoService`.
+abstract interface class CancelamentoDeAgendamentos {
+  /// Cancela os `agendado` da aula com [agora]; devolve quantos mudaram.
+  Future<int> cancelarEmCascata(int idAula, {required DateTime agora});
+}
+
+/// Regras e permissoes de aula: criar (admin), ler (todos), atualizar,
+/// cancelar e ver os agendados (admin; professor so nas proprias).
 class AulaService {
   final AulaRepository _repository;
 
+  final CancelamentoDeAgendamentos _agendamentos;
+
   final DateTime Function() _agora;
 
-  AulaService(this._repository, {DateTime Function()? agora})
-    : _agora = agora ?? DateTime.now;
+  AulaService(
+    this._repository,
+    this._agendamentos, {
+    DateTime Function()? agora,
+  }) : _agora = agora ?? DateTime.now;
 
   Future<AulaData> criar({
     required Identidade identidade,
@@ -40,6 +53,15 @@ class AulaService {
     exigirAdmin(identidade);
 
     _exigirAnoDeVigencia(data.year);
+    final dia = _diaCivil(data);
+    _exigirForaDoPassado(
+      mudaData: true,
+      mudaInicio: true,
+      mudaFim: false,
+      dataFinal: dia,
+      inicioFinal: horaInicio,
+      fimFinal: horaFim,
+    );
     _validarAula(
       tipo: tipo,
       categoria: categoria,
@@ -53,7 +75,7 @@ class AulaService {
     return _repository.create(
       idAdminCriador: identidade.id,
       idProfessor: idProfessor,
-      data: PgDate.fromDateTime(data),
+      data: dia,
       horaInicio: _paraTime(horaInicio),
       horaFim: _paraTime(horaFim),
       tipo: tipo,
@@ -99,6 +121,42 @@ class AulaService {
     return (itens: itens, total: total);
   }
 
+  /// Vagas ocupadas por aula; aula sem ocupacao vem com 0. A leitura da
+  /// aula e livre para todos os perfis, e a ocupacao segue a mesma regra.
+  Future<Map<int, int>> vagasOcupadas(
+    Identidade identidade,
+    List<int> idsAulas,
+  ) async {
+    final contagem = await _repository.contarOcupadasPorAula(idsAulas);
+    return {for (final id in idsAulas) id: contagem[id] ?? 0};
+  }
+
+  /// Agendados da aula (sem os cancelados). Admin em qualquer aula;
+  /// professor so na propria; aluno nunca.
+  Future<({List<AgendadoDaAula> itens, int total})> listarAgendados(
+    Identidade identidade,
+    int idAula, {
+    required int limit,
+    required int offset,
+  }) async {
+    if (identidade.papel == Papel.aluno) throw const AcessoNegado();
+
+    final aula = await _repository.buscarPorId(idAula);
+    if (aula == null) throw const AulaNotFoundException();
+    if (identidade.papel == Papel.professor &&
+        aula.idProfessor != identidade.id) {
+      throw const AcessoNegado();
+    }
+
+    final itens = await _repository.listarAgendados(
+      idAula,
+      limit: limit,
+      offset: offset,
+    );
+    final total = await _repository.contarAgendados(idAula);
+    return (itens: itens, total: total);
+  }
+
   /// Campo nulo = nao alterar. Roda com a aula travada para nenhum
   /// agendamento entrar durante a edicao.
   Future<AulaData> atualizar({
@@ -122,7 +180,7 @@ class AulaService {
         throw const AulaConflictException(CodigoErro.aulaInativa);
       }
 
-      final novaData = data == null ? null : PgDate.fromDateTime(data);
+      final novaData = data == null ? null : _diaCivil(data);
 
       // So conta como alteracao o que difere do valor atual.
       final mudaProfessor =
@@ -138,16 +196,18 @@ class AulaService {
           identidade,
           atual,
           mudaProfessor: mudaProfessor,
-          mudaData: mudaData,
-          mudaInicio: mudaInicio,
-          mudaFim: mudaFim,
-          dataFinal: novaData ?? atual.data,
-          inicioFinal: horaInicio ?? _paraDuration(atual.horaInicio),
-          fimFinal: horaFim ?? _paraDuration(atual.horaFim),
         );
       }
 
       // Apos a autorizacao, para quem nao pode editar receber sempre 403.
+      _exigirForaDoPassado(
+        mudaData: mudaData,
+        mudaInicio: mudaInicio,
+        mudaFim: mudaFim,
+        dataFinal: novaData ?? atual.data,
+        inicioFinal: horaInicio ?? _paraDuration(atual.horaInicio),
+        fimFinal: horaFim ?? _paraDuration(atual.horaFim),
+      );
       if (mudaData) _exigirAnoDeVigencia(novaData.year);
 
       // Valida a combinacao final, nao so os campos enviados.
@@ -190,6 +250,43 @@ class AulaService {
     });
   }
 
+  /// Admin em qualquer aula; professor so na propria. Na mesma transacao,
+  /// os agendamentos `agendado` sao cancelados com o mesmo instante. Aula
+  /// ja cancelada devolve o estado atual; aula realizada nao cancela.
+  Future<AulaData> cancelar({
+    required Identidade identidade,
+    required int idAula,
+  }) async {
+    if (identidade.papel == Papel.aluno) throw const AcessoNegado();
+
+    return _repository.transacao(() async {
+      final atual = await _repository.buscarParaAtualizar(idAula);
+      if (atual == null) throw const AulaNotFoundException();
+
+      if (identidade.papel == Papel.professor &&
+          atual.idProfessor != identidade.id) {
+        throw const AcessoNegado();
+      }
+
+      if (!atual.status) return atual;
+
+      if (_jaRealizada(atual)) {
+        throw const AulaConflictException(CodigoErro.aulaDataPassada);
+      }
+
+      final instante = _agora().toUtc();
+      final porAdmin = identidade.papel == Papel.admin;
+      final cancelada = await _repository.cancelar(
+        idAula,
+        agora: instante,
+        idAdminCancelou: porAdmin ? identidade.id : null,
+        idProfessorCancelou: porAdmin ? null : identidade.id,
+      );
+      await _agendamentos.cancelarEmCascata(idAula, agora: instante);
+      return cancelada;
+    });
+  }
+
   void _validarAula({
     required String tipo,
     required String categoria,
@@ -218,11 +315,20 @@ class AulaService {
   void _exigirAnoDeVigencia(int ano) => exigirAnoDeVigencia(ano, _agora());
 
   /// Professor: so a propria aula, ainda nao realizada, sem trocar o
-  /// professor e sem mover para o passado (data ou horario).
+  /// professor.
   void _exigirRegrasDoProfessor(
     Identidade identidade,
     AulaData atual, {
     required bool mudaProfessor,
+  }) {
+    if (atual.idProfessor != identidade.id) throw const AcessoNegado();
+    if (_jaRealizada(atual)) throw const AcessoNegado();
+    if (mudaProfessor) throw const AcessoNegado();
+  }
+
+  /// Admin e professor: data e horario alterados nao podem cair no passado.
+  /// "Exatamente agora" conta como passado.
+  void _exigirForaDoPassado({
     required bool mudaData,
     required bool mudaInicio,
     required bool mudaFim,
@@ -230,11 +336,9 @@ class AulaService {
     required Duration inicioFinal,
     required Duration fimFinal,
   }) {
-    if (atual.idProfessor != identidade.id) throw const AcessoNegado();
-    if (_jaRealizada(atual)) throw const AcessoNegado();
-    if (mudaProfessor) throw const AcessoNegado();
-
-    if (mudaData && dataFinal.compareTo(_hoje()) < 0) _invalido('data');
+    if (mudaData && _diaCivil(dataFinal.toDateTime()).compareTo(_hoje()) < 0) {
+      _invalido('data');
+    }
 
     final agora = _agora();
     if ((mudaData || mudaInicio) &&
@@ -288,7 +392,11 @@ class AulaService {
   Never _invalido(String campo) =>
       throw AulaValidationException(CodigoErro.campoInvalido, campo: campo);
 
-  PgDate _hoje() => PgDate.fromDateTime(_agora());
+  PgDate _hoje() => _diaCivil(_agora());
+
+  /// So o dia civil: descarta hora e fuso do DateTime de origem.
+  static PgDate _diaCivil(DateTime d) =>
+      PgDate(year: d.year, month: d.month, day: d.day);
 
   bool _jaRealizada(AulaData aula) =>
       !_momento(aula.data, _paraDuration(aula.horaFim)).isAfter(_agora());

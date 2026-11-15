@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:postgres/postgres.dart' as pg;
+import 'package:shared/dtos/aula_agendado_serializer.dart';
 import 'package:shared/dtos/aula_serializer.dart';
 import 'package:shared/dtos/pagina_serializer.dart';
 import 'package:shared/erros/codigo_erro.dart';
@@ -13,6 +14,7 @@ import '../../shared/erros/aula_exception.dart';
 import '../../shared/erros/status_http.dart';
 import '../../shared/erros/tradutor_erro_banco.dart';
 import '../../shared/middleware/identidade_middleware.dart';
+import 'aula_repository.dart' show AgendadoDaAula;
 import 'aula_service.dart';
 
 /// Valida a forma da requisicao e monta o DTO; regras ficam no service.
@@ -27,6 +29,8 @@ class AulaController {
     router.get('/aulas', _listar);
     router.get('/aulas/<id>', _buscarPorId);
     router.patch('/aulas/<id>', _atualizar);
+    router.post('/aulas/<id>/cancelar', _cancelar);
+    router.get('/aulas/<id>/agendamentos', _listarAgendados);
     return router;
   }
 
@@ -75,7 +79,7 @@ class AulaController {
         categoria: c.categoria!,
         vagasMaxima: c.vagasMaxima!,
       );
-      return _json(201, _aulaJson(aula));
+      return _json(201, _aulaJson(aula, ocupadas: 0));
     });
   }
 
@@ -84,18 +88,9 @@ class AulaController {
     if (identidade == null) return _envelope(CodigoErro.tokenInvalido);
     final parametros = req.url.queryParameters;
 
-    final limit = _parametroInteiro(parametros['limit'], padrao: _limitPadrao);
-    if (limit == null || limit < 1 || limit > _limitMaximo) {
-      return _campoInvalido(
-        'limit',
-        'Deve ser um inteiro de 1 a $_limitMaximo.',
-      );
-    }
-
-    final offset = _parametroInteiro(parametros['offset'], padrao: 0);
-    if (offset == null || offset < 0) {
-      return _campoInvalido('offset', 'Deve ser um inteiro >= 0.');
-    }
+    final paginacao = _paginacao(parametros);
+    if (paginacao.erro != null) return paginacao.erro!;
+    final (:limit, :offset, erro: _) = paginacao;
 
     final dataBruta = parametros['data'];
     final data = dataBruta == null ? null : _dataCivil(dataBruta);
@@ -125,10 +120,16 @@ class AulaController {
         categoria: categoria,
         idProfessor: idProfessor,
       );
+      final ocupadas = await _service.vagasOcupadas(identidade, [
+        for (final aula in pagina.itens) aula.idAula,
+      ]);
       return _json(
         200,
         paginaToJson(
-          itens: pagina.itens.map(_aulaJson).toList(),
+          itens: [
+            for (final aula in pagina.itens)
+              _aulaJson(aula, ocupadas: ocupadas[aula.idAula]!),
+          ],
           limit: limit,
           offset: offset,
           total: pagina.total,
@@ -144,7 +145,7 @@ class AulaController {
     }
     return _comId(id, (idAula) async {
       final aula = await _service.buscarPorId(identidade, idAula);
-      return _json(200, _aulaJson(aula));
+      return _json(200, await _aulaComOcupacao(identidade, aula));
     });
   }
 
@@ -186,8 +187,78 @@ class AulaController {
         categoria: c.categoria,
         vagasMaxima: c.vagasMaxima,
       );
-      return _json(200, _aulaJson(aula));
+      return _json(200, await _aulaComOcupacao(identidade, aula));
     });
+  }
+
+  /// Sem corpo; o que vier e ignorado.
+  Future<Response> _cancelar(Request req, String id) {
+    final identidade = identidadeDaRequisicao(req);
+    if (identidade == null) {
+      return Future.value(_envelope(CodigoErro.tokenInvalido));
+    }
+    return _comId(id, (idAula) async {
+      final aula = await _service.cancelar(
+        identidade: identidade,
+        idAula: idAula,
+      );
+      return _json(200, await _aulaComOcupacao(identidade, aula));
+    });
+  }
+
+  /// Sem cancelados; mesma paginacao de `GET /aulas`.
+  Future<Response> _listarAgendados(Request req, String id) {
+    final identidade = identidadeDaRequisicao(req);
+    if (identidade == null) {
+      return Future.value(_envelope(CodigoErro.tokenInvalido));
+    }
+    final paginacao = _paginacao(req.url.queryParameters);
+    if (paginacao.erro != null) return Future.value(paginacao.erro!);
+    final (:limit, :offset, erro: _) = paginacao;
+
+    return _comId(id, (idAula) async {
+      final pagina = await _service.listarAgendados(
+        identidade,
+        idAula,
+        limit: limit,
+        offset: offset,
+      );
+      return _json(
+        200,
+        paginaToJson(
+          itens: pagina.itens.map(_agendadoJson).toList(),
+          limit: limit,
+          offset: offset,
+          total: pagina.total,
+        ),
+      );
+    });
+  }
+
+  ({int limit, int offset, Response? erro}) _paginacao(
+    Map<String, String> parametros,
+  ) {
+    final limit = _parametroInteiro(parametros['limit'], padrao: _limitPadrao);
+    if (limit == null || limit < 1 || limit > _limitMaximo) {
+      return (
+        limit: 0,
+        offset: 0,
+        erro: _campoInvalido(
+          'limit',
+          'Deve ser um inteiro de 1 a $_limitMaximo.',
+        ),
+      );
+    }
+
+    final offset = _parametroInteiro(parametros['offset'], padrao: 0);
+    if (offset == null || offset < 0) {
+      return (
+        limit: 0,
+        offset: 0,
+        erro: _campoInvalido('offset', 'Deve ser um inteiro >= 0.'),
+      );
+    }
+    return (limit: limit, offset: offset, erro: null);
   }
 
   /// Ausente vira `null`; presente e invalido devolve 400.
@@ -382,6 +453,7 @@ class AulaController {
     CodigoErro.acessoNegado => 'Acesso negado.',
     CodigoErro.registroNaoEncontrado => 'Aula nao encontrada.',
     CodigoErro.aulaInativa => 'Aula cancelada nao pode ser editada.',
+    CodigoErro.aulaDataPassada => 'Aula ja realizada nao pode ser cancelada.',
     CodigoErro.registroEmUso =>
       'Aula com agendamentos: data, horario e professor ficam travados e '
           'as vagas nao descem abaixo da ocupacao.',
@@ -398,17 +470,37 @@ class AulaController {
     _ => 'Requisicao rejeitada.',
   };
 
-  Map<String, dynamic> _aulaJson(AulaData aula) => aulaToJson(
-    idAula: aula.idAula,
-    idProfessor: aula.idProfessor,
-    idCronograma: aula.idCronograma,
-    data: aula.data.toDateTime(),
-    horaInicio: Duration(microseconds: aula.horaInicio.microseconds),
-    horaFim: Duration(microseconds: aula.horaFim.microseconds),
-    tipo: aula.tipo,
-    categoria: aula.categoria,
-    vagasMaxima: aula.vagasMaxima,
-    status: aula.status,
+  Future<Map<String, dynamic>> _aulaComOcupacao(
+    Identidade identidade,
+    AulaData aula,
+  ) async {
+    final ocupadas = await _service.vagasOcupadas(identidade, [aula.idAula]);
+    return _aulaJson(aula, ocupadas: ocupadas[aula.idAula]!);
+  }
+
+  Map<String, dynamic> _aulaJson(AulaData aula, {required int ocupadas}) =>
+      aulaToJson(
+        idAula: aula.idAula,
+        idProfessor: aula.idProfessor,
+        idCronograma: aula.idCronograma,
+        data: aula.data.toDateTime(),
+        horaInicio: Duration(microseconds: aula.horaInicio.microseconds),
+        horaFim: Duration(microseconds: aula.horaFim.microseconds),
+        tipo: aula.tipo,
+        categoria: aula.categoria,
+        vagasMaxima: aula.vagasMaxima,
+        status: aula.status,
+        dataCancelamento: aula.dataCancelamento?.dateTime,
+        idProfessorCancelou: aula.idProfessorCancelou,
+        idAdminCancelou: aula.idAdminCancelou,
+        vagasOcupadas: ocupadas,
+      );
+
+  Map<String, dynamic> _agendadoJson(AgendadoDaAula a) => aulaAgendadoToJson(
+    idAgendamento: a.idAgendamento,
+    idAluno: a.idAluno,
+    nomeAluno: a.nomeAluno,
+    status: a.status,
   );
 }
 

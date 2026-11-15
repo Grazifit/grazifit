@@ -3,9 +3,27 @@ import 'package:drift_postgres/drift_postgres.dart';
 import 'package:postgres/postgres.dart' as pg;
 
 import '../../../database/database.dart';
+import '../agendamentos/agendamento_repository.dart'
+    show statusQueNaoOcupamVaga;
+
+/// Agendamento listado para admin e professor: so o que identifica o aluno
+/// na chamada.
+class AgendadoDaAula {
+  final int idAgendamento;
+  final int idAluno;
+  final String nomeAluno;
+  final String status;
+
+  const AgendadoDaAula({
+    required this.idAgendamento,
+    required this.idAluno,
+    required this.nomeAluno,
+    required this.status,
+  });
+}
 
 /// Acesso a tabela `aula`. Sem validacao: erros do banco sobem para o
-/// tradutor. `professor` e `agendamento` sao apenas lidos.
+/// tradutor. `professor`, `aluno` e `agendamento` sao so lidos.
 class AulaRepository {
   final GraziDatabase _db;
 
@@ -120,21 +138,70 @@ class AulaRepository {
     return linhas.isEmpty ? null : linhas.single;
   }
 
-  /// Agendamentos que ocupam vaga (fora `cancelado` e `faltou`).
-  Future<int> contarAgendamentosAtivos(int idAula) async {
-    final linha = await _db
-        .customSelect(
-          r'''
-      SELECT COUNT(*)::int AS total
-        FROM agendamento
-       WHERE id_aula = $1
-         AND status NOT IN ('cancelado', 'faltou')
-    ''',
-          variables: [Variable.withInt(idAula)],
-        )
-        .getSingle();
-    return linha.read<int>('total');
+  /// Agendamentos que ocupam vaga, pela regra de [statusQueNaoOcupamVaga].
+  Future<int> contarAgendamentosAtivos(int idAula) async =>
+      (await contarOcupadasPorAula([idAula]))[idAula] ?? 0;
+
+  /// Vagas ocupadas de varias aulas numa so consulta agregada. Aula sem
+  /// agendamento que ocupe vaga nao aparece no mapa.
+  Future<Map<int, int>> contarOcupadasPorAula(Iterable<int> idsAulas) async {
+    final ids = idsAulas.toSet();
+    if (ids.isEmpty) return {};
+    final g = _db.agendamento;
+    final total = g.idAgendamento.count();
+    final consulta = _db.selectOnly(g)
+      ..addColumns([g.idAula, total])
+      ..where(g.idAula.isIn(ids) & g.status.isNotIn(statusQueNaoOcupamVaga))
+      ..groupBy([g.idAula]);
+    return {
+      for (final linha in await consulta.get())
+        linha.read(g.idAula)!: linha.read(total)!,
+    };
   }
+
+  /// Agendamentos da aula fora `cancelado`, com o nome do aluno. So as
+  /// quatro colunas saem do banco. Ordem por nome e desempate por id.
+  Future<List<AgendadoDaAula>> listarAgendados(
+    int idAula, {
+    required int limit,
+    required int offset,
+  }) async {
+    final g = _db.agendamento;
+    final a = _db.aluno;
+    final consulta =
+        _db.selectOnly(g).join([
+            innerJoin(a, a.idAluno.equalsExp(g.idAluno), useColumns: false),
+          ])
+          ..addColumns([g.idAgendamento, g.idAluno, a.nome, g.status])
+          ..where(_agendadoDaAula(idAula))
+          ..orderBy([
+            OrderingTerm.asc(a.nome),
+            OrderingTerm.asc(g.idAgendamento),
+          ])
+          ..limit(limit, offset: offset);
+    return [
+      for (final linha in await consulta.get())
+        AgendadoDaAula(
+          idAgendamento: linha.read(g.idAgendamento)!,
+          idAluno: linha.read(g.idAluno)!,
+          nomeAluno: linha.read(a.nome)!,
+          status: linha.read(g.status)!,
+        ),
+    ];
+  }
+
+  /// Total com o mesmo filtro de [listarAgendados].
+  Future<int> contarAgendados(int idAula) async {
+    final total = _db.agendamento.idAgendamento.count();
+    final consulta = _db.selectOnly(_db.agendamento)
+      ..addColumns([total])
+      ..where(_agendadoDaAula(idAula));
+    return (await consulta.getSingle()).read(total)!;
+  }
+
+  Expression<bool> _agendadoDaAula(int idAula) =>
+      _db.agendamento.idAula.equals(idAula) &
+      _db.agendamento.status.equals('cancelado').not();
 
   Future<bool> professorAtivoExiste(int idProfessor) async {
     final consulta = _db.selectOnly(_db.professor)
@@ -145,6 +212,28 @@ class AulaRepository {
       )
       ..limit(1);
     return await consulta.getSingleOrNull() != null;
+  }
+
+  /// Marca a aula como cancelada. Exatamente um dos responsaveis deve vir
+  /// preenchido (`ck_aula_cancelamento`). Usar dentro de [transacao].
+  Future<AulaData> cancelar(
+    int idAula, {
+    required DateTime agora,
+    int? idAdminCancelou,
+    int? idProfessorCancelou,
+  }) async {
+    final linhas =
+        await (_db.update(
+          _db.aula,
+        )..where((t) => t.idAula.equals(idAula))).writeReturning(
+          AulaCompanion(
+            status: const Value(false),
+            dataCancelamento: Value<PgDateTime?>(PgDateTime(agora)),
+            idAdminCancelou: Value(idAdminCancelou),
+            idProfessorCancelou: Value(idProfessorCancelou),
+          ),
+        );
+    return linhas.single;
   }
 
   Future<T> transacao<T>(Future<T> Function() acao) => _db.transaction(acao);

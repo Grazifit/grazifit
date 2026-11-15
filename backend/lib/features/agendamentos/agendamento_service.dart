@@ -5,7 +5,8 @@ import '../../database/database.dart' show AgendamentoData, AulaData;
 import '../../shared/autorizacao/identidade.dart';
 import '../../shared/erros/agendamento_exception.dart';
 import '../../shared/erros/tradutor_erro_banco.dart';
-import '../aulas/aula_service.dart' show exigirAnoDeVigencia;
+import '../aulas/aula_service.dart'
+    show CancelamentoDeAgendamentos, exigirAnoDeVigencia;
 import 'agendamento_repository.dart';
 
 /// Regras de agendamento: so o aluno reserva e cancela a propria vaga,
@@ -14,7 +15,7 @@ import 'agendamento_repository.dart';
 /// Data passada, janela de 2 horas, ano de vigencia e dia civil saem do
 /// Postgres (`America/Sao_Paulo`, na mesma consulta que le a aula). O Dart
 /// nao converte fuso para essas regras.
-class AgendamentoService {
+class AgendamentoService implements CancelamentoDeAgendamentos {
   /// Antecedencia minima, em ambos os sentidos. A regra roda no SQL
   /// (`agendamento_repository.dart`, `_colunasDeRegra`); esta constante e a
   /// referencia dela, usada pelos testes.
@@ -75,7 +76,7 @@ class AgendamentoService {
       final hoje = situacao.regras.hoje;
 
       // Corrida: a leitura travada pode estar um commit atras. Trigger
-      // (GF001, GF002) e unique (uq_agendamento_aluno_aula) decidem com
+      // e unique (uq_agendamento_aluno_aula) decidem com
       // snapshot novo; o codigo sai do tradutor unico, igual a checagem
       // antecipada.
       try {
@@ -142,6 +143,12 @@ class AgendamentoService {
       return _repository.cancelar(idAgendamento, agora: _agoraUtc());
     });
   }
+
+  /// So o `AulaService.cancelar` chama, ja autorizado e dentro da transacao
+  /// do cancelamento da aula; por isso nao checa perfil nem abre transacao.
+  @override
+  Future<int> cancelarEmCascata(int idAula, {required DateTime agora}) =>
+      _repository.cancelarAgendadosDaAula(idAula, agora: agora);
 
   /// Lista so os proprios agendamentos.
   Future<({List<AgendamentoData> itens, int total})> listarDoAluno(

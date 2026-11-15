@@ -9,7 +9,9 @@ const Set<String> categoriasAula = {
   'spinning',
 };
 
-/// `status = false` indica aula cancelada.
+/// `status = false` indica aula cancelada. Quem cancelou sai so como papel
+/// (`cancelado_por`), sem o id; `data_cancelamento` em UTC ISO-8601.
+/// `vagas_livres` e derivado de `vagas_maxima` e `vagas_ocupadas`.
 Map<String, dynamic> aulaToJson({
   required int idAula,
   required int idProfessor,
@@ -21,6 +23,10 @@ Map<String, dynamic> aulaToJson({
   required String categoria,
   required int vagasMaxima,
   required bool status,
+  required DateTime? dataCancelamento,
+  required int? idProfessorCancelou,
+  required int? idAdminCancelou,
+  required int vagasOcupadas,
 }) {
   return {
     'id_aula': idAula,
@@ -32,7 +38,13 @@ Map<String, dynamic> aulaToJson({
     'tipo': tipo,
     'categoria': categoria,
     'vagas_maxima': vagasMaxima,
+    'vagas_ocupadas': vagasOcupadas,
+    'vagas_livres': vagasMaxima - vagasOcupadas,
     'status': status,
+    'data_cancelamento': dataCancelamento?.toUtc().toIso8601String(),
+    'cancelado_por': idAdminCancelou != null
+        ? 'admin'
+        : (idProfessorCancelou != null ? 'professor' : null),
   };
 }
 

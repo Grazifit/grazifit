@@ -1,4 +1,5 @@
-import 'package:drift_postgres/drift_postgres.dart' show PgDate;
+import 'package:drift_postgres/drift_postgres.dart' show PgDate, PgDateTime;
+import 'package:grazifit_backend/database/database.dart' show AgendamentoData;
 import 'package:grazifit_backend/features/agendamentos/agendamento_service.dart';
 import 'package:grazifit_backend/shared/autorizacao/identidade.dart';
 import 'package:grazifit_backend/shared/erros/agendamento_exception.dart';
@@ -302,6 +303,55 @@ void main() {
         service.listarDoAluno(professor, limit: 20, offset: 0),
         throwsA(isA<AcessoNegado>()),
       );
+    });
+  });
+
+  group('cancelarEmCascata', () {
+    AgendamentoData agendamento(int id, int idAula, String status) =>
+        AgendamentoData(
+          idAgendamento: id,
+          idAluno: 100 + id,
+          idAula: idAula,
+          dataAgendamento: PgDate(year: 2026, month: 6, day: 1),
+          status: status,
+          dataCancelamento: status == 'cancelado'
+              ? PgDateTime(DateTime.utc(2026, 6, 2))
+              : null,
+        );
+
+    test('repassa a aula e o instante; so agendado vira cancelado', () async {
+      final instante = DateTime.utc(2026, 6, 10, 15, 30, 1, 2, 3);
+      repo.agendamentos.addAll([
+        agendamento(1, 1, 'agendado'),
+        agendamento(2, 1, 'presente'),
+        agendamento(3, 1, 'faltou'),
+        agendamento(4, 1, 'cancelado'),
+        agendamento(5, 1, 'agendado'),
+        agendamento(6, 2, 'agendado'),
+      ]);
+      final antes = List.of(repo.agendamentos);
+
+      final alterados = await service.cancelarEmCascata(1, agora: instante);
+
+      expect(alterados, 2);
+      expect(repo.cascatas, [(1, instante)]);
+      for (final i in [0, 4]) {
+        expect(repo.agendamentos[i].status, 'cancelado');
+        expect(repo.agendamentos[i].dataCancelamento!.dateTime, instante);
+      }
+      for (final i in [1, 2, 3, 5]) {
+        expect(repo.agendamentos[i], antes[i]);
+      }
+    });
+
+    test('nao usa o relogio do service nem abre transacao propria', () async {
+      final instante = DateTime.utc(2030, 1, 1);
+      repo.agendamentos.add(agendamento(1, 1, 'agendado'));
+      await service.cancelarEmCascata(1, agora: instante);
+      expect(repo.cascatas.single.$2, instante);
+      expect(repo.cascatas.single.$2, isNot(agoraFixo));
+      expect(repo.transacoes, 0);
+      expect(repo.leiturasComTrava, 0);
     });
   });
 
