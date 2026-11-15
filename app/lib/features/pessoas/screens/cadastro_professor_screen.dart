@@ -97,7 +97,7 @@ class _CadastroProfessorScreenState
     final erro = atual.error;
     if (erro is! ApiException) return;
 
-    switch (erro.codigo) {
+    switch (erro.codigoErro) {
       case CodigoErro.cpfEmUso:
         setState(() => _erroCpf = 'CPF já cadastrado');
       case CodigoErro.cpfInvalido:
@@ -119,7 +119,7 @@ class _CadastroProfessorScreenState
     if (erro.semResposta) {
       return 'Sem conexão com o servidor. Tente novamente.';
     }
-    return switch (erro.codigo) {
+    return switch (erro.codigoErro) {
       CodigoErro.tokenInvalido => 'Sessão expirada. Entre novamente.',
       CodigoErro.acessoNegado =>
         'Você não tem permissão para cadastrar professores.',

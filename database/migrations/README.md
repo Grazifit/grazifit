@@ -13,7 +13,19 @@ ainda tem em produção.
 alteração vira um arquivo aqui, e `schema/grazi_db_init_schema.sql` deixa
 de ser editado.
 
-Hoje esta pasta está vazia de propósito. Isso não é pendência.
+Migrations atuais: `001` cria sessões; `002` garante unicidade global de
+e-mails; `003` corrige o instante de revogação em transações concorrentes.
+
+A `002` aborta atomicamente se encontrar e-mails duplicados (ignorando
+maiúsculas e espaços nas extremidades). Resolva os cadastros envolvidos
+com seus responsáveis antes de reaplicar; não exclua ou mescle contas
+automaticamente. A implantação destas correções exige aplicar `002` e
+`003` e reiniciar o backend atualizado.
+
+Validação isolada: na pasta `backend`, com `DATABASE_URL` definida, execute
+`dart run tool/test_auth_isolated.dart`. O comando consulta apenas a contagem
+de duplicidades na base de origem e cria uma base temporária para testar
+schema, migrations e suíte. A base temporária é removida ao terminar.
 
 ---
 
