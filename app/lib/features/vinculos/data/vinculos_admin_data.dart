@@ -2,31 +2,9 @@
 class VinculosAdminData {
   const VinculosAdminData({required this.ativos, required this.encerrados});
 
-  static const demonstracao = VinculosAdminData(
-    ativos: [
-      VinculoAdminData(
-        id: 1,
-        alunoNome: 'Ana Beatriz Ramos',
-        professorNome: 'Marina Alves',
-      ),
-      VinculoAdminData(
-        id: 2,
-        alunoNome: 'Carlos Menezes',
-        professorNome: 'Rafael Nunes',
-      ),
-      VinculoAdminData(
-        id: 3,
-        alunoNome: 'Júlia Prado',
-        professorNome: 'Marina Alves',
-      ),
-    ],
-    encerrados: [
-      VinculoAdminData(
-        id: 4,
-        alunoNome: 'Rafael Moura',
-        professorNome: 'Beatriz Lima',
-      ),
-    ],
+  static const vazio = VinculosAdminData(
+    ativos: [],
+    encerrados: [],
   );
 
   final List<VinculoAdminData> ativos;

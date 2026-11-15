@@ -17,8 +17,8 @@ enum FiltroVinculosAdmin { ativos, encerrados }
 class VinculosAdminScreen extends StatefulWidget {
   const VinculosAdminScreen({
     super.key,
-    this.dados = VinculosAdminData.demonstracao,
-    this.estado = EstadoVinculosAdmin.dados,
+    this.dados = VinculosAdminData.vazio,
+    this.estado = EstadoVinculosAdmin.vazio,
     this.onTentarNovamente,
     this.onNovoVinculo,
     this.onEncerrarVinculo,

@@ -16,8 +16,8 @@ enum CategoriaInativosAdmin { alunos, professores }
 class PainelInativosAdminScreen extends StatefulWidget {
   const PainelInativosAdminScreen({
     super.key,
-    this.dados = InativosAdminData.demonstracao,
-    this.estado = EstadoPainelInativosAdmin.dados,
+    this.dados = InativosAdminData.vazio,
+    this.estado = EstadoPainelInativosAdmin.vazio,
     this.onTentarNovamente,
     this.onSelecionarPessoa,
   });
