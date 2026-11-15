@@ -2182,8 +2182,7 @@ class AulaData extends DataClass implements Insertable<AulaData> {
   final int? idAdminCriador;
   final int idProfessor;
 
-  /// Nulo = aula avulsa. Nesta feature sempre nulo: quem preenche e a geracao
-  /// por cronograma (GRAZ-85).
+  /// Nulo = aula avulsa.
   final int? idCronograma;
   final PgDate data;
   final pg.Time horaInicio;
@@ -2647,6 +2646,503 @@ class AulaCompanion extends UpdateCompanion<AulaData> {
   }
 }
 
+class $AgendamentoTable extends Agendamento
+    with TableInfo<$AgendamentoTable, AgendamentoData> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $AgendamentoTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idAgendamentoMeta = const VerificationMeta(
+    'idAgendamento',
+  );
+  @override
+  late final GeneratedColumn<int> idAgendamento = GeneratedColumn<int>(
+    'id_agendamento',
+    aliasedName,
+    false,
+    hasAutoIncrement: true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'PRIMARY KEY AUTOINCREMENT',
+    ),
+  );
+  static const VerificationMeta _idAlunoMeta = const VerificationMeta(
+    'idAluno',
+  );
+  @override
+  late final GeneratedColumn<int> idAluno = GeneratedColumn<int>(
+    'id_aluno',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _idAulaMeta = const VerificationMeta('idAula');
+  @override
+  late final GeneratedColumn<int> idAula = GeneratedColumn<int>(
+    'id_aula',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _dataAgendamentoMeta = const VerificationMeta(
+    'dataAgendamento',
+  );
+  @override
+  late final GeneratedColumn<PgDate> dataAgendamento = GeneratedColumn<PgDate>(
+    'data_agendamento',
+    aliasedName,
+    false,
+    type: PgTypes.date,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _statusMeta = const VerificationMeta('status');
+  @override
+  late final GeneratedColumn<String> status = GeneratedColumn<String>(
+    'status',
+    aliasedName,
+    false,
+    additionalChecks: GeneratedColumn.checkTextLength(maxTextLength: 15),
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('agendado'),
+  );
+  static const VerificationMeta _dataPresencaMeta = const VerificationMeta(
+    'dataPresenca',
+  );
+  @override
+  late final GeneratedColumn<PgDateTime> dataPresenca =
+      GeneratedColumn<PgDateTime>(
+        'data_presenca',
+        aliasedName,
+        true,
+        type: PgTypes.timestampWithTimezone,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _dataCancelamentoMeta = const VerificationMeta(
+    'dataCancelamento',
+  );
+  @override
+  late final GeneratedColumn<PgDateTime> dataCancelamento =
+      GeneratedColumn<PgDateTime>(
+        'data_cancelamento',
+        aliasedName,
+        true,
+        type: PgTypes.timestampWithTimezone,
+        requiredDuringInsert: false,
+      );
+  @override
+  List<GeneratedColumn> get $columns => [
+    idAgendamento,
+    idAluno,
+    idAula,
+    dataAgendamento,
+    status,
+    dataPresenca,
+    dataCancelamento,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'agendamento';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<AgendamentoData> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id_agendamento')) {
+      context.handle(
+        _idAgendamentoMeta,
+        idAgendamento.isAcceptableOrUnknown(
+          data['id_agendamento']!,
+          _idAgendamentoMeta,
+        ),
+      );
+    }
+    if (data.containsKey('id_aluno')) {
+      context.handle(
+        _idAlunoMeta,
+        idAluno.isAcceptableOrUnknown(data['id_aluno']!, _idAlunoMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_idAlunoMeta);
+    }
+    if (data.containsKey('id_aula')) {
+      context.handle(
+        _idAulaMeta,
+        idAula.isAcceptableOrUnknown(data['id_aula']!, _idAulaMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_idAulaMeta);
+    }
+    if (data.containsKey('data_agendamento')) {
+      context.handle(
+        _dataAgendamentoMeta,
+        dataAgendamento.isAcceptableOrUnknown(
+          data['data_agendamento']!,
+          _dataAgendamentoMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_dataAgendamentoMeta);
+    }
+    if (data.containsKey('status')) {
+      context.handle(
+        _statusMeta,
+        status.isAcceptableOrUnknown(data['status']!, _statusMeta),
+      );
+    }
+    if (data.containsKey('data_presenca')) {
+      context.handle(
+        _dataPresencaMeta,
+        dataPresenca.isAcceptableOrUnknown(
+          data['data_presenca']!,
+          _dataPresencaMeta,
+        ),
+      );
+    }
+    if (data.containsKey('data_cancelamento')) {
+      context.handle(
+        _dataCancelamentoMeta,
+        dataCancelamento.isAcceptableOrUnknown(
+          data['data_cancelamento']!,
+          _dataCancelamentoMeta,
+        ),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {idAgendamento};
+  @override
+  AgendamentoData map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return AgendamentoData(
+      idAgendamento: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}id_agendamento'],
+      )!,
+      idAluno: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}id_aluno'],
+      )!,
+      idAula: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}id_aula'],
+      )!,
+      dataAgendamento: attachedDatabase.typeMapping.read(
+        PgTypes.date,
+        data['${effectivePrefix}data_agendamento'],
+      )!,
+      status: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}status'],
+      )!,
+      dataPresenca: attachedDatabase.typeMapping.read(
+        PgTypes.timestampWithTimezone,
+        data['${effectivePrefix}data_presenca'],
+      ),
+      dataCancelamento: attachedDatabase.typeMapping.read(
+        PgTypes.timestampWithTimezone,
+        data['${effectivePrefix}data_cancelamento'],
+      ),
+    );
+  }
+
+  @override
+  $AgendamentoTable createAlias(String alias) {
+    return $AgendamentoTable(attachedDatabase, alias);
+  }
+}
+
+class AgendamentoData extends DataClass implements Insertable<AgendamentoData> {
+  final int idAgendamento;
+  final int idAluno;
+  final int idAula;
+  final PgDate dataAgendamento;
+  final String status;
+  final PgDateTime? dataPresenca;
+  final PgDateTime? dataCancelamento;
+  const AgendamentoData({
+    required this.idAgendamento,
+    required this.idAluno,
+    required this.idAula,
+    required this.dataAgendamento,
+    required this.status,
+    this.dataPresenca,
+    this.dataCancelamento,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id_agendamento'] = Variable<int>(idAgendamento);
+    map['id_aluno'] = Variable<int>(idAluno);
+    map['id_aula'] = Variable<int>(idAula);
+    map['data_agendamento'] = Variable<PgDate>(dataAgendamento, PgTypes.date);
+    map['status'] = Variable<String>(status);
+    if (!nullToAbsent || dataPresenca != null) {
+      map['data_presenca'] = Variable<PgDateTime>(
+        dataPresenca,
+        PgTypes.timestampWithTimezone,
+      );
+    }
+    if (!nullToAbsent || dataCancelamento != null) {
+      map['data_cancelamento'] = Variable<PgDateTime>(
+        dataCancelamento,
+        PgTypes.timestampWithTimezone,
+      );
+    }
+    return map;
+  }
+
+  AgendamentoCompanion toCompanion(bool nullToAbsent) {
+    return AgendamentoCompanion(
+      idAgendamento: Value(idAgendamento),
+      idAluno: Value(idAluno),
+      idAula: Value(idAula),
+      dataAgendamento: Value(dataAgendamento),
+      status: Value(status),
+      dataPresenca: dataPresenca == null && nullToAbsent
+          ? const Value.absent()
+          : Value(dataPresenca),
+      dataCancelamento: dataCancelamento == null && nullToAbsent
+          ? const Value.absent()
+          : Value(dataCancelamento),
+    );
+  }
+
+  factory AgendamentoData.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return AgendamentoData(
+      idAgendamento: serializer.fromJson<int>(json['idAgendamento']),
+      idAluno: serializer.fromJson<int>(json['idAluno']),
+      idAula: serializer.fromJson<int>(json['idAula']),
+      dataAgendamento: serializer.fromJson<PgDate>(json['dataAgendamento']),
+      status: serializer.fromJson<String>(json['status']),
+      dataPresenca: serializer.fromJson<PgDateTime?>(json['dataPresenca']),
+      dataCancelamento: serializer.fromJson<PgDateTime?>(
+        json['dataCancelamento'],
+      ),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'idAgendamento': serializer.toJson<int>(idAgendamento),
+      'idAluno': serializer.toJson<int>(idAluno),
+      'idAula': serializer.toJson<int>(idAula),
+      'dataAgendamento': serializer.toJson<PgDate>(dataAgendamento),
+      'status': serializer.toJson<String>(status),
+      'dataPresenca': serializer.toJson<PgDateTime?>(dataPresenca),
+      'dataCancelamento': serializer.toJson<PgDateTime?>(dataCancelamento),
+    };
+  }
+
+  AgendamentoData copyWith({
+    int? idAgendamento,
+    int? idAluno,
+    int? idAula,
+    PgDate? dataAgendamento,
+    String? status,
+    Value<PgDateTime?> dataPresenca = const Value.absent(),
+    Value<PgDateTime?> dataCancelamento = const Value.absent(),
+  }) => AgendamentoData(
+    idAgendamento: idAgendamento ?? this.idAgendamento,
+    idAluno: idAluno ?? this.idAluno,
+    idAula: idAula ?? this.idAula,
+    dataAgendamento: dataAgendamento ?? this.dataAgendamento,
+    status: status ?? this.status,
+    dataPresenca: dataPresenca.present ? dataPresenca.value : this.dataPresenca,
+    dataCancelamento: dataCancelamento.present
+        ? dataCancelamento.value
+        : this.dataCancelamento,
+  );
+  AgendamentoData copyWithCompanion(AgendamentoCompanion data) {
+    return AgendamentoData(
+      idAgendamento: data.idAgendamento.present
+          ? data.idAgendamento.value
+          : this.idAgendamento,
+      idAluno: data.idAluno.present ? data.idAluno.value : this.idAluno,
+      idAula: data.idAula.present ? data.idAula.value : this.idAula,
+      dataAgendamento: data.dataAgendamento.present
+          ? data.dataAgendamento.value
+          : this.dataAgendamento,
+      status: data.status.present ? data.status.value : this.status,
+      dataPresenca: data.dataPresenca.present
+          ? data.dataPresenca.value
+          : this.dataPresenca,
+      dataCancelamento: data.dataCancelamento.present
+          ? data.dataCancelamento.value
+          : this.dataCancelamento,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('AgendamentoData(')
+          ..write('idAgendamento: $idAgendamento, ')
+          ..write('idAluno: $idAluno, ')
+          ..write('idAula: $idAula, ')
+          ..write('dataAgendamento: $dataAgendamento, ')
+          ..write('status: $status, ')
+          ..write('dataPresenca: $dataPresenca, ')
+          ..write('dataCancelamento: $dataCancelamento')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    idAgendamento,
+    idAluno,
+    idAula,
+    dataAgendamento,
+    status,
+    dataPresenca,
+    dataCancelamento,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is AgendamentoData &&
+          other.idAgendamento == this.idAgendamento &&
+          other.idAluno == this.idAluno &&
+          other.idAula == this.idAula &&
+          other.dataAgendamento == this.dataAgendamento &&
+          other.status == this.status &&
+          other.dataPresenca == this.dataPresenca &&
+          other.dataCancelamento == this.dataCancelamento);
+}
+
+class AgendamentoCompanion extends UpdateCompanion<AgendamentoData> {
+  final Value<int> idAgendamento;
+  final Value<int> idAluno;
+  final Value<int> idAula;
+  final Value<PgDate> dataAgendamento;
+  final Value<String> status;
+  final Value<PgDateTime?> dataPresenca;
+  final Value<PgDateTime?> dataCancelamento;
+  const AgendamentoCompanion({
+    this.idAgendamento = const Value.absent(),
+    this.idAluno = const Value.absent(),
+    this.idAula = const Value.absent(),
+    this.dataAgendamento = const Value.absent(),
+    this.status = const Value.absent(),
+    this.dataPresenca = const Value.absent(),
+    this.dataCancelamento = const Value.absent(),
+  });
+  AgendamentoCompanion.insert({
+    this.idAgendamento = const Value.absent(),
+    required int idAluno,
+    required int idAula,
+    required PgDate dataAgendamento,
+    this.status = const Value.absent(),
+    this.dataPresenca = const Value.absent(),
+    this.dataCancelamento = const Value.absent(),
+  }) : idAluno = Value(idAluno),
+       idAula = Value(idAula),
+       dataAgendamento = Value(dataAgendamento);
+  static Insertable<AgendamentoData> custom({
+    Expression<int>? idAgendamento,
+    Expression<int>? idAluno,
+    Expression<int>? idAula,
+    Expression<PgDate>? dataAgendamento,
+    Expression<String>? status,
+    Expression<PgDateTime>? dataPresenca,
+    Expression<PgDateTime>? dataCancelamento,
+  }) {
+    return RawValuesInsertable({
+      if (idAgendamento != null) 'id_agendamento': idAgendamento,
+      if (idAluno != null) 'id_aluno': idAluno,
+      if (idAula != null) 'id_aula': idAula,
+      if (dataAgendamento != null) 'data_agendamento': dataAgendamento,
+      if (status != null) 'status': status,
+      if (dataPresenca != null) 'data_presenca': dataPresenca,
+      if (dataCancelamento != null) 'data_cancelamento': dataCancelamento,
+    });
+  }
+
+  AgendamentoCompanion copyWith({
+    Value<int>? idAgendamento,
+    Value<int>? idAluno,
+    Value<int>? idAula,
+    Value<PgDate>? dataAgendamento,
+    Value<String>? status,
+    Value<PgDateTime?>? dataPresenca,
+    Value<PgDateTime?>? dataCancelamento,
+  }) {
+    return AgendamentoCompanion(
+      idAgendamento: idAgendamento ?? this.idAgendamento,
+      idAluno: idAluno ?? this.idAluno,
+      idAula: idAula ?? this.idAula,
+      dataAgendamento: dataAgendamento ?? this.dataAgendamento,
+      status: status ?? this.status,
+      dataPresenca: dataPresenca ?? this.dataPresenca,
+      dataCancelamento: dataCancelamento ?? this.dataCancelamento,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (idAgendamento.present) {
+      map['id_agendamento'] = Variable<int>(idAgendamento.value);
+    }
+    if (idAluno.present) {
+      map['id_aluno'] = Variable<int>(idAluno.value);
+    }
+    if (idAula.present) {
+      map['id_aula'] = Variable<int>(idAula.value);
+    }
+    if (dataAgendamento.present) {
+      map['data_agendamento'] = Variable<PgDate>(
+        dataAgendamento.value,
+        PgTypes.date,
+      );
+    }
+    if (status.present) {
+      map['status'] = Variable<String>(status.value);
+    }
+    if (dataPresenca.present) {
+      map['data_presenca'] = Variable<PgDateTime>(
+        dataPresenca.value,
+        PgTypes.timestampWithTimezone,
+      );
+    }
+    if (dataCancelamento.present) {
+      map['data_cancelamento'] = Variable<PgDateTime>(
+        dataCancelamento.value,
+        PgTypes.timestampWithTimezone,
+      );
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('AgendamentoCompanion(')
+          ..write('idAgendamento: $idAgendamento, ')
+          ..write('idAluno: $idAluno, ')
+          ..write('idAula: $idAula, ')
+          ..write('dataAgendamento: $dataAgendamento, ')
+          ..write('status: $status, ')
+          ..write('dataPresenca: $dataPresenca, ')
+          ..write('dataCancelamento: $dataCancelamento')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$GraziDatabase extends GeneratedDatabase {
   _$GraziDatabase(QueryExecutor e) : super(e);
   $GraziDatabaseManager get managers => $GraziDatabaseManager(this);
@@ -2654,6 +3150,7 @@ abstract class _$GraziDatabase extends GeneratedDatabase {
   late final $AlunoTable aluno = $AlunoTable(this);
   late final $ProfessorTable professor = $ProfessorTable(this);
   late final $AulaTable aula = $AulaTable(this);
+  late final $AgendamentoTable agendamento = $AgendamentoTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -2663,6 +3160,7 @@ abstract class _$GraziDatabase extends GeneratedDatabase {
     aluno,
     professor,
     aula,
+    agendamento,
   ];
 }
 
@@ -3903,6 +4401,255 @@ typedef $$AulaTableProcessedTableManager =
       AulaData,
       PrefetchHooks Function()
     >;
+typedef $$AgendamentoTableCreateCompanionBuilder =
+    AgendamentoCompanion Function({
+      Value<int> idAgendamento,
+      required int idAluno,
+      required int idAula,
+      required PgDate dataAgendamento,
+      Value<String> status,
+      Value<PgDateTime?> dataPresenca,
+      Value<PgDateTime?> dataCancelamento,
+    });
+typedef $$AgendamentoTableUpdateCompanionBuilder =
+    AgendamentoCompanion Function({
+      Value<int> idAgendamento,
+      Value<int> idAluno,
+      Value<int> idAula,
+      Value<PgDate> dataAgendamento,
+      Value<String> status,
+      Value<PgDateTime?> dataPresenca,
+      Value<PgDateTime?> dataCancelamento,
+    });
+
+class $$AgendamentoTableFilterComposer
+    extends Composer<_$GraziDatabase, $AgendamentoTable> {
+  $$AgendamentoTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get idAgendamento => $composableBuilder(
+    column: $table.idAgendamento,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get idAluno => $composableBuilder(
+    column: $table.idAluno,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get idAula => $composableBuilder(
+    column: $table.idAula,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<PgDate> get dataAgendamento => $composableBuilder(
+    column: $table.dataAgendamento,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get status => $composableBuilder(
+    column: $table.status,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<PgDateTime> get dataPresenca => $composableBuilder(
+    column: $table.dataPresenca,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<PgDateTime> get dataCancelamento => $composableBuilder(
+    column: $table.dataCancelamento,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$AgendamentoTableOrderingComposer
+    extends Composer<_$GraziDatabase, $AgendamentoTable> {
+  $$AgendamentoTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get idAgendamento => $composableBuilder(
+    column: $table.idAgendamento,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get idAluno => $composableBuilder(
+    column: $table.idAluno,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get idAula => $composableBuilder(
+    column: $table.idAula,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<PgDate> get dataAgendamento => $composableBuilder(
+    column: $table.dataAgendamento,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get status => $composableBuilder(
+    column: $table.status,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<PgDateTime> get dataPresenca => $composableBuilder(
+    column: $table.dataPresenca,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<PgDateTime> get dataCancelamento => $composableBuilder(
+    column: $table.dataCancelamento,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$AgendamentoTableAnnotationComposer
+    extends Composer<_$GraziDatabase, $AgendamentoTable> {
+  $$AgendamentoTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get idAgendamento => $composableBuilder(
+    column: $table.idAgendamento,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get idAluno =>
+      $composableBuilder(column: $table.idAluno, builder: (column) => column);
+
+  GeneratedColumn<int> get idAula =>
+      $composableBuilder(column: $table.idAula, builder: (column) => column);
+
+  GeneratedColumn<PgDate> get dataAgendamento => $composableBuilder(
+    column: $table.dataAgendamento,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get status =>
+      $composableBuilder(column: $table.status, builder: (column) => column);
+
+  GeneratedColumn<PgDateTime> get dataPresenca => $composableBuilder(
+    column: $table.dataPresenca,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<PgDateTime> get dataCancelamento => $composableBuilder(
+    column: $table.dataCancelamento,
+    builder: (column) => column,
+  );
+}
+
+class $$AgendamentoTableTableManager
+    extends
+        RootTableManager<
+          _$GraziDatabase,
+          $AgendamentoTable,
+          AgendamentoData,
+          $$AgendamentoTableFilterComposer,
+          $$AgendamentoTableOrderingComposer,
+          $$AgendamentoTableAnnotationComposer,
+          $$AgendamentoTableCreateCompanionBuilder,
+          $$AgendamentoTableUpdateCompanionBuilder,
+          (
+            AgendamentoData,
+            BaseReferences<_$GraziDatabase, $AgendamentoTable, AgendamentoData>,
+          ),
+          AgendamentoData,
+          PrefetchHooks Function()
+        > {
+  $$AgendamentoTableTableManager(_$GraziDatabase db, $AgendamentoTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$AgendamentoTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$AgendamentoTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$AgendamentoTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<int> idAgendamento = const Value.absent(),
+                Value<int> idAluno = const Value.absent(),
+                Value<int> idAula = const Value.absent(),
+                Value<PgDate> dataAgendamento = const Value.absent(),
+                Value<String> status = const Value.absent(),
+                Value<PgDateTime?> dataPresenca = const Value.absent(),
+                Value<PgDateTime?> dataCancelamento = const Value.absent(),
+              }) => AgendamentoCompanion(
+                idAgendamento: idAgendamento,
+                idAluno: idAluno,
+                idAula: idAula,
+                dataAgendamento: dataAgendamento,
+                status: status,
+                dataPresenca: dataPresenca,
+                dataCancelamento: dataCancelamento,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> idAgendamento = const Value.absent(),
+                required int idAluno,
+                required int idAula,
+                required PgDate dataAgendamento,
+                Value<String> status = const Value.absent(),
+                Value<PgDateTime?> dataPresenca = const Value.absent(),
+                Value<PgDateTime?> dataCancelamento = const Value.absent(),
+              }) => AgendamentoCompanion.insert(
+                idAgendamento: idAgendamento,
+                idAluno: idAluno,
+                idAula: idAula,
+                dataAgendamento: dataAgendamento,
+                status: status,
+                dataPresenca: dataPresenca,
+                dataCancelamento: dataCancelamento,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<$AgendamentoTable, AgendamentoData>(table),
+                  BaseReferences<
+                    _$GraziDatabase,
+                    $AgendamentoTable,
+                    AgendamentoData
+                  >(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$AgendamentoTableProcessedTableManager =
+    ProcessedTableManager<
+      _$GraziDatabase,
+      $AgendamentoTable,
+      AgendamentoData,
+      $$AgendamentoTableFilterComposer,
+      $$AgendamentoTableOrderingComposer,
+      $$AgendamentoTableAnnotationComposer,
+      $$AgendamentoTableCreateCompanionBuilder,
+      $$AgendamentoTableUpdateCompanionBuilder,
+      (
+        AgendamentoData,
+        BaseReferences<_$GraziDatabase, $AgendamentoTable, AgendamentoData>,
+      ),
+      AgendamentoData,
+      PrefetchHooks Function()
+    >;
 
 class $GraziDatabaseManager {
   final _$GraziDatabase _db;
@@ -3914,4 +4661,6 @@ class $GraziDatabaseManager {
   $$ProfessorTableTableManager get professor =>
       $$ProfessorTableTableManager(_db, _db.professor);
   $$AulaTableTableManager get aula => $$AulaTableTableManager(_db, _db.aula);
+  $$AgendamentoTableTableManager get agendamento =>
+      $$AgendamentoTableTableManager(_db, _db.agendamento);
 }

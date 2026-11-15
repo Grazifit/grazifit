@@ -8,6 +8,15 @@ import '../../shared/autorizacao/identidade.dart';
 import '../../shared/erros/aula_exception.dart';
 import 'aula_repository.dart';
 
+/// Regra de vigencia de data: aceita o ano corrente e o seguinte. Unica
+/// fonte; aula e agendamento usam esta mesma funcao.
+void exigirAnoDeVigencia(int ano, DateTime agora) {
+  final atual = agora.year;
+  if (ano != atual && ano != atual + 1) {
+    throw const AulaValidationException(CodigoErro.campoInvalido, campo: 'data');
+  }
+}
+
 /// Regras e permissoes de aula: criar (admin), ler (todos) e atualizar
 /// (admin; professor so nas proprias).
 class AulaService {
@@ -206,11 +215,7 @@ class AulaService {
   /// Limite do INT do banco.
   static const int _vagasMaximaLimite = 2147483647;
 
-  /// Aceita o ano corrente e o seguinte.
-  void _exigirAnoDeVigencia(int ano) {
-    final atual = _agora().year;
-    if (ano != atual && ano != atual + 1) _invalido('data');
-  }
+  void _exigirAnoDeVigencia(int ano) => exigirAnoDeVigencia(ano, _agora());
 
   /// Professor: so a propria aula, ainda nao realizada, sem trocar o
   /// professor e sem mover para o passado (data ou horario).
