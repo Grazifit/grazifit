@@ -37,7 +37,15 @@ class AuthService {
     }
 
     final token = _tokens.emitir(conta.identidade);
-    await _repository.registrarSessao(token, conta.identidade);
+    try {
+      await _repository.registrarSessao(
+        token,
+        conta.identidade,
+        senhaHashEsperada: conta.senhaHash,
+      );
+    } on CredencialAlterada {
+      throw const CredenciaisInvalidas();
+    }
     try {
       await _repository.limparSessoesExpiradas();
     } catch (_) {

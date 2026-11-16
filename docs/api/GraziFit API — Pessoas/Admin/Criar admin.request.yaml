@@ -1,0 +1,34 @@
+$kind: http-request
+description: |-
+  **Aceita (JSON)**
+  | Campo | Obrig. | Regra |
+  |---|---|---|
+  | `cpf` | sim | CPF válido; pontuação é removida |
+  | `senha` | sim | mínimo 8 caracteres |
+  | `nome` | sim | texto |
+  | `email` | sim | e-mail válido; gravado em minúsculas |
+  | `telefone` | não | texto |
+
+  **Sucesso:** `201` → `{ id_admin, nome, email, telefone }`
+
+  **Erros** — Todos os erros vêm como `{ "erro": "<mensagem>" }` (ainda sem o envelope D64).
+  | HTTP | Quando |
+  |---|---|
+  | 400 | JSON inválido · campo obrigatório ausente · CPF inválido · e-mail inválido · senha < 8 |
+  | 409 | CPF ou e-mail já cadastrado |
+  | 500 | qualquer outra falha |
+url: "{{baseUrl}}/admin"
+method: POST
+headers:
+  Content-Type: application/json
+body:
+  type: json
+  content: |-
+    {
+      "cpf": "{{novoCpf}}",
+      "senha": "{{novaSenha}}",
+      "nome": "Admin Teste",
+      "email": "{{novoEmail}}",
+      "telefone": "11999990000"
+    }
+order: 1000

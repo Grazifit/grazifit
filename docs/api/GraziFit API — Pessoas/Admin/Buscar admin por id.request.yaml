@@ -1,0 +1,15 @@
+$kind: http-request
+description: |-
+  **Aceita:** `id` inteiro na rota.
+
+  **Sucesso:** `200` → `{ id_admin, nome, email, telefone }`
+
+  **Erros** — Todos os erros vêm como `{ "erro": "<mensagem>" }` (ainda sem o envelope D64).
+  | HTTP | Quando |
+  |---|---|
+  | 400 | id não é inteiro |
+  | 404 | admin não existe |
+  | 500 | qualquer outra falha |
+url: "{{baseUrl}}/admin/{{idAdmin}}"
+method: GET
+order: 2000

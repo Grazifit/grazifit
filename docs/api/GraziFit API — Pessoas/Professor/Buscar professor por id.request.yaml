@@ -1,0 +1,15 @@
+$kind: http-request
+description: |-
+  **Aceita:** `id` inteiro na rota.
+
+  **Sucesso:** `200` → `{ id_professor, nome, email, telefone, status }`
+
+  **Erros** — Dois formatos: erro de **forma** (JSON, obrigatório, tamanho, id) e o 500 vêm como `{ "erro": "<mensagem>" }`; erro de **regra/banco** vem no envelope `{ codigo, mensagem, campo? }`.
+  | HTTP | Retorno | Quando |
+  |---|---|---|
+  | 400 | `{ erro }` | id não é inteiro |
+  | 404 | `REGISTRO_NAO_ENCONTRADO` | professor não existe |
+  | 500 | `{ erro }` | falha não mapeada |
+url: "{{baseUrl}}/professor/{{idProfessor}}"
+method: GET
+order: 2000
