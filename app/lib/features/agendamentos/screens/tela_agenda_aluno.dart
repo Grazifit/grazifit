@@ -3,18 +3,18 @@ import 'package:flutter/material.dart';
 import 'tela_detalhe_aula.dart';
 import 'tela_meus_agendamentos_aluno.dart';
 import '../data/agenda_repository.dart';
-import '../data/agenda_repository_mock.dart';
 import '../data/aula.dart';
 import '../../treinos/screens/tela_treino_aluno.dart';
 import '../../avaliacoes/screens/tela_evolucao_aluno.dart';
 import '../../pessoas/screens/tela_perfil_aluno.dart';
+import '../../../core/data/repositorios.dart';
 import '../../../core/theme/app_colors.dart';
 
 /// Tela de agenda do aluno: abas (Agenda / Meus agendamentos),
 /// filtros por modalidade e lista de aulas disponíveis.
 ///
 /// Os dados vêm de um [AgendaRepository]. Se nenhum for informado, usa o
-/// definido em `_criarRepositorio`.
+/// definido em `core/data/repositorios.dart`.
 class TelaAgendaAluno extends StatefulWidget {
   final AgendaRepository? repository;
 
@@ -38,13 +38,9 @@ class _TelaAgendaAlunoState extends State<TelaAgendaAluno> {
   @override
   void initState() {
     super.initState();
-    _repo = widget.repository ?? _criarRepositorio();
+    _repo = widget.repository ?? Repositorios.agenda;
     _future = _carregar();
   }
-
-  /// Ponto único para trocar a origem dos dados.
-  /// TODO: substituir o mock pela implementação que chama o backend.
-  AgendaRepository _criarRepositorio() => AgendaRepositoryMock();
 
   Future<_DadosAgenda> _carregar() async {
     final resultados = await Future.wait<Object>([
@@ -165,26 +161,32 @@ class _TelaAgendaAlunoState extends State<TelaAgendaAluno> {
     );
   }
 
-  void _abrirDetalhe(Aula aula) {
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => TelaDetalheAula(
-          horarioInicio: aula.horarioInicio,
-          horarioFim: aula.horarioFim,
-          modalidade: aula.modalidade,
-          professor: aula.professor,
-          vagasOcupadas: aula.vagasOcupadas,
-          vagasTotais: aula.vagasTotais,
-        ),
-      ),
-    );
+  /// Recarrega as aulas (as vagas mudam ao agendar ou cancelar), mantendo o
+  /// filtro escolhido.
+  void _atualizarAulas() {
+    if (!mounted) return;
+    setState(() {
+      _future = _carregar();
+    });
   }
 
-  void _selecionarAba(int index) {
+  Future<void> _abrirDetalhe(Aula aula) async {
+    final agendou = await Navigator.of(context).push<bool>(
+      MaterialPageRoute(
+        builder: (_) => TelaDetalheAula(aula: aula, repository: _repo),
+      ),
+    );
+    if (agendou == true) _atualizarAulas();
+  }
+
+  Future<void> _selecionarAba(int index) async {
     if (index == 1) {
-      Navigator.of(context).push(
-        MaterialPageRoute(builder: (_) => const TelaMeusAgendamentosAluno()),
+      await Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => TelaMeusAgendamentosAluno(repository: _repo),
+        ),
       );
+      _atualizarAulas();
       return;
     }
     setState(() => _abaSelecionada = index);

@@ -1,8 +1,8 @@
 /// Modelos da agenda do aluno, como a tela espera receber.
 ///
 /// ATENÇÃO: as chaves usadas nos `fromJson` (id, nome, horarioInicio,
-/// horarioFim, modalidade, tipo, professor, vagasOcupadas, vagasTotais) são uma
-/// suposição. Ajuste para os nomes reais que o backend devolve.
+/// horarioFim, modalidade, tipo, professor, vagasOcupadas, vagasTotais,
+/// antecedenciaCancelamentoHoras) são uma suposição. Ajuste para os nomes reais que o backend devolve.
 
 enum StatusAula { normal, ultimasVagas, lotada }
 
@@ -34,6 +34,9 @@ class Aula {
   final int vagasOcupadas;
   final int vagasTotais;
 
+  /// Antecedência mínima, em horas, para cancelar o agendamento.
+  final int antecedenciaCancelamentoHoras;
+
   const Aula({
     required this.id,
     required this.horarioInicio,
@@ -43,6 +46,7 @@ class Aula {
     required this.professor,
     required this.vagasOcupadas,
     required this.vagasTotais,
+    this.antecedenciaCancelamentoHoras = 2,
   });
 
   /// Com quantas vagas restantes ou menos a aula aparece como "Últimas vagas".
@@ -67,6 +71,8 @@ class Aula {
       professor: json['professor'] as String,
       vagasOcupadas: (json['vagasOcupadas'] as num).toInt(),
       vagasTotais: (json['vagasTotais'] as num).toInt(),
+      antecedenciaCancelamentoHoras:
+          (json['antecedenciaCancelamentoHoras'] as num?)?.toInt() ?? 2,
     );
   }
 }

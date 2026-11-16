@@ -9,6 +9,7 @@
 import 'package:flutter/material.dart';
 
 
+import '../features/pessoas/data/perfil_aluno.dart';
 import '../features/pessoas/screens/boas_vindas_alunos.dart';
 import '../features/pessoas/screens/criar_cadastro_aluno.dart';
 import '../features/pessoas/screens/cadastro_professor_screen.dart';
@@ -42,7 +43,16 @@ class MenuDevScreen extends StatelessWidget {
       _TelaDev('Cadastro de aluno', () => const CriarCadastroAlunoScreen()),
       _TelaDev('Boas-vindas do aluno', () => TelaBoasVindasAluno( nomeAluno: 'Ana Beatriz', onContinuar: (restricao, observacoes) {}, )),
       _TelaDev('Perfil do aluno', () => const TelaPerfilAluno()),
-      _TelaDev('Editar perfil do aluno', () => const EditarPerfilAlunoScreen()),
+      _TelaDev('Editar perfil do aluno', () => const EditarPerfilAlunoScreen(
+            perfil: PerfilAluno(
+              nome: 'Ana Beatriz Ramos',
+              desde: '12/03/2025',
+              email: 'ana.ramos@exemplo.com',
+              telefone: '(45) 90000-0000',
+              cpf: '000.000.000-00',
+              nascimento: '14/07/1996',
+            ),
+          )),
       _TelaDev('Cadastro de professor', () => const CadastroProfessorScreen()),
       _TelaDev('Perfil do professor', () => const PerfilProfessorScreen()),
       _TelaDev('Editar perfil do professor', () => const EditarPerfilProfessorScreen()),
