@@ -37,6 +37,8 @@ import '../features/avaliacoes/screens/tela_evolucao_aluno.dart';
 import '../features/avaliacoes/screens/avaliacao_fisica_screen.dart';
 import '../features/pessoas/screens/painel_inativos_admin_screen.dart';
 import '../features/vinculos/screens/vinculos_admin_screen.dart';
+import '../core/routing/admin_shell_screen.dart';
+
 
 class MenuDevScreen extends StatelessWidget {
   const MenuDevScreen({super.key});
@@ -47,6 +49,7 @@ class MenuDevScreen extends StatelessWidget {
     _GrupoDev('Admin', [
       _TelaDev('Inativos Admin', () => const PainelInativosAdminScreen()),
       _TelaDev('Vínculos Admin', () => const VinculosAdminScreen()),
+      _TelaDev('Navegação Admin', () => const AdminShellScreen()),
     ]),
     _GrupoDev('Pessoas', [
       _TelaDev('Login', () => const LoginScreen()),
