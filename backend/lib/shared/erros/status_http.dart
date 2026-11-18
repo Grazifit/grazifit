@@ -18,6 +18,7 @@ int statusHttp(CodigoErro codigo) => switch (codigo) {
   CodigoErro.registroNaoEncontrado || CodigoErro.professorNaoEncontrado => 404,
   CodigoErro.cpfEmUso ||
   CodigoErro.emailEmUso ||
+  CodigoErro.nomeEmUso ||
   CodigoErro.registroEmUso ||
   CodigoErro.agendamentoDuplicado ||
   CodigoErro.horarioConflitante ||

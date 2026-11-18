@@ -31,6 +31,9 @@ const Map<String, CodigoErro> _porConstraint = <String, CodigoErro>{
   'dom_cpf_check': CodigoErro.cpfInvalido,
   'dom_email_check': CodigoErro.emailInvalido,
   'ck_aluno_nascimento': CodigoErro.dataNascimentoInvalida,
+
+  // --- Exercicio ---
+  'uq_exercicio_nome': CodigoErro.nomeEmUso,
 };
 
 /// FKs `ON DELETE RESTRICT` que apontam para `aluno` e `professor` — so com
@@ -47,6 +50,7 @@ const Map<String, CodigoErro> _porRestricao = <String, CodigoErro>{
   'fk_cronograma_professor': CodigoErro.registroEmUso,
   'fk_aula_professor': CodigoErro.registroEmUso,
   'fk_treino_professor': CodigoErro.registroEmUso,
+  'fk_treino_exercicio_exercicio': CodigoErro.registroEmUso,
 };
 
 /// Traduz a partir dos dois campos crus do erro.

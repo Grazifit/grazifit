@@ -1,0 +1,11 @@
+$kind: http-request
+url: http://localhost:8080/auth/login
+method: POST
+body:
+  type: json
+  content: "{ \"email\": \"admin@gmail.com\", \"senha\": \"teste1234\" }\r\n"
+scripts:
+  - type: afterResponse
+    code: pm.collectionVariables.set("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJncmF6aWZpdCIsImF1ZCI6ImdyYXppZml0LWFwaSIsInN1YiI6ImFkbWluOjEiLCJwYXBlbCI6ImFkbWluIiwianRpIjoiRDlOdVF6T2hUclhHS01iWEo2OTFSUSIsImlhdCI6MTc5MzE1MjI0MiwiZXhwIjoxNzkzMTU1ODQyfQ.RTMujEeTXmt3R5FkZpDwDZpyDfJsP2WlHN8RMgxJiwM", pm.response.json().access_token)
+    language: text/javascript
+order: 2000
