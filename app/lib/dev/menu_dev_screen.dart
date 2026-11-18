@@ -10,7 +10,6 @@ import 'package:flutter/material.dart';
 import 'package:grazifit_app/features/inicio/screens/tela_inicio_admin.dart';
 import 'package:grazifit_app/features/agendamentos/screens/chamada_screen.dart';
 
-//import '../features/inicio/screens/tela_inicio_admin.dart';
 import '../features/pessoas/screens/boas_vindas_alunos.dart';
 import '../features/pessoas/screens/criar_cadastro_aluno.dart';
 import '../features/pessoas/screens/cadastro_professor_screen.dart';
@@ -37,6 +36,9 @@ import '../features/auth/screens/login_screen.dart';
 import '../features/avaliacoes/screens/tela_registrar_medida_aluno.dart';
 import '../features/avaliacoes/screens/tela_evolucao_aluno.dart';
 import '../features/avaliacoes/screens/avaliacao_fisica_screen.dart';
+import '../features/pessoas/screens/painel_inativos_admin_screen.dart';
+import '../features/vinculos/screens/vinculos_admin_screen.dart';
+import '../core/routing/admin_shell_screen.dart';
 
 class MenuDevScreen extends StatelessWidget {
   const MenuDevScreen({super.key});
@@ -46,6 +48,9 @@ class MenuDevScreen extends StatelessWidget {
   static final _grupos = <_GrupoDev>[
     _GrupoDev('Admin', [
       _TelaDev('Aula avulsa Admin', () => const AulaAvulsaAdminScreen()),
+      _TelaDev('Inativos Admin', () => const PainelInativosAdminScreen()),
+      _TelaDev('Vínculos Admin', () => const VinculosAdminScreen()),
+      _TelaDev('Navegação Admin', () => const AdminShellScreen()),
     ]),
     _GrupoDev('Pessoas', [
       _TelaDev('Login', () => const LoginScreen()),
