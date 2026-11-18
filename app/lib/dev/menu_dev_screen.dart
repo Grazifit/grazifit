@@ -24,6 +24,7 @@ import '../features/treinos/screens/historico_treinos_screen.dart';
 import '../features/treinos/screens/montar_treino_screen.dart';
 
 import '../features/aulas/screens/detalhe_aula_screen.dart';
+import '../features/aulas/screens/aula_avulsa_admin_screen.dart';
 import '../features/aulas/screens/minha_agenda_screen.dart';
 
 import '../features/vinculos/screens/meus_alunos_screen.dart';
@@ -39,7 +40,6 @@ import '../features/pessoas/screens/painel_inativos_admin_screen.dart';
 import '../features/vinculos/screens/vinculos_admin_screen.dart';
 import '../core/routing/admin_shell_screen.dart';
 
-
 class MenuDevScreen extends StatelessWidget {
   const MenuDevScreen({super.key});
 
@@ -47,6 +47,7 @@ class MenuDevScreen extends StatelessWidget {
   // fictícios só para abrir.
   static final _grupos = <_GrupoDev>[
     _GrupoDev('Admin', [
+      _TelaDev('Aula avulsa Admin', () => const AulaAvulsaAdminScreen()),
       _TelaDev('Inativos Admin', () => const PainelInativosAdminScreen()),
       _TelaDev('Vínculos Admin', () => const VinculosAdminScreen()),
       _TelaDev('Navegação Admin', () => const AdminShellScreen()),
@@ -54,6 +55,7 @@ class MenuDevScreen extends StatelessWidget {
     _GrupoDev('Pessoas', [
       _TelaDev('Login', () => const LoginScreen()),
       _TelaDev('Home admin', () => const TelaInicioAdmin()),
+
       _TelaDev('Cadastro de aluno', () => const CriarCadastroAlunoScreen()),
       _TelaDev(
         'Boas-vindas do aluno',
