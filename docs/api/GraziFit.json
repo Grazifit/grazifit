@@ -50,6 +50,120 @@
       "_type": "environment"
     },
     {
+      "_id": "fld_avaliacoes",
+      "parentId": "wrk_grazifit_backend",
+      "modified": 1794355913351,
+      "created": 1794355913351,
+      "name": "Avaliacoes",
+      "description": "Primeira etapa: admin acessa qualquer aluno; aluno acessa somente suas avaliacoes. Professor recebe 403. Defina aluno_id no ambiente e execute Login antes das requisicoes. Sem exclusao ou edicao de datas anteriores.",
+      "environment": {},
+      "environmentPropertyOrder": null,
+      "metaSortKey": 0,
+      "_type": "request_group"
+    },
+    {
+      "_id": "req_avaliacao_hoje",
+      "parentId": "fld_avaliacoes",
+      "modified": 1794355913351,
+      "created": 1794355913351,
+      "url": "{{ _.base_url }}/aluno/{{ _.aluno_id }}/avaliacoes/hoje",
+      "name": "Salvar avaliacao do dia",
+      "description": "Cria ou sobrescreve a avaliacao de hoje (America/Sao_Paulo). Retorna 200 com id_avaliacao, id_aluno, data_avaliacao, peso, altura, imc e observacao. Peso em kg: > 0 e < 500; altura em metros: > 0 e < 3; ambos com ate duas casas decimais. Observacao opcional, ate 2000 caracteres; omitir limpa a anterior. IMC calculado pelo banco: nao enviar imc ou data. Aluno inativo: 403; inexistente: 404; medidas invalidas: 400.",
+      "method": "POST",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"peso\": 70,\n  \"altura\": 1.75,\n  \"observacao\": \"Avaliacao inicial\"\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {% response 'body', 'req_login', 'b64::JC5hY2Nlc3NfdG9rZW4=::46b', 'never', 60 %}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -3000,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global",
+      "_type": "request"
+    },
+    {
+      "_id": "req_avaliacao_historico",
+      "parentId": "fld_avaliacoes",
+      "modified": 1794355913351,
+      "created": 1794355913351,
+      "url": "{{ _.base_url }}/aluno/{{ _.aluno_id }}/avaliacoes",
+      "name": "Listar historico de avaliacoes",
+      "description": "Retorna 200 com {itens, limit, offset, total}, ordenado da avaliacao mais recente para a mais antiga. limit: 1 a 100 (padrao 20); offset: >= 0 (padrao 0). Sem medidas: itens vazio e total 0. Aluno inexistente: 404.",
+      "method": "GET",
+      "body": {},
+      "parameters": [
+        {
+          "name": "limit",
+          "value": "20",
+          "disabled": false
+        },
+        {
+          "name": "offset",
+          "value": "0",
+          "disabled": false
+        }
+      ],
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {% response 'body', 'req_login', 'b64::JC5hY2Nlc3NfdG9rZW4=::46b', 'never', 60 %}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -2000,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global",
+      "_type": "request"
+    },
+    {
+      "_id": "req_avaliacao_atual",
+      "parentId": "fld_avaliacoes",
+      "modified": 1794355913351,
+      "created": 1794355913351,
+      "url": "{{ _.base_url }}/aluno/{{ _.aluno_id }}/avaliacoes/atual",
+      "name": "Buscar avaliacao atual",
+      "description": "Retorna 200 com a ultima avaliacao registrada, incluindo IMC calculado pelo banco; 204 sem corpo quando nao houver medidas. Aluno inexistente: 404.",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {% response 'body', 'req_login', 'b64::JC5hY2Nlc3NfdG9rZW4=::46b', 'never', 60 %}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1000,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global",
+      "_type": "request"
+    },
+    {
       "_id": "fld_saude",
       "parentId": "wrk_grazifit_backend",
       "modified": 1792540800000,
