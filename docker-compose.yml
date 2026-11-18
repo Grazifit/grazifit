@@ -114,6 +114,8 @@ services:
       SERVER_HOST: 0.0.0.0
       SERVER_PORT: ${SERVER_PORT:-8080}
       CORS_ORIGIN: ${CORS_ORIGIN:?defina CORS_ORIGIN no .env (veja .env.example)}
+      # Horario de Brasilia (sem isto o container roda em UTC).
+      TZ: America/Sao_Paulo
     ports:
       - "127.0.0.1:${BACKEND_PUBLIC_PORT:-8080}:${SERVER_PORT:-8080}"
     # /health responde 200 so se o banco atende um SELECT 1.

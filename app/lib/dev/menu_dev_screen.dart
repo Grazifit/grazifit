@@ -79,7 +79,6 @@ class MenuDevScreen extends StatelessWidget {
         'Editar perfil do professor',
         () => const EditarPerfilProfessorScreen(),
       ),
-      _TelaDev('Editar perfil do professor', () => const EditarPerfilProfessorScreen()),
       _TelaDev('Tela Usuarios admin', () => const TelaUsuariosAdmin()),
     ]),
 
@@ -104,8 +103,6 @@ class MenuDevScreen extends StatelessWidget {
       _TelaDev('Chamada', () => const ChamadaScreen()),
       _TelaDev('Detalhes da aula', () => const DetalheAulaScreen()),
       _TelaDev('Minha Agenda', () => const MinhaAgendaScreen()),
-      _TelaDev('Detalhes da aula', () => const DetalheAulaScreen()),
-      _TelaDev('Avaliação física', () => const AvaliacaoFisicaScreen()),
       _TelaDev('Avaliação física', () => const AvaliacaoFisicaScreen()),
     ]),
 

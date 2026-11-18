@@ -1,69 +1,37 @@
 import 'dart:ui' show PathMetric;
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../data/avaliacao_repository.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../treinos/screens/tela_treino_aluno.dart';
 import '../../pessoas/screens/tela_perfil_aluno.dart';
-import 'tela_registrar_medida_aluno.dart';
+import 'avaliacao_fisica_screen.dart';
 
 /// Tela de evolução do aluno: peso e IMC atuais, gráfico mensal
 /// e botão para registrar uma nova medida.
-class TelaEvolucaoAluno extends StatefulWidget {
+class TelaEvolucaoAluno extends ConsumerStatefulWidget {
   const TelaEvolucaoAluno({super.key});
 
   @override
-  State<TelaEvolucaoAluno> createState() => _TelaEvolucaoAlunoState();
+  ConsumerState<TelaEvolucaoAluno> createState() => _TelaEvolucaoAlunoState();
 }
 
-class _TelaEvolucaoAlunoState extends State<TelaEvolucaoAluno> {
+class _TelaEvolucaoAlunoState extends ConsumerState<TelaEvolucaoAluno> {
   static const Color kGreen = AppColors.verde;
   static const Color kBackground = AppColors.fundo;
   static const Color kImc = Color(0xFF2E3A8C);
 
-  static const List<String> _mesesAbrev = [
-    'jan', 'fev', 'mar', 'abr', 'mai', 'jun',
-    'jul', 'ago', 'set', 'out', 'nov', 'dez',
-  ];
-
   int _navSelecionado = 2;
-
-  // Dados de exemplo. Troque pela chamada ao backend.
-  // TODO: buscar altura e histórico de medidas do backend.
-  final double _alturaM = 1.68;
-  final List<_Medida> _medidas = [
-    _Medida('mar', 70.0),
-    _Medida('abr', 71.0),
-    _Medida('mai', 70.6),
-    _Medida('jun', 72.0),
-    _Medida('jul', 72.5),
-  ];
-
-  double _imc(double peso) => peso / (_alturaM * _alturaM);
-
   String _fmt(double v) => v.toStringAsFixed(1).replaceAll('.', ',');
 
   Future<void> _registrarMedida() async {
-    final peso = await Navigator.of(context).push<double>(
-      MaterialPageRoute(
-        builder: (_) => TelaRegistrarMedidaAluno(alturaM: _alturaM),
-      ),
+    await Navigator.of(context).push<bool>(
+      MaterialPageRoute(builder: (_) => const AvaliacaoFisicaScreen()),
     );
-    if (peso == null || !mounted) return;
-
-    // TODO: enviar a nova medida para o backend.
-    final mes = _mesesAbrev[DateTime.now().month - 1];
-    setState(() {
-      final i = _medidas.indexWhere((m) => m.mes == mes);
-      if (i >= 0) {
-        _medidas[i] = _Medida(mes, peso);
-      } else {
-        _medidas.add(_Medida(mes, peso));
-      }
-    });
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Medida registrada.')),
-    );
+    if (mounted) ref.invalidate(historicoAvaliacoesProvider);
   }
 
   void _selecionarNav(int index) {
@@ -87,9 +55,11 @@ class _TelaEvolucaoAlunoState extends State<TelaEvolucaoAluno> {
 
   @override
   Widget build(BuildContext context) {
-    final pesos = _medidas.map((m) => m.peso).toList();
-    final imcs = pesos.map(_imc).toList();
-    final meses = _medidas.map((m) => m.mes).toList();
+    final historico = ref.watch(historicoAvaliacoesProvider);
+    final medidas = historico.asData?.value ?? <MedidaAvaliacao>[];
+    final pesos = medidas.map((m) => m.peso).toList();
+    final imcs = medidas.map((m) => m.imc).toList();
+    final meses = medidas.map((m) => m.rotulo).toList();
     final pesoAtual = pesos.isEmpty ? null : pesos.last;
     final imcAtual = imcs.isEmpty ? null : imcs.last;
 
@@ -131,7 +101,17 @@ class _TelaEvolucaoAlunoState extends State<TelaEvolucaoAluno> {
             const SizedBox(height: 28),
             SizedBox(
               height: 200,
-              child: _medidas.length < 2
+              child: historico.isLoading
+                  ? const Center(child: CircularProgressIndicator())
+                  : historico.hasError
+                  ? Center(
+                      child: TextButton(
+                        onPressed: () =>
+                            ref.invalidate(historicoAvaliacoesProvider),
+                        child: Text(mensagemAvaliacao(historico.error!)),
+                      ),
+                    )
+                  : medidas.length < 2
                   ? const Center(
                       child: Text(
                         'Registre ao menos duas medidas para ver o gráfico.',
@@ -269,12 +249,6 @@ class _TelaEvolucaoAlunoState extends State<TelaEvolucaoAluno> {
   }
 }
 
-class _Medida {
-  final String mes;
-  final double peso;
-  const _Medida(this.mes, this.peso);
-}
-
 /// Gráfico de linhas com duas séries (peso e IMC) sobre os meses.
 ///
 /// Não há eixo Y: cada série é normalizada na sua própria faixa vertical
@@ -345,6 +319,8 @@ class _GraficoEvolucaoPainter extends CustomPainter {
     }
 
     for (int i = 0; i < n; i++) {
+      final intervalo = (n / 5).ceil();
+      if (i != n - 1 && i % intervalo != 0) continue;
       final tp = TextPainter(
         text: TextSpan(
           text: meses[i],

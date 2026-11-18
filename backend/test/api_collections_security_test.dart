@@ -5,10 +5,10 @@ import 'package:test/test.dart';
 
 void main() {
   for (final caminhos in [
-    ['docs/insomnia/GraziFit.json'],
+    ['../docs/api/GraziFit.json', 'docs/api/GraziFit.json'],
     [
-      '../docs/api/grazifit-pessoas.postman_collection.json',
-      'docs/grazifit-pessoas.postman_collection.json',
+      '../docs/api/grazifit.insomnia.json',
+      'docs/api/grazifit.insomnia.json',
     ],
   ]) {
     final caminho = caminhos.firstWhere((item) => File(item).existsSync());
