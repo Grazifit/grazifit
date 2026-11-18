@@ -38,6 +38,8 @@ import '../features/auth/screens/login_screen.dart';
 import '../features/avaliacoes/screens/tela_registrar_medida_aluno.dart';
 import '../features/avaliacoes/screens/tela_evolucao_aluno.dart';
 import '../features/avaliacoes/screens/avaliacao_fisica_screen.dart';
+import '../features/exercicios/screens/novo_exercicio_admin_screen.dart';
+
 import '../features/pessoas/screens/painel_inativos_admin_screen.dart';
 import '../features/vinculos/screens/vinculos_admin_screen.dart';
 import '../core/routing/admin_shell_screen.dart';
@@ -94,6 +96,9 @@ class MenuDevScreen extends StatelessWidget {
       _TelaDev('Evolução do aluno', () => const TelaEvolucaoAluno()),
       _TelaDev('Montar treino', () => const MontarTreinoScreen()),
       _TelaDev(
+        'Novo exercício (Admin)',
+        () => const NovoExercicioAdminScreen(),
+      ),
         'Biblioteca de exercícios (Admin)',
         () => const BibliotecaExerciciosAdminScreen(),
       ),
