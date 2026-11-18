@@ -1,3 +1,0 @@
-$kind: collection
-description: Rotas de infraestrutura, consumidas pelo healthcheck do compose e não pelo app.
-order: 4000
