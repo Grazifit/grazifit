@@ -1,39 +1,24 @@
 import 'package:shared/erros/codigo_erro.dart';
 
-/// Falha devolvida pela API. A tela escolhe o texto a partir de [codigo],
-/// jamais de [mensagem] (D64). [codigo] é nulo quando a resposta não segue
-/// o envelope `{ codigo, mensagem, campo? }` ou o código é desconhecido.
 class ApiException implements Exception {
   const ApiException({
-    required this.status,
+    this.statusCode,
     this.codigo,
-    this.campo,
     this.mensagem,
+    this.retryAfter,
+    this.campo,
   });
 
-  /// Sem resposta HTTP: rede fora do ar, CORS bloqueado, timeout.
-  const ApiException.semConexao()
-      : status = 0,
-        codigo = null,
-        campo = null,
-        mensagem = null;
-
-  final int status;
-  final CodigoErro? codigo;
-  final String? campo;
-
-  /// Só para log. Nunca exibir.
+  final int? statusCode;
+  final String? codigo;
   final String? mensagem;
-
+  final int? retryAfter;
+  final String? campo;
+  int get status => statusCode ?? 0;
   bool get semResposta => status == 0;
-
-  static CodigoErro? codigoDe(Object? valor) {
-    for (final c in CodigoErro.values) {
-      if (c.valor == valor) return c;
-    }
-    return null;
-  }
+  CodigoErro? get codigoErro =>
+      CodigoErro.values.where((c) => c.valor == codigo).firstOrNull;
 
   @override
-  String toString() => 'ApiException($status, ${codigo?.valor}, $campo)';
+  String toString() => 'ApiException(statusCode: $statusCode, codigo: $codigo)';
 }

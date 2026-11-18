@@ -1,5 +1,9 @@
 import 'dart:convert';
 
+import 'package:grazifit_backend/features/avaliacoes/avaliacao_controller.dart';
+import 'package:grazifit_backend/features/avaliacoes/avaliacao_service.dart';
+import 'package:grazifit_backend/features/avaliacoes/avaliacao_repository.dart';
+
 import 'package:shelf/shelf.dart';
 import 'package:shelf/shelf_io.dart' as io;
 import 'package:shelf_router/shelf_router.dart';
@@ -60,6 +64,12 @@ void main() async {
   final exercicioController = ExercicioController(exercicioService);
 
   final rootRouter = Router()
+    ..mount(
+      '/',
+      AvaliacaoController(AvaliacaoService(AvaliacaoRepository(db)))
+          .router
+          .call,
+    )
     ..get('/health', (Request _) => _health(db))
     ..mount('/', authController.router.call)
     ..mount('/', adminController.router.call)

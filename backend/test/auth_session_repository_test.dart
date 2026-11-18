@@ -28,28 +28,40 @@ void main() {
     await db.close();
   });
 
-  test(
-    'repository registra e encontra sessao com expiração TIMESTAMPTZ',
-    () async {
-      final expiraEm = DateTime.utc(2099, 1, 2, 3, 4, 5);
-      const identidade = Identidade(id: 987654, papel: Papel.aluno);
-      final emitido = TokenEmitido(
-        token: 'token-de-teste',
-        jtiHash: 'c' * 64,
-        expiraEm: expiraEm,
-      );
-      final validado = TokenValidado(
-        identidade: identidade,
-        jtiHash: emitido.jtiHash,
-        expiraEm: expiraEm,
-      );
-      final repository = AuthRepository(db);
+  test('repository registra e encontra sessao com expiração TIMESTAMPTZ', () async {
+    final expiraEm = DateTime.utc(2099, 1, 2, 3, 4, 5);
+    final email =
+        'sessao.registro.${DateTime.now().microsecondsSinceEpoch}@exemplo.test';
+    emails.add(email);
+    final pessoa = await db
+        .customSelect(
+          "INSERT INTO admin (cpf, senha_hash, nome, telefone, email) VALUES ('00000008888', 'hash-registro', 'Teste', '11900000000', '$email') RETURNING id_admin",
+        )
+        .getSingle();
+    final identidade = Identidade(
+      id: pessoa.read<int>('id_admin'),
+      papel: Papel.admin,
+    );
+    final emitido = TokenEmitido(
+      token: 'token-de-teste',
+      jtiHash: 'c' * 64,
+      expiraEm: expiraEm,
+    );
+    final validado = TokenValidado(
+      identidade: identidade,
+      jtiHash: emitido.jtiHash,
+      expiraEm: expiraEm,
+    );
+    final repository = AuthRepository(db);
 
-      await repository.registrarSessao(emitido, identidade);
+    await repository.registrarSessao(
+      emitido,
+      identidade,
+      senhaHashEsperada: 'hash-registro',
+    );
 
-      expect(await repository.sessaoAtiva(validado), isTrue);
-    },
-  );
+    expect(await repository.sessaoAtiva(validado), isTrue);
+  });
 
   test('troca de senha revoga todas as sessoes ativas da identidade', () async {
     final email =

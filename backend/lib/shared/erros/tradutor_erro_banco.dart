@@ -18,6 +18,7 @@ const Map<String, CodigoErro> _porSqlstate = <String, CodigoErro>{
 
 /// Unicidade (`23505`) e CHECK (`23514`), pelo nome da constraint.
 const Map<String, CodigoErro> _porConstraint = <String, CodigoErro>{
+  'uq_conta_email': CodigoErro.emailEmUso,
   'uq_agendamento_aluno_aula': CodigoErro.agendamentoDuplicado,
   'uq_aula_professor_horario': CodigoErro.horarioConflitante,
   'uq_vinculo_aluno_ativo': CodigoErro.vinculoJaAtivo,
