@@ -80,7 +80,7 @@ class _TelaUsuariosAdminState extends State<TelaUsuariosAdmin> {
             ],
           ),
         ),
-        bottomNavigationBar: mostrarNavegacaoInferior
+        bottomNavigationBar: widget.mostrarNavegacaoInferior
             ? _navegacaoInferior(context)
             : null,
       ),

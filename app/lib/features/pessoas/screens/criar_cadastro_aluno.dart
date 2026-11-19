@@ -1,6 +1,15 @@
 import 'package:flutter/material.dart';
 
-<<<<<<< HEAD
+/// Callback para salvar o formulário de cadastro do aluno.
+/// A implementação de integração pode lançar uma exceção em caso de falha.
+typedef SalvarCadastroAluno = Future<void> Function({
+  required String nome,
+  required String cpf,
+  required String email,
+  required String nascimento,
+  required String senha,
+});
+
 /// Cadastro administrativo de aluno, incluindo a ação para redefinir senha.
 class CriarCadastroAlunoScreen extends StatefulWidget {
   const CriarCadastroAlunoScreen({
@@ -11,7 +20,7 @@ class CriarCadastroAlunoScreen extends StatefulWidget {
     this.nascimentoInicial,
     this.senhaRedefinida = false,
     this.onRedefinirSenha,
-    this.onSalvarCadastro,
+    this.onSalvar,
     this.onAbrirAvaliacao,
   });
 
@@ -21,28 +30,8 @@ class CriarCadastroAlunoScreen extends StatefulWidget {
   final String? nascimentoInicial;
   final bool senhaRedefinida;
   final Future<void> Function()? onRedefinirSenha;
-  final VoidCallback? onSalvarCadastro;
-  final VoidCallback? onAbrirAvaliacao;
-=======
-/// Função chamada ao salvar o cadastro (ex.: envia os dados ao backend).
-/// Deve lançar uma exceção se não for possível salvar.
-typedef SalvarCadastroAluno = Future<void> Function({
-  required String nome,
-  required String cpf,
-  required String email,
-  required String nascimento,
-  required String senha,
-});
-
-/// Tela de cadastro de aluno, com destaque nos campos principais
-/// e campo de senha com opção de mostrar/ocultar.
-class CriarCadastroAlunoScreen extends StatefulWidget {
-  /// Chamada ao tocar em "Salvar cadastro". Enquanto não for informada, o botão
-  /// só mostra a confirmação na tela, sem enviar nada.
   final SalvarCadastroAluno? onSalvar;
-
-  const CriarCadastroAlunoScreen({super.key, this.onSalvar});
->>>>>>> origin/dev
+  final VoidCallback? onAbrirAvaliacao;
 
   @override
   State<CriarCadastroAlunoScreen> createState() =>
@@ -58,11 +47,13 @@ class _CriarCadastroAlunoScreenState extends State<CriarCadastroAlunoScreen> {
   final _cpfCtrl = TextEditingController();
   final _emailCtrl = TextEditingController();
   final _nascCtrl = TextEditingController();
-<<<<<<< HEAD
+  final _senhaCtrl = TextEditingController();
 
   bool _enderecoAberto = false;
   bool _senhaRedefinida = false;
   bool _redefinindoSenha = false;
+  bool _senhaVisivel = false;
+  bool _salvando = false;
 
   @override
   void initState() {
@@ -93,13 +84,6 @@ class _CriarCadastroAlunoScreenState extends State<CriarCadastroAlunoScreen> {
       _senhaRedefinida = widget.senhaRedefinida;
     }
   }
-=======
-  final _senhaCtrl = TextEditingController();
-
-  bool _enderecoAberto = false;
-  bool _senhaVisivel = false;
-  bool _salvando = false;
->>>>>>> origin/dev
 
   @override
   void dispose() {
@@ -107,6 +91,7 @@ class _CriarCadastroAlunoScreenState extends State<CriarCadastroAlunoScreen> {
     _cpfCtrl.dispose();
     _emailCtrl.dispose();
     _nascCtrl.dispose();
+    _senhaCtrl.dispose();
     super.dispose();
   }
 
@@ -114,9 +99,9 @@ class _CriarCadastroAlunoScreenState extends State<CriarCadastroAlunoScreen> {
     final onSalvar = widget.onSalvar;
     final messenger = ScaffoldMessenger.of(context);
     if (onSalvar == null) {
-      // Sem integração ainda: só confirma na tela.
+      // Sem integração, não afirmar que o cadastro foi salvo.
       messenger.showSnackBar(
-        const SnackBar(content: Text('Cadastro salvo!')),
+        const SnackBar(content: Text('Cadastro aguardando integração.')),
       );
       return;
     }
@@ -240,6 +225,8 @@ class _CriarCadastroAlunoScreenState extends State<CriarCadastroAlunoScreen> {
             hint: 'Anterior a hoje',
             keyboardType: TextInputType.datetime,
           ),
+          const SizedBox(height: 16),
+          _buildCampoSenha(),
         ],
       ),
     );
@@ -282,6 +269,53 @@ class _CriarCadastroAlunoScreenState extends State<CriarCadastroAlunoScreen> {
         Text(
           hint,
           style: const TextStyle(fontSize: 11.5, color: kHint),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildCampoSenha() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Senha',
+          style: TextStyle(
+            fontSize: 13,
+            color: Colors.black87,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+        const SizedBox(height: 6),
+        TextField(
+          controller: _senhaCtrl,
+          obscureText: !_senhaVisivel,
+          style: const TextStyle(fontSize: 15),
+          decoration: InputDecoration(
+            hintText: 'Digite uma senha',
+            hintStyle: const TextStyle(color: kHint, fontSize: 14),
+            filled: true,
+            fillColor: kFieldFill,
+            contentPadding:
+                const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: BorderSide.none,
+            ),
+            suffixIcon: IconButton(
+              icon: Icon(
+                _senhaVisivel ? Icons.visibility_off : Icons.visibility,
+                color: kHint,
+                size: 20,
+              ),
+              onPressed: () => setState(() => _senhaVisivel = !_senhaVisivel),
+            ),
+          ),
+        ),
+        const SizedBox(height: 4),
+        const Text(
+          'Mínimo de 6 caracteres',
+          style: TextStyle(fontSize: 11.5, color: kHint),
         ),
       ],
     );
@@ -601,12 +635,7 @@ class _CriarCadastroAlunoScreenState extends State<CriarCadastroAlunoScreen> {
       child: SizedBox(
         height: 50,
         child: ElevatedButton(
-<<<<<<< HEAD
-          onPressed: widget.onSalvarCadastro ??
-              () => _mostrarMensagem('Cadastro aguardando integração.'),
-=======
           onPressed: _salvando ? null : _salvar,
->>>>>>> origin/dev
           style: ElevatedButton.styleFrom(
             backgroundColor: kGreen,
             foregroundColor: Colors.white,
