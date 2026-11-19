@@ -10,6 +10,10 @@ import 'package:flutter/material.dart';
 import 'package:grazifit_app/features/inicio/screens/tela_inicio_admin.dart';
 import 'package:grazifit_app/features/agendamentos/screens/chamada_screen.dart';
 
+
+import '../features/pessoas/data/perfil_aluno.dart';
+//import '../features/inicio/screens/tela_inicio_admin.dart';
+
 import '../features/pessoas/screens/boas_vindas_alunos.dart';
 import '../features/pessoas/screens/criar_cadastro_aluno.dart';
 import '../features/pessoas/screens/cadastro_professor_screen.dart';
@@ -18,29 +22,26 @@ import '../features/pessoas/screens/editar_perfil_professor_screen.dart';
 import '../features/pessoas/screens/perfil_professor_screen.dart';
 import '../features/pessoas/screens/tela_perfil_aluno.dart';
 import '../features/pessoas/screens/tela_usuarios_admin.dart';
-
 import '../features/treinos/screens/treinos_aluno_screen.dart';
 import '../features/treinos/screens/historico_treinos_screen.dart';
 import '../features/treinos/screens/montar_treino_screen.dart';
 import '../features/treinos/screens/montar_treino_livre_admin_screen.dart';
 import '../features/exercicios/screens/biblioteca_exercicios_admin_screen.dart';
 import '../features/treinos/screens/treinos_livres_admin_screen.dart';
-
 import '../features/aulas/screens/detalhe_aula_screen.dart';
 import '../features/aulas/screens/aula_avulsa_admin_screen.dart';
 import '../features/aulas/screens/minha_agenda_screen.dart';
-
+import '../features/cronogramas/screens/gerar_aulas_admin_screen.dart';
 import '../features/vinculos/screens/meus_alunos_screen.dart';
 import '../features/vinculos/screens/aluno_detalhe_screen.dart';
 import '../features/vinculos/screens/alunos_inativos_screen.dart';
-
 import '../features/auth/screens/login_screen.dart';
-
 import '../features/avaliacoes/screens/tela_registrar_medida_aluno.dart';
 import '../features/avaliacoes/screens/tela_evolucao_aluno.dart';
 import '../features/avaliacoes/screens/avaliacao_fisica_screen.dart';
+import '../features/cronogramas/screens/cronogramas_admin_screen.dart';
+import '../features/cronogramas/screens/form_cronograma_admin_screen.dart';
 import '../features/exercicios/screens/novo_exercicio_admin_screen.dart';
-
 import '../features/pessoas/screens/painel_inativos_admin_screen.dart';
 import '../features/vinculos/screens/vinculos_admin_screen.dart';
 import '../core/routing/admin_shell_screen.dart';
@@ -52,6 +53,11 @@ class MenuDevScreen extends StatelessWidget {
   // fictícios só para abrir.
   static final _grupos = <_GrupoDev>[
     _GrupoDev('Admin', [
+      _TelaDev('Cronogramas Admin', () => const _FluxoCronogramasAdminDev()),
+      _TelaDev(
+        'Formulário de cronograma',
+        () => const FormCronogramaAdminScreen(),
+      ),
       _TelaDev('Aula avulsa Admin', () => const AulaAvulsaAdminScreen()),
       _TelaDev('Inativos Admin', () => const PainelInativosAdminScreen()),
       _TelaDev('Vínculos Admin', () => const VinculosAdminScreen()),
@@ -60,7 +66,6 @@ class MenuDevScreen extends StatelessWidget {
     _GrupoDev('Pessoas', [
       _TelaDev('Login', () => const LoginScreen()),
       _TelaDev('Home admin', () => const TelaInicioAdmin()),
-
       _TelaDev('Cadastro de aluno', () => const CriarCadastroAlunoScreen()),
       _TelaDev(
         'Boas-vindas do aluno',
@@ -70,16 +75,25 @@ class MenuDevScreen extends StatelessWidget {
         ),
       ),
       _TelaDev('Perfil do aluno', () => const TelaPerfilAluno()),
-      _TelaDev('Editar perfil do aluno', () => const EditarPerfilAlunoScreen()),
+      _TelaDev('Editar perfil do aluno', () => const EditarPerfilAlunoScreen(
+            perfil: PerfilAluno(
+              nome: 'Ana Beatriz Ramos',
+              desde: '12/03/2025',
+              email: 'ana.ramos@exemplo.com',
+              telefone: '(45) 90000-0000',
+              cpf: '000.000.000-00',
+              nascimento: '14/07/1996',
+            ),
+          )),
       _TelaDev('Cadastro de professor', () => const CadastroProfessorScreen()),
       _TelaDev('Perfil do professor', () => const PerfilProfessorScreen()),
       _TelaDev(
         'Editar perfil do professor',
         () => const EditarPerfilProfessorScreen(),
       ),
+      _TelaDev('Editar perfil do professor', () => const EditarPerfilProfessorScreen()),
       _TelaDev('Tela Usuarios admin', () => const TelaUsuariosAdmin()),
     ]),
-    _GrupoDev('Alunos', []),
 
     _GrupoDev('Treinos', [
       _TelaDev(
@@ -96,6 +110,7 @@ class MenuDevScreen extends StatelessWidget {
       ),
       _TelaDev('Evolução do aluno', () => const TelaEvolucaoAluno()),
       _TelaDev('Montar treino', () => const MontarTreinoScreen()),
+<<<<<<< HEAD
       _TelaDev(
         'Montar treino livre (Admin)',
         () => const MontarTreinoLivreAdminScreen(),
@@ -106,11 +121,21 @@ class MenuDevScreen extends StatelessWidget {
         'Biblioteca de exercícios (Admin)',
         () => const BibliotecaExerciciosAdminScreen(),
       ),
+=======
+      _TelaDev('Novo exercício (Admin)', () => const NovoExercicioAdminScreen()),
+      _TelaDev('Biblioteca de exercícios (Admin)', () => const BibliotecaExerciciosAdminScreen(),),
+>>>>>>> origin/dev
       _TelaDev('Treinos livres (Admin)', () => const TreinosLivresAdminScreen()),
       _TelaDev('Chamada', () => const ChamadaScreen()),
       _TelaDev('Detalhes da aula', () => const DetalheAulaScreen()),
       _TelaDev('Minha Agenda', () => const MinhaAgendaScreen()),
+      _TelaDev('Detalhes da aula', () => const DetalheAulaScreen()),
       _TelaDev('Avaliação física', () => const AvaliacaoFisicaScreen()),
+      _TelaDev('Avaliação física', () => const AvaliacaoFisicaScreen()),
+    ]),
+
+    _GrupoDev('Cronogramas', [
+      _TelaDev('Gerar aulas (Admin)', () => const GerarAulasAdminScreen()),
     ]),
 
     _GrupoDev('Vínculos', [
@@ -163,4 +188,17 @@ class _TelaDev {
 
   final String nome;
   final Widget Function() builder;
+}
+
+class _FluxoCronogramasAdminDev extends StatelessWidget {
+  const _FluxoCronogramasAdminDev();
+
+  @override
+  Widget build(BuildContext context) {
+    return CronogramasAdminScreen(
+      onNovoCronograma: () => Navigator.of(context).push(
+        MaterialPageRoute(builder: (_) => const FormCronogramaAdminScreen()),
+      ),
+    );
+  }
 }

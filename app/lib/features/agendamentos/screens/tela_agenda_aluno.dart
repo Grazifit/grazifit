@@ -2,15 +2,23 @@ import 'package:flutter/material.dart';
 
 import 'tela_detalhe_aula.dart';
 import 'tela_meus_agendamentos_aluno.dart';
+import '../data/agenda_repository.dart';
+import '../data/aula.dart';
 import '../../treinos/screens/tela_treino_aluno.dart';
 import '../../avaliacoes/screens/tela_evolucao_aluno.dart';
 import '../../pessoas/screens/tela_perfil_aluno.dart';
+import '../../../core/data/repositorios.dart';
 import '../../../core/theme/app_colors.dart';
 
 /// Tela de agenda do aluno: abas (Agenda / Meus agendamentos),
 /// filtros por modalidade e lista de aulas disponíveis.
+///
+/// Os dados vêm de um [AgendaRepository]. Se nenhum for informado, usa o
+/// definido em `core/data/repositorios.dart`.
 class TelaAgendaAluno extends StatefulWidget {
-  const TelaAgendaAluno({super.key});
+  final AgendaRepository? repository;
+
+  const TelaAgendaAluno({super.key, this.repository});
 
   @override
   State<TelaAgendaAluno> createState() => _TelaAgendaAlunoState();
@@ -24,41 +32,33 @@ class _TelaAgendaAlunoState extends State<TelaAgendaAluno> {
   int _filtroSelecionado = 0; // índice da modalidade ativa
   int _navSelecionado = 0;
 
-  final List<_Modalidade> _modalidades = const [
-    _Modalidade('Funcional', Icons.fitness_center),
-    _Modalidade('Musculação', Icons.sports_gymnastics),
-    _Modalidade('Pilates', Icons.self_improvement),
-  ];
+  late final AgendaRepository _repo;
+  late Future<_DadosAgenda> _future;
 
-  final List<_Aula> _aulas = const [
-    _Aula(
-      horarioInicio: '07:00',
-      horarioFim: '08:00',
-      modalidade: 'Funcional',
-      professor: 'Prof. Marina Alves',
-      vagasOcupadas: 8,
-      vagasTotais: 12,
-      status: _StatusAula.normal,
-    ),
-    _Aula(
-      horarioInicio: '09:00',
-      horarioFim: '10:00',
-      modalidade: 'Funcional',
-      professor: 'Prof. Marina Alves',
-      vagasOcupadas: 11,
-      vagasTotais: 12,
-      status: _StatusAula.ultimasVagas,
-    ),
-    _Aula(
-      horarioInicio: '18:00',
-      horarioFim: '19:00',
-      modalidade: 'Funcional',
-      professor: 'Prof. Marina Alves',
-      vagasOcupadas: 12,
-      vagasTotais: 12,
-      status: _StatusAula.lotada,
-    ),
-  ];
+  @override
+  void initState() {
+    super.initState();
+    _repo = widget.repository ?? Repositorios.agenda;
+    _future = _carregar();
+  }
+
+  Future<_DadosAgenda> _carregar() async {
+    final resultados = await Future.wait<Object>([
+      _repo.buscarModalidades(),
+      _repo.buscarAulas(),
+    ]);
+    return _DadosAgenda(
+      resultados[0] as List<Modalidade>,
+      resultados[1] as List<Aula>,
+    );
+  }
+
+  void _recarregar() {
+    setState(() {
+      _filtroSelecionado = 0;
+      _future = _carregar();
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -70,20 +70,19 @@ class _TelaAgendaAlunoState extends State<TelaAgendaAluno> {
           children: [
             const _CabecalhoAgenda(),
             _buildAbas(),
-            _buildFiltros(),
             Expanded(
-              child: ListView.separated(
-                padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
-                itemCount: _aulas.length,
-                separatorBuilder: (_, __) => const SizedBox(height: 12),
-                itemBuilder: (context, index) {
-                  final aula = _aulas[index];
-                  return GestureDetector(
-                    onTap: aula.status == _StatusAula.lotada
-                        ? null
-                        : () => _abrirDetalhe(aula),
-                    child: _buildCardAula(aula),
-                  );
+              child: FutureBuilder<_DadosAgenda>(
+                future: _future,
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState != ConnectionState.done) {
+                    return const Center(
+                      child: CircularProgressIndicator(color: kGreen),
+                    );
+                  }
+                  if (snapshot.hasError || snapshot.data == null) {
+                    return _buildErro();
+                  }
+                  return _buildCorpo(snapshot.data!);
                 },
               ),
             ),
@@ -94,26 +93,100 @@ class _TelaAgendaAlunoState extends State<TelaAgendaAluno> {
     );
   }
 
-  void _abrirDetalhe(_Aula aula) {
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => TelaDetalheAula(
-          horarioInicio: aula.horarioInicio,
-          horarioFim: aula.horarioFim,
-          modalidade: aula.modalidade,
-          professor: aula.professor,
-          vagasOcupadas: aula.vagasOcupadas,
-          vagasTotais: aula.vagasTotais,
+  Widget _buildErro() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.error_outline, size: 40, color: Colors.black45),
+            const SizedBox(height: 12),
+            const Text(
+              'Não foi possível carregar a agenda.',
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 14, color: Colors.black87),
+            ),
+            const SizedBox(height: 16),
+            OutlinedButton(
+              onPressed: _recarregar,
+              style: OutlinedButton.styleFrom(
+                foregroundColor: kGreen,
+                side: const BorderSide(color: kGreen),
+              ),
+              child: const Text('Tentar novamente'),
+            ),
+          ],
         ),
       ),
     );
   }
 
-  void _selecionarAba(int index) {
+  Widget _buildCorpo(_DadosAgenda dados) {
+    final modalidades = dados.modalidades;
+    final indiceFiltro =
+        _filtroSelecionado < modalidades.length ? _filtroSelecionado : 0;
+    final filtro = modalidades.isEmpty ? null : modalidades[indiceFiltro];
+    final aulas = filtro == null
+        ? dados.aulas
+        : dados.aulas.where((a) => a.modalidade == filtro.nome).toList();
+
+    return Column(
+      children: [
+        if (modalidades.isNotEmpty) _buildFiltros(modalidades, indiceFiltro),
+        Expanded(
+          child: aulas.isEmpty
+              ? const Center(
+                  child: Text(
+                    'Nenhuma aula disponível.',
+                    style: TextStyle(fontSize: 14, color: Colors.black54),
+                  ),
+                )
+              : ListView.separated(
+                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+                  itemCount: aulas.length,
+                  separatorBuilder: (_, __) => const SizedBox(height: 12),
+                  itemBuilder: (context, index) {
+                    final aula = aulas[index];
+                    return GestureDetector(
+                      onTap: aula.status == StatusAula.lotada
+                          ? null
+                          : () => _abrirDetalhe(aula),
+                      child: _buildCardAula(aula),
+                    );
+                  },
+                ),
+        ),
+      ],
+    );
+  }
+
+  /// Recarrega as aulas (as vagas mudam ao agendar ou cancelar), mantendo o
+  /// filtro escolhido.
+  void _atualizarAulas() {
+    if (!mounted) return;
+    setState(() {
+      _future = _carregar();
+    });
+  }
+
+  Future<void> _abrirDetalhe(Aula aula) async {
+    final agendou = await Navigator.of(context).push<bool>(
+      MaterialPageRoute(
+        builder: (_) => TelaDetalheAula(aula: aula, repository: _repo),
+      ),
+    );
+    if (agendou == true) _atualizarAulas();
+  }
+
+  Future<void> _selecionarAba(int index) async {
     if (index == 1) {
-      Navigator.of(context).push(
-        MaterialPageRoute(builder: (_) => const TelaMeusAgendamentosAluno()),
+      await Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => TelaMeusAgendamentosAluno(repository: _repo),
+        ),
       );
+      _atualizarAulas();
       return;
     }
     setState(() => _abaSelecionada = index);
@@ -142,6 +215,20 @@ class _TelaAgendaAlunoState extends State<TelaAgendaAluno> {
       return;
     }
     setState(() => _navSelecionado = index);
+  }
+
+  /// Ícone de cada modalidade. É só apresentação: modalidades novas, que não
+  /// estejam aqui, usam o ícone padrão.
+  IconData _iconeDaModalidade(String nome) {
+    switch (nome) {
+      case 'Musculação':
+        return Icons.sports_gymnastics;
+      case 'Pilates':
+        return Icons.self_improvement;
+      case 'Funcional':
+      default:
+        return Icons.fitness_center;
+    }
   }
 
   Widget _buildAbas() {
@@ -182,17 +269,17 @@ class _TelaAgendaAlunoState extends State<TelaAgendaAluno> {
     );
   }
 
-  Widget _buildFiltros() {
+  Widget _buildFiltros(List<Modalidade> modalidades, int indiceAtivo) {
     return SizedBox(
       height: 40,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-        itemCount: _modalidades.length,
+        itemCount: modalidades.length,
         separatorBuilder: (_, __) => const SizedBox(width: 8),
         itemBuilder: (context, index) {
-          final modalidade = _modalidades[index];
-          final selecionada = _filtroSelecionado == index;
+          final modalidade = modalidades[index];
+          final selecionada = indiceAtivo == index;
           return GestureDetector(
             onTap: () => setState(() => _filtroSelecionado = index),
             child: Container(
@@ -205,7 +292,7 @@ class _TelaAgendaAlunoState extends State<TelaAgendaAluno> {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Icon(
-                    modalidade.icone,
+                    _iconeDaModalidade(modalidade.nome),
                     size: 16,
                     color: selecionada ? Colors.white : Colors.black54,
                   ),
@@ -227,7 +314,7 @@ class _TelaAgendaAlunoState extends State<TelaAgendaAluno> {
     );
   }
 
-  Widget _buildCardAula(_Aula aula) {
+  Widget _buildCardAula(Aula aula) {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
@@ -261,7 +348,11 @@ class _TelaAgendaAlunoState extends State<TelaAgendaAluno> {
           const SizedBox(height: 8),
           Row(
             children: [
-              const Icon(Icons.fitness_center, size: 14, color: Colors.black54),
+              Icon(
+                _iconeDaModalidade(aula.modalidade),
+                size: 14,
+                color: Colors.black54,
+              ),
               const SizedBox(width: 6),
               Text(
                 aula.modalidade,
@@ -274,9 +365,9 @@ class _TelaAgendaAlunoState extends State<TelaAgendaAluno> {
                   color: const Color(0xFFEDEDED),
                   borderRadius: BorderRadius.circular(6),
                 ),
-                child: const Text(
-                  'Em grupo',
-                  style: TextStyle(fontSize: 11.5, color: Colors.black54),
+                child: Text(
+                  aula.tipo,
+                  style: const TextStyle(fontSize: 11.5, color: Colors.black54),
                 ),
               ),
             ],
@@ -292,7 +383,7 @@ class _TelaAgendaAlunoState extends State<TelaAgendaAluno> {
             style: TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w600,
-              color: aula.status == _StatusAula.ultimasVagas
+              color: aula.status == StatusAula.ultimasVagas
                   ? const Color(0xFFB07300)
                   : Colors.black54,
             ),
@@ -302,9 +393,9 @@ class _TelaAgendaAlunoState extends State<TelaAgendaAluno> {
     );
   }
 
-  Widget _buildBadgeStatus(_StatusAula status) {
+  Widget _buildBadgeStatus(StatusAula status) {
     switch (status) {
-      case _StatusAula.ultimasVagas:
+      case StatusAula.ultimasVagas:
         return Container(
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
           decoration: BoxDecoration(
@@ -320,12 +411,12 @@ class _TelaAgendaAlunoState extends State<TelaAgendaAluno> {
             ),
           ),
         );
-      case _StatusAula.lotada:
+      case StatusAula.lotada:
         return const Text(
           'Lotada',
           style: TextStyle(fontSize: 12.5, color: Colors.black45),
         );
-      case _StatusAula.normal:
+      case StatusAula.normal:
         return const SizedBox.shrink();
     }
   }
@@ -375,6 +466,13 @@ class _TelaAgendaAlunoState extends State<TelaAgendaAluno> {
   }
 }
 
+/// Resultado do carregamento: modalidades dos filtros e aulas da lista.
+class _DadosAgenda {
+  final List<Modalidade> modalidades;
+  final List<Aula> aulas;
+  const _DadosAgenda(this.modalidades, this.aulas);
+}
+
 /// Cabeçalho da tela: título "Agenda" à esquerda e o logo
 /// colorido (pinwheel de 4 pétalas) centralizado.
 class _CabecalhoAgenda extends StatelessWidget {
@@ -410,32 +508,4 @@ class _CabecalhoAgenda extends StatelessWidget {
       ),
     );
   }
-}
-
-class _Modalidade {
-  final String nome;
-  final IconData icone;
-  const _Modalidade(this.nome, this.icone);
-}
-
-enum _StatusAula { normal, ultimasVagas, lotada }
-
-class _Aula {
-  final String horarioInicio;
-  final String horarioFim;
-  final String modalidade;
-  final String professor;
-  final int vagasOcupadas;
-  final int vagasTotais;
-  final _StatusAula status;
-
-  const _Aula({
-    required this.horarioInicio,
-    required this.horarioFim,
-    required this.modalidade,
-    required this.professor,
-    required this.vagasOcupadas,
-    required this.vagasTotais,
-    required this.status,
-  });
 }

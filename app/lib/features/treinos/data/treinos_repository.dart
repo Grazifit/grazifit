@@ -1,8 +1,13 @@
 import 'treino_detalhe.dart';
+import 'treino_resumo.dart';
 
-/// Contrato de acesso aos dados de treinos. A tela só conhece esta interface,
-/// então trocar o mock pela chamada real ao backend não exige mexer na tela.
+/// Contrato de acesso aos dados de treinos. As telas só conhecem esta
+/// interface, então trocar o mock pela chamada real ao backend não exige mexer
+/// nelas. Troque a implementação em `core/data/repositorios.dart`.
 abstract class TreinosRepository {
+  /// Lista de treinos do aluno: os montados pelo professor e os livres.
+  Future<TreinosDoAluno> buscarTreinos();
+
   /// Busca o treino com seus exercícios.
   Future<TreinoDetalhe> buscarTreino(String id);
 
@@ -13,9 +18,29 @@ abstract class TreinosRepository {
 /// Implementação de exemplo, com dados fixos, para desenvolver a tela
 /// enquanto o backend não fica pronto.
 ///
-/// TODO: criar uma implementação que chama a API (ex.: `TreinosRepositoryHttp`),
-/// usando `TreinoDetalhe.fromJson`, e passar no lugar deste mock.
+/// Quando a integração estiver pronta, este mock pode ser apagado junto com o
+/// seu uso em `core/data/repositorios.dart`.
 class TreinosRepositoryMock implements TreinosRepository {
+  @override
+  Future<TreinosDoAluno> buscarTreinos() async {
+    await Future.delayed(const Duration(milliseconds: 600));
+    return const TreinosDoAluno(
+      professor: 'Prof. Marina Alves',
+      treinosDoProfessor: [
+        TreinoResumo(id: '1', nome: 'Inferiores A', objetivo: 'Força'),
+        TreinoResumo(id: '2', nome: 'Superiores B', objetivo: 'Hipertrofia'),
+      ],
+      treinosLivres: [
+        TreinoResumo(
+          id: '3',
+          nome: 'Full body iniciante',
+          objetivo: 'Resistência',
+        ),
+        TreinoResumo(id: '4', nome: 'Cardio leve', objetivo: 'Cardio'),
+      ],
+    );
+  }
+
   @override
   Future<TreinoDetalhe> buscarTreino(String id) async {
     await Future.delayed(const Duration(milliseconds: 600));
@@ -135,7 +160,6 @@ class TreinosRepositoryMock implements TreinosRepository {
 
   @override
   Future<void> confirmarExecucao(String treinoId) async {
-    // TODO: enviar a confirmação para o backend.
     await Future.delayed(const Duration(milliseconds: 500));
   }
 }

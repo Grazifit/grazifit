@@ -1,29 +1,24 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/data/repositorios.dart';
+import '../../../core/theme/app_colors.dart';
+import '../../auth/screens/login_screen.dart';
 import '../../avaliacoes/screens/tela_evolucao_aluno.dart';
 import '../../treinos/screens/tela_treino_aluno.dart';
+import '../data/perfil_aluno.dart';
+import '../data/perfil_repository.dart';
 import 'editar_perfil_aluno.dart';
 
 /// Tela de perfil do aluno: cabeçalho com nome e data de entrada,
 /// cards com dados de contato/documento, seção expansível de
 /// informações de saúde e botão para editar o perfil.
+///
+/// Os dados vêm de um [PerfilRepository]. Se nenhum for informado, usa o
+/// definido em `core/data/repositorios.dart`.
 class TelaPerfilAluno extends StatefulWidget {
-  final String nome;
-  final String desde;
-  final String email;
-  final String telefone;
-  final String cpf;
-  final String nascimento;
+  final PerfilRepository? repository;
 
-  const TelaPerfilAluno({
-    super.key,
-    this.nome = 'Ana Beatriz Ramos',
-    this.desde = '12/03/2025',
-    this.email = 'ana.ramos@exemplo.com',
-    this.telefone = '(45) 90000-0000',
-    this.cpf = '000.000.000-00',
-    this.nascimento = '14/07/1996',
-  });
+  const TelaPerfilAluno({super.key, this.repository});
 
   @override
   State<TelaPerfilAluno> createState() => _TelaPerfilAlunoState();
@@ -39,17 +34,74 @@ class _TelaPerfilAlunoState extends State<TelaPerfilAluno> {
   bool _saudeAberta = false;
   int _navSelecionado = 3; // Perfil já selecionado
 
-  void _abrirEdicao() {
-    Navigator.of(context).push(
+  late final PerfilRepository _repo;
+  late Future<PerfilAluno> _future;
+
+  @override
+  void initState() {
+    super.initState();
+    _repo = widget.repository ?? Repositorios.perfil;
+    _future = _repo.buscarPerfil();
+  }
+
+  void _recarregar() {
+    setState(() {
+      _future = _repo.buscarPerfil();
+    });
+  }
+
+  Future<void> _abrirEdicao(PerfilAluno perfil) async {
+    // A tela de edição salva pelo repositório e devolve `true` quando deu
+    // certo; aí recarregamos para mostrar os dados atualizados.
+    final salvou = await Navigator.of(context).push<bool>(
       MaterialPageRoute(
         builder: (_) => EditarPerfilAlunoScreen(
-          nome: widget.nome,
-          cpf: widget.cpf,
-          email: widget.email,
-          nascimento: widget.nascimento,
+          perfil: perfil,
+          repository: _repo,
         ),
       ),
     );
+    if (salvou == true && mounted) _recarregar();
+  }
+
+  Future<void> _sair() async {
+    final confirmou = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Sair da conta?'),
+        content: const Text('Você precisará entrar novamente para acessar o app.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancelar'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: TextButton.styleFrom(foregroundColor: AppColors.vermelho),
+            child: const Text('Sair'),
+          ),
+        ],
+      ),
+    );
+    if (confirmou != true || !mounted) return;
+
+    final navigator = Navigator.of(context);
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      await _repo.sair();
+      if (!mounted) return;
+      // Remove todas as telas anteriores: o "voltar" não retorna ao app logado.
+      navigator.pushAndRemoveUntil(
+        MaterialPageRoute(builder: (_) => const LoginScreen()),
+        (route) => false,
+      );
+    } catch (_) {
+      messenger.showSnackBar(
+        const SnackBar(
+          content: Text('Não foi possível sair. Tente novamente.'),
+        ),
+      );
+    }
   }
 
   void _selecionarNav(int index) {
@@ -77,38 +129,86 @@ class _TelaPerfilAlunoState extends State<TelaPerfilAluno> {
       backgroundColor: kBackground,
       body: SafeArea(
         bottom: false,
-        child: Column(
-          children: [
-            _buildCabecalho(),
-            Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _buildCampo(valor: widget.email, rotulo: 'E-mail'),
-                    const SizedBox(height: 10),
-                    _buildCampo(valor: widget.telefone, rotulo: 'Telefone'),
-                    const SizedBox(height: 10),
-                    _buildCampo(valor: widget.cpf, rotulo: 'CPF'),
-                    const SizedBox(height: 10),
-                    _buildCampo(valor: widget.nascimento, rotulo: 'Nascimento'),
-                    const SizedBox(height: 18),
-                    _buildInformacoesSaude(),
-                    const SizedBox(height: 20),
-                    _buildBotaoEditar(),
-                  ],
-                ),
-              ),
-            ),
-          ],
+        child: FutureBuilder<PerfilAluno>(
+          future: _future,
+          builder: (context, snapshot) {
+            if (snapshot.connectionState != ConnectionState.done) {
+              return const Center(
+                child: CircularProgressIndicator(color: kGreen),
+              );
+            }
+            if (snapshot.hasError || snapshot.data == null) {
+              return _buildErro();
+            }
+            return _buildConteudo(snapshot.data!);
+          },
         ),
       ),
       bottomNavigationBar: _buildNavInferior(),
     );
   }
 
-  Widget _buildCabecalho() {
+  Widget _buildErro() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.error_outline, size: 40, color: Colors.black45),
+            const SizedBox(height: 12),
+            const Text(
+              'Não foi possível carregar seu perfil.',
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 14, color: Colors.black87),
+            ),
+            const SizedBox(height: 16),
+            OutlinedButton(
+              onPressed: _recarregar,
+              style: OutlinedButton.styleFrom(
+                foregroundColor: kGreen,
+                side: const BorderSide(color: kGreen),
+              ),
+              child: const Text('Tentar novamente'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildConteudo(PerfilAluno perfil) {
+    return Column(
+      children: [
+        _buildCabecalho(perfil),
+        Expanded(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildCampo(valor: perfil.email, rotulo: 'E-mail'),
+                const SizedBox(height: 10),
+                _buildCampo(valor: perfil.telefone, rotulo: 'Telefone'),
+                const SizedBox(height: 10),
+                _buildCampo(valor: perfil.cpf, rotulo: 'CPF'),
+                const SizedBox(height: 10),
+                _buildCampo(valor: perfil.nascimento, rotulo: 'Nascimento'),
+                const SizedBox(height: 18),
+                _buildInformacoesSaude(perfil),
+                const SizedBox(height: 20),
+                _buildBotaoEditar(perfil),
+                const SizedBox(height: 12),
+                _buildBotaoSair(),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildCabecalho(PerfilAluno perfil) {
     return Container(
       width: double.infinity,
       margin: const EdgeInsets.fromLTRB(12, 12, 12, 8),
@@ -134,7 +234,7 @@ class _TelaPerfilAlunoState extends State<TelaPerfilAluno> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  widget.nome,
+                  perfil.nome,
                   style: const TextStyle(
                     color: Colors.white,
                     fontSize: 18,
@@ -143,7 +243,7 @@ class _TelaPerfilAlunoState extends State<TelaPerfilAluno> {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  'Aluna desde ${widget.desde}',
+                  'Aluna desde ${perfil.desde}',
                   style: TextStyle(
                     color: Colors.white.withOpacity(0.75),
                     fontSize: 12.5,
@@ -193,7 +293,7 @@ class _TelaPerfilAlunoState extends State<TelaPerfilAluno> {
     );
   }
 
-  Widget _buildInformacoesSaude() {
+  Widget _buildInformacoesSaude(PerfilAluno perfil) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -222,15 +322,21 @@ class _TelaPerfilAlunoState extends State<TelaPerfilAluno> {
         AnimatedSize(
           duration: const Duration(milliseconds: 200),
           child: _saudeAberta
-              ? const Padding(
-                  padding: EdgeInsets.only(top: 10),
-                  child: Text(
-                    'Restrições médicas e observações de saúde informadas pelo aluno no primeiro acesso aparecem aqui.',
-                    style: TextStyle(
-                      fontSize: 12.5,
-                      color: kHint,
-                      height: 1.4,
-                    ),
+              ? Padding(
+                  padding: const EdgeInsets.only(top: 10),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildLinhaSaude(
+                        'Restrição médica',
+                        perfil.restricaoMedica,
+                      ),
+                      const SizedBox(height: 10),
+                      _buildLinhaSaude(
+                        'Observações de saúde',
+                        perfil.observacoesSaude,
+                      ),
+                    ],
                   ),
                 )
               : const SizedBox.shrink(),
@@ -239,12 +345,33 @@ class _TelaPerfilAlunoState extends State<TelaPerfilAluno> {
     );
   }
 
-  Widget _buildBotaoEditar() {
+  /// Informado pelo aluno no primeiro acesso; se vazio, mostra "Não informado".
+  Widget _buildLinhaSaude(String rotulo, String? valor) {
+    final texto = valor?.trim() ?? '';
+    final informado = texto.isNotEmpty;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(rotulo, style: const TextStyle(fontSize: 11.5, color: kHint)),
+        const SizedBox(height: 2),
+        Text(
+          informado ? texto : 'Não informado',
+          style: TextStyle(
+            fontSize: 13.5,
+            height: 1.4,
+            color: informado ? Colors.black87 : kHint,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildBotaoEditar(PerfilAluno perfil) {
     return SizedBox(
       width: double.infinity,
       height: 48,
       child: OutlinedButton(
-        onPressed: _abrirEdicao,
+        onPressed: () => _abrirEdicao(perfil),
         style: OutlinedButton.styleFrom(
           foregroundColor: kGreen,
           side: const BorderSide(color: kGreen),
@@ -255,6 +382,28 @@ class _TelaPerfilAlunoState extends State<TelaPerfilAluno> {
         child: const Text(
           'Editar perfil',
           style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBotaoSair() {
+    return SizedBox(
+      width: double.infinity,
+      height: 48,
+      child: OutlinedButton.icon(
+        onPressed: _sair,
+        icon: const Icon(Icons.logout, size: 18),
+        label: const Text(
+          'Sair da conta',
+          style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+        ),
+        style: OutlinedButton.styleFrom(
+          foregroundColor: AppColors.vermelho,
+          side: const BorderSide(color: AppColors.vermelho),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
         ),
       ),
     );
