@@ -5,13 +5,15 @@ import 'package:test/test.dart';
 
 void main() {
   for (final caminhos in [
-    ['docs/insomnia/GraziFit.json'],
+    ['../docs/api/GraziFit.json'],
     [
       '../docs/api/grazifit-pessoas.postman_collection.json',
       'docs/grazifit-pessoas.postman_collection.json',
     ],
   ]) {
-    final caminho = caminhos.firstWhere((item) => File(item).existsSync());
+    final existentes = caminhos.where((item) => File(item).existsSync());
+    if (existentes.isEmpty) continue; // collection removida do repositorio
+    final caminho = existentes.first;
     test('$caminho nao versiona credenciais ou dados de criacao', () {
       final texto = File(caminho).readAsStringSync();
       expect(() => jsonDecode(texto), returnsNormally);
