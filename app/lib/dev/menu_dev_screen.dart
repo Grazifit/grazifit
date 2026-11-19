@@ -25,6 +25,7 @@ import '../features/pessoas/screens/tela_usuarios_admin.dart';
 import '../features/treinos/screens/treinos_aluno_screen.dart';
 import '../features/treinos/screens/historico_treinos_screen.dart';
 import '../features/treinos/screens/montar_treino_screen.dart';
+import '../features/treinos/screens/montar_treino_livre_admin_screen.dart';
 import '../features/exercicios/screens/biblioteca_exercicios_admin_screen.dart';
 import '../features/treinos/screens/treinos_livres_admin_screen.dart';
 import '../features/aulas/screens/detalhe_aula_screen.dart';
@@ -90,7 +91,6 @@ class MenuDevScreen extends StatelessWidget {
         'Editar perfil do professor',
         () => const EditarPerfilProfessorScreen(),
       ),
-      _TelaDev('Editar perfil do professor', () => const EditarPerfilProfessorScreen()),
       _TelaDev('Tela Usuarios admin', () => const TelaUsuariosAdmin()),
     ]),
 
@@ -109,14 +109,19 @@ class MenuDevScreen extends StatelessWidget {
       ),
       _TelaDev('Evolução do aluno', () => const TelaEvolucaoAluno()),
       _TelaDev('Montar treino', () => const MontarTreinoScreen()),
+      _TelaDev(
+        'Montar treino livre (Admin)',
+        () => const MontarTreinoLivreAdminScreen(),
+      ),
       _TelaDev('Novo exercício (Admin)', () => const NovoExercicioAdminScreen()),
-      _TelaDev('Biblioteca de exercícios (Admin)', () => const BibliotecaExerciciosAdminScreen(),),
+      _TelaDev(
+        'Biblioteca de exercícios (Admin)',
+        () => const BibliotecaExerciciosAdminScreen(),
+      ),
       _TelaDev('Treinos livres (Admin)', () => const TreinosLivresAdminScreen()),
       _TelaDev('Chamada', () => const ChamadaScreen()),
       _TelaDev('Detalhes da aula', () => const DetalheAulaScreen()),
       _TelaDev('Minha Agenda', () => const MinhaAgendaScreen()),
-      _TelaDev('Detalhes da aula', () => const DetalheAulaScreen()),
-      _TelaDev('Avaliação física', () => const AvaliacaoFisicaScreen()),
       _TelaDev('Avaliação física', () => const AvaliacaoFisicaScreen()),
     ]),
 
