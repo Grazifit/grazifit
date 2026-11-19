@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+<<<<<<< HEAD
 /// Cadastro administrativo de aluno, incluindo a ação para redefinir senha.
 class CriarCadastroAlunoScreen extends StatefulWidget {
   const CriarCadastroAlunoScreen({
@@ -22,6 +23,26 @@ class CriarCadastroAlunoScreen extends StatefulWidget {
   final Future<void> Function()? onRedefinirSenha;
   final VoidCallback? onSalvarCadastro;
   final VoidCallback? onAbrirAvaliacao;
+=======
+/// Função chamada ao salvar o cadastro (ex.: envia os dados ao backend).
+/// Deve lançar uma exceção se não for possível salvar.
+typedef SalvarCadastroAluno = Future<void> Function({
+  required String nome,
+  required String cpf,
+  required String email,
+  required String nascimento,
+  required String senha,
+});
+
+/// Tela de cadastro de aluno, com destaque nos campos principais
+/// e campo de senha com opção de mostrar/ocultar.
+class CriarCadastroAlunoScreen extends StatefulWidget {
+  /// Chamada ao tocar em "Salvar cadastro". Enquanto não for informada, o botão
+  /// só mostra a confirmação na tela, sem enviar nada.
+  final SalvarCadastroAluno? onSalvar;
+
+  const CriarCadastroAlunoScreen({super.key, this.onSalvar});
+>>>>>>> origin/dev
 
   @override
   State<CriarCadastroAlunoScreen> createState() =>
@@ -37,6 +58,7 @@ class _CriarCadastroAlunoScreenState extends State<CriarCadastroAlunoScreen> {
   final _cpfCtrl = TextEditingController();
   final _emailCtrl = TextEditingController();
   final _nascCtrl = TextEditingController();
+<<<<<<< HEAD
 
   bool _enderecoAberto = false;
   bool _senhaRedefinida = false;
@@ -71,6 +93,13 @@ class _CriarCadastroAlunoScreenState extends State<CriarCadastroAlunoScreen> {
       _senhaRedefinida = widget.senhaRedefinida;
     }
   }
+=======
+  final _senhaCtrl = TextEditingController();
+
+  bool _enderecoAberto = false;
+  bool _senhaVisivel = false;
+  bool _salvando = false;
+>>>>>>> origin/dev
 
   @override
   void dispose() {
@@ -79,6 +108,42 @@ class _CriarCadastroAlunoScreenState extends State<CriarCadastroAlunoScreen> {
     _emailCtrl.dispose();
     _nascCtrl.dispose();
     super.dispose();
+  }
+
+  Future<void> _salvar() async {
+    final onSalvar = widget.onSalvar;
+    final messenger = ScaffoldMessenger.of(context);
+    if (onSalvar == null) {
+      // Sem integração ainda: só confirma na tela.
+      messenger.showSnackBar(
+        const SnackBar(content: Text('Cadastro salvo!')),
+      );
+      return;
+    }
+
+    setState(() => _salvando = true);
+    try {
+      await onSalvar(
+        nome: _nomeCtrl.text.trim(),
+        cpf: _cpfCtrl.text.trim(),
+        email: _emailCtrl.text.trim(),
+        nascimento: _nascCtrl.text.trim(),
+        senha: _senhaCtrl.text,
+      );
+      if (!mounted) return;
+      messenger.showSnackBar(
+        const SnackBar(content: Text('Cadastro salvo!')),
+      );
+    } catch (_) {
+      if (!mounted) return;
+      messenger.showSnackBar(
+        const SnackBar(
+          content: Text('Não foi possível salvar o cadastro. Tente novamente.'),
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _salvando = false);
+    }
   }
 
   @override
@@ -536,8 +601,12 @@ class _CriarCadastroAlunoScreenState extends State<CriarCadastroAlunoScreen> {
       child: SizedBox(
         height: 50,
         child: ElevatedButton(
+<<<<<<< HEAD
           onPressed: widget.onSalvarCadastro ??
               () => _mostrarMensagem('Cadastro aguardando integração.'),
+=======
+          onPressed: _salvando ? null : _salvar,
+>>>>>>> origin/dev
           style: ElevatedButton.styleFrom(
             backgroundColor: kGreen,
             foregroundColor: Colors.white,

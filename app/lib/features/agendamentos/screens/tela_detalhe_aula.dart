@@ -1,39 +1,62 @@
 import 'package:flutter/material.dart';
 
+import '../data/agenda_repository.dart';
+import '../data/aula.dart';
+
 /// Tela de detalhe da aula: resumo da aula, ocupação das vagas
 /// e botão para confirmar o agendamento.
-class TelaDetalheAula extends StatelessWidget {
-  static const Color kGreen = Color(0xFF1B5E3C);
-  static const Color kBackground = Color(0xFFF3F4F6);
-
-  final String horarioInicio;
-  final String horarioFim;
-  final String modalidade;
-  final String professor;
-  final int vagasOcupadas;
-  final int vagasTotais;
+///
+/// Recebe a [Aula] já carregada e o [AgendaRepository] usado para confirmar
+/// o agendamento (o mesmo da tela de agenda).
+class TelaDetalheAula extends StatefulWidget {
+  final Aula aula;
+  final AgendaRepository repository;
 
   const TelaDetalheAula({
     super.key,
-    required this.horarioInicio,
-    required this.horarioFim,
-    required this.modalidade,
-    required this.professor,
-    required this.vagasOcupadas,
-    required this.vagasTotais,
+    required this.aula,
+    required this.repository,
   });
 
-  bool get _lotada => vagasOcupadas >= vagasTotais;
+  @override
+  State<TelaDetalheAula> createState() => _TelaDetalheAulaState();
+}
 
-  void _confirmar(BuildContext context) {
+class _TelaDetalheAulaState extends State<TelaDetalheAula> {
+  static const Color kGreen = Color(0xFF1B5E3C);
+  static const Color kBackground = Color(0xFFF3F4F6);
+
+  bool _confirmando = false;
+
+  Aula get _aula => widget.aula;
+
+  bool get _lotada => _aula.status == StatusAula.lotada;
+
+  Future<void> _confirmar() async {
+    setState(() => _confirmando = true);
     final messenger = ScaffoldMessenger.of(context);
-    Navigator.of(context).pop(true);
-    messenger.showSnackBar(
-      SnackBar(
-        backgroundColor: kGreen,
-        content: Text('Aula de $modalidade às $horarioInicio confirmada!'),
-      ),
-    );
+    final navigator = Navigator.of(context);
+    try {
+      await widget.repository.agendarAula(_aula.id);
+      if (!mounted) return;
+      navigator.pop(true);
+      messenger.showSnackBar(
+        SnackBar(
+          backgroundColor: kGreen,
+          content: Text(
+            'Aula de ${_aula.modalidade} às ${_aula.horarioInicio} confirmada!',
+          ),
+        ),
+      );
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _confirmando = false);
+      messenger.showSnackBar(
+        const SnackBar(
+          content: Text('Não foi possível confirmar a aula. Tente novamente.'),
+        ),
+      );
+    }
   }
 
   @override
@@ -58,7 +81,7 @@ class TelaDetalheAula extends StatelessWidget {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      '$vagasOcupadas ocupadas de $vagasTotais',
+                      '${_aula.vagasOcupadas} ocupadas de ${_aula.vagasTotais}',
                       style: const TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.w500,
@@ -73,7 +96,7 @@ class TelaDetalheAula extends StatelessWidget {
                 ),
               ),
             ),
-            _buildRodape(context),
+            _buildRodape(),
           ],
         ),
       ),
@@ -122,7 +145,7 @@ class TelaDetalheAula extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            '$horarioInicio – $horarioFim',
+            '${_aula.horarioInicio} – ${_aula.horarioFim}',
             style: const TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.bold,
@@ -135,7 +158,7 @@ class TelaDetalheAula extends StatelessWidget {
               const Icon(Icons.fitness_center, size: 15, color: Colors.black54),
               const SizedBox(width: 6),
               Text(
-                modalidade,
+                _aula.modalidade,
                 style: const TextStyle(fontSize: 13.5, color: Colors.black87),
               ),
               const SizedBox(width: 8),
@@ -145,21 +168,21 @@ class TelaDetalheAula extends StatelessWidget {
                   color: const Color(0xFFEDEDED),
                   borderRadius: BorderRadius.circular(6),
                 ),
-                child: const Text(
-                  'Em grupo',
-                  style: TextStyle(fontSize: 11.5, color: Colors.black54),
+                child: Text(
+                  _aula.tipo,
+                  style: const TextStyle(fontSize: 11.5, color: Colors.black54),
                 ),
               ),
             ],
           ),
           const SizedBox(height: 10),
           Text(
-            professor,
+            _aula.professor,
             style: const TextStyle(fontSize: 14, color: Colors.black87),
           ),
           const SizedBox(height: 8),
           Text(
-            '$vagasOcupadas de $vagasTotais vagas',
+            '${_aula.vagasOcupadas} de ${_aula.vagasTotais} vagas',
             style: const TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w600,
@@ -179,8 +202,8 @@ class TelaDetalheAula extends StatelessWidget {
       physics: const NeverScrollableScrollPhysics(),
       mainAxisSpacing: 10,
       crossAxisSpacing: 10,
-      children: List.generate(vagasTotais, (index) {
-        final ocupada = index < vagasOcupadas;
+      children: List.generate(_aula.vagasTotais, (index) {
+        final ocupada = index < _aula.vagasOcupadas;
         return Container(
           decoration: BoxDecoration(
             color: ocupada ? const Color(0xFFE5E7EB) : Colors.white,
@@ -238,7 +261,8 @@ class TelaDetalheAula extends StatelessWidget {
     );
   }
 
-  Widget _buildRodape(BuildContext context) {
+  Widget _buildRodape() {
+    final horas = _aula.antecedenciaCancelamentoHoras;
     return Container(
       color: kBackground,
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
@@ -249,7 +273,7 @@ class TelaDetalheAula extends StatelessWidget {
             width: double.infinity,
             height: 52,
             child: ElevatedButton(
-              onPressed: _lotada ? null : () => _confirmar(context),
+              onPressed: (_lotada || _confirmando) ? null : _confirmar,
               style: ElevatedButton.styleFrom(
                 backgroundColor: kGreen,
                 foregroundColor: Colors.white,
@@ -259,20 +283,29 @@ class TelaDetalheAula extends StatelessWidget {
                   borderRadius: BorderRadius.circular(12),
                 ),
               ),
-              child: Text(
-                _lotada ? 'Aula lotada' : 'Confirmar aula',
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
+              child: _confirmando
+                  ? const SizedBox(
+                      width: 22,
+                      height: 22,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2.5,
+                        color: Colors.white,
+                      ),
+                    )
+                  : Text(
+                      _lotada ? 'Aula lotada' : 'Confirmar aula',
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
             ),
           ),
           const SizedBox(height: 8),
-          const Text(
-            'Cancelamento permitido até 2 horas antes da aula',
+          Text(
+            'Cancelamento permitido até $horas ${horas == 1 ? 'hora' : 'horas'} antes da aula',
             textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 11.5, color: Colors.black45),
+            style: const TextStyle(fontSize: 11.5, color: Colors.black45),
           ),
         ],
       ),

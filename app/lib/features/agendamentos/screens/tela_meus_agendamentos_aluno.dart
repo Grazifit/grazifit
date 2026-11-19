@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 
+import '../data/agenda_repository.dart';
+import '../data/agendamento.dart';
 import '../../treinos/screens/tela_treino_aluno.dart';
 import '../../pessoas/screens/tela_perfil_aluno.dart';
 import '../../avaliacoes/screens/tela_evolucao_aluno.dart';
+import '../../../core/data/repositorios.dart';
 import '../../../core/theme/app_colors.dart';
 
 // Cores da tela (ajuste para o tema do app, se já tiver um).
@@ -11,30 +14,14 @@ const _verdeClaro = AppColors.verdeClaro;
 const _vermelho = AppColors.vermelho;
 const _fundo = AppColors.fundo;
 
-class Agendamento {
-  final String id;
-  final String horario;
-  final String modalidade;
-  final String tipo;
-  final String professor;
-  final int vagasOcupadas;
-  final int vagasTotal;
-  final String? aviso;
-
-  const Agendamento({
-    required this.id,
-    required this.horario,
-    required this.modalidade,
-    required this.tipo,
-    required this.professor,
-    required this.vagasOcupadas,
-    required this.vagasTotal,
-    this.aviso,
-  });
-}
-
+/// Tela "Meus agendamentos" do aluno, com opção de cancelar.
+///
+/// Os dados vêm de um [AgendaRepository]. Se nenhum for informado, usa o
+/// definido em `core/data/repositorios.dart`.
 class TelaMeusAgendamentosAluno extends StatefulWidget {
-  const TelaMeusAgendamentosAluno({super.key});
+  final AgendaRepository? repository;
+
+  const TelaMeusAgendamentosAluno({super.key, this.repository});
 
   @override
   State<TelaMeusAgendamentosAluno> createState() => _TelaMeusAgendamentosAlunoState();
@@ -44,28 +31,21 @@ class _TelaMeusAgendamentosAlunoState extends State<TelaMeusAgendamentosAluno> {
   int _abaSelecionada = 1; // 0 = Agenda, 1 = Meus agendamentos
   int _navIndex = 0;
 
-  // Dados de exemplo. Troque pela chamada ao backend.
-  final List<Agendamento> _agendamentos = [
-    const Agendamento(
-      id: '1',
-      horario: '07:00 - 08:00',
-      modalidade: 'Funcional',
-      tipo: 'Em grupo',
-      professor: 'Prof. Marina Alves',
-      vagasOcupadas: 8,
-      vagasTotal: 12,
-    ),
-    const Agendamento(
-      id: '2',
-      horario: '09:00 - 10:00',
-      modalidade: 'Funcional',
-      tipo: 'Em grupo',
-      professor: 'Prof. Marina Alves',
-      vagasOcupadas: 8,
-      vagasTotal: 12,
-      aviso: 'Agendamento encerra 2 horas antes da aula',
-    ),
-  ];
+  late final AgendaRepository _repo;
+  late Future<List<Agendamento>> _future;
+
+  @override
+  void initState() {
+    super.initState();
+    _repo = widget.repository ?? Repositorios.agenda;
+    _future = _repo.buscarMeusAgendamentos();
+  }
+
+  void _recarregar() {
+    setState(() {
+      _future = _repo.buscarMeusAgendamentos();
+    });
+  }
 
   void _selecionarNav(int i) {
     if (i == 0) {
@@ -116,12 +96,22 @@ class _TelaMeusAgendamentosAlunoState extends State<TelaMeusAgendamentosAluno> {
 
     if (confirmou != true || !mounted) return;
 
-    // TODO: chamar o backend para cancelar o agendamento.
-    setState(() => _agendamentos.removeWhere((a) => a.id == item.id));
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Agendamento cancelado.')),
-    );
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      await _repo.cancelarAgendamento(item.id);
+      if (!mounted) return;
+      _recarregar();
+      messenger.showSnackBar(
+        const SnackBar(content: Text('Agendamento cancelado.')),
+      );
+    } catch (_) {
+      if (!mounted) return;
+      messenger.showSnackBar(
+        const SnackBar(
+          content: Text('Não foi possível cancelar. Tente novamente.'),
+        ),
+      );
+    }
   }
 
   @override
@@ -173,21 +163,62 @@ class _TelaMeusAgendamentosAlunoState extends State<TelaMeusAgendamentosAluno> {
   }
 
   Widget _listaMeusAgendamentos() {
-    if (_agendamentos.isEmpty) {
-      return const Center(child: Text('Você não tem agendamentos.'));
-    }
-    return ListView.separated(
-      padding: const EdgeInsets.only(bottom: 16),
-      itemCount: _agendamentos.length,
-      separatorBuilder: (_, __) => const SizedBox(height: 12),
-      itemBuilder: (_, i) {
-        final item = _agendamentos[i];
-        return _CardAgendamento(
-          agendamento: item,
-          destaque: i == 0,
-          onCancelar: () => _cancelar(item),
+    return FutureBuilder<List<Agendamento>>(
+      future: _future,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState != ConnectionState.done) {
+          return const Center(child: CircularProgressIndicator(color: _verde));
+        }
+        if (snapshot.hasError || snapshot.data == null) {
+          return _buildErro();
+        }
+        final agendamentos = snapshot.data!;
+        if (agendamentos.isEmpty) {
+          return const Center(child: Text('Você não tem agendamentos.'));
+        }
+        return ListView.separated(
+          padding: const EdgeInsets.only(bottom: 16),
+          itemCount: agendamentos.length,
+          separatorBuilder: (_, __) => const SizedBox(height: 12),
+          itemBuilder: (_, i) {
+            final item = agendamentos[i];
+            return _CardAgendamento(
+              agendamento: item,
+              destaque: i == 0,
+              onCancelar: () => _cancelar(item),
+            );
+          },
         );
       },
+    );
+  }
+
+  Widget _buildErro() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.error_outline, size: 40, color: Colors.black45),
+            const SizedBox(height: 12),
+            const Text(
+              'Não foi possível carregar seus agendamentos.',
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 14, color: Colors.black87),
+            ),
+            const SizedBox(height: 16),
+            OutlinedButton(
+              onPressed: _recarregar,
+              style: OutlinedButton.styleFrom(
+                foregroundColor: _verde,
+                side: const BorderSide(color: _verde),
+              ),
+              child: const Text('Tentar novamente'),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
@@ -316,7 +347,7 @@ class _CardAgendamento extends StatelessWidget {
           ),
           const SizedBox(height: 10),
           Text(
-            '${agendamento.vagasOcupadas} de ${agendamento.vagasTotal} vagas',
+            '${agendamento.vagasOcupadas} de ${agendamento.vagasTotais} vagas',
             style: const TextStyle(fontSize: 13, color: Colors.black87),
           ),
           if (agendamento.aviso != null) ...[

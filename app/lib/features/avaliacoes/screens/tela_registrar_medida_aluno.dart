@@ -1,18 +1,28 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../../../core/data/repositorios.dart';
 import '../../../core/theme/app_colors.dart';
+import '../data/avaliacoes_repository.dart';
 
 /// Tela para registrar uma nova medida do aluno.
 ///
 /// O peso é digitado; a altura vem da última avaliação (somente leitura) e o
-/// IMC é calculado automaticamente. Ao salvar, devolve o peso (double) para a
-/// tela anterior via `Navigator.pop`.
+/// IMC é calculado automaticamente. Ao salvar, envia a medida pelo
+/// [AvaliacoesRepository] e devolve `true` para a tela anterior via
+/// `Navigator.pop`.
 class TelaRegistrarMedidaAluno extends StatefulWidget {
   /// Altura da última avaliação, em metros.
   final double alturaM;
 
-  const TelaRegistrarMedidaAluno({super.key, required this.alturaM});
+  /// Se não for informado, usa o definido em `core/data/repositorios.dart`.
+  final AvaliacoesRepository? repository;
+
+  const TelaRegistrarMedidaAluno({
+    super.key,
+    required this.alturaM,
+    this.repository,
+  });
 
   @override
   State<TelaRegistrarMedidaAluno> createState() =>
@@ -28,6 +38,10 @@ class _TelaRegistrarMedidaAlunoState extends State<TelaRegistrarMedidaAluno> {
 
   final _pesoController = TextEditingController();
   String? _erroPeso;
+  bool _salvando = false;
+
+  late final AvaliacoesRepository _repo =
+      widget.repository ?? Repositorios.avaliacoes;
 
   @override
   void dispose() {
@@ -53,14 +67,28 @@ class _TelaRegistrarMedidaAlunoState extends State<TelaRegistrarMedidaAluno> {
     return _fmt(peso / (widget.alturaM * widget.alturaM));
   }
 
-  void _salvar() {
+  Future<void> _salvar() async {
+    if (_salvando) return;
     final peso = _pesoValido;
     if (peso == null) {
       setState(() => _erroPeso = 'Informe um peso entre 0 e 500 kg.');
       return;
     }
-    // TODO: enviar a nova medida para o backend antes de fechar a tela.
-    Navigator.of(context).pop(peso);
+
+    setState(() => _salvando = true);
+    try {
+      await _repo.registrarMedida(peso);
+      if (!mounted) return;
+      Navigator.of(context).pop(true);
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _salvando = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Não foi possível salvar a medida. Tente novamente.'),
+        ),
+      );
+    }
   }
 
   @override
@@ -147,18 +175,32 @@ class _TelaRegistrarMedidaAlunoState extends State<TelaRegistrarMedidaAluno> {
                 width: double.infinity,
                 height: 48,
                 child: ElevatedButton(
-                  onPressed: _salvar,
+                  onPressed: _salvando ? null : _salvar,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: kGreen,
                     foregroundColor: Colors.white,
+                    disabledBackgroundColor: kGreen.withOpacity(0.6),
+                    disabledForegroundColor: Colors.white,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(10),
                     ),
                   ),
-                  child: const Text(
-                    'Salvar medida',
-                    style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
-                  ),
+                  child: _salvando
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
+                        )
+                      : const Text(
+                          'Salvar medida',
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
                 ),
               ),
             ),
