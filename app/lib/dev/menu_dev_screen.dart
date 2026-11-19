@@ -91,7 +91,6 @@ class MenuDevScreen extends StatelessWidget {
         'Editar perfil do professor',
         () => const EditarPerfilProfessorScreen(),
       ),
-      _TelaDev('Editar perfil do professor', () => const EditarPerfilProfessorScreen()),
       _TelaDev('Tela Usuarios admin', () => const TelaUsuariosAdmin()),
     ]),
 
@@ -110,27 +109,19 @@ class MenuDevScreen extends StatelessWidget {
       ),
       _TelaDev('Evolução do aluno', () => const TelaEvolucaoAluno()),
       _TelaDev('Montar treino', () => const MontarTreinoScreen()),
-<<<<<<< HEAD
       _TelaDev(
         'Montar treino livre (Admin)',
         () => const MontarTreinoLivreAdminScreen(),
       ),
-        'Novo exercício (Admin)',
-        () => const NovoExercicioAdminScreen(),
-      ),
+      _TelaDev('Novo exercício (Admin)', () => const NovoExercicioAdminScreen()),
+      _TelaDev(
         'Biblioteca de exercícios (Admin)',
         () => const BibliotecaExerciciosAdminScreen(),
       ),
-=======
-      _TelaDev('Novo exercício (Admin)', () => const NovoExercicioAdminScreen()),
-      _TelaDev('Biblioteca de exercícios (Admin)', () => const BibliotecaExerciciosAdminScreen(),),
->>>>>>> origin/dev
       _TelaDev('Treinos livres (Admin)', () => const TreinosLivresAdminScreen()),
       _TelaDev('Chamada', () => const ChamadaScreen()),
       _TelaDev('Detalhes da aula', () => const DetalheAulaScreen()),
       _TelaDev('Minha Agenda', () => const MinhaAgendaScreen()),
-      _TelaDev('Detalhes da aula', () => const DetalheAulaScreen()),
-      _TelaDev('Avaliação física', () => const AvaliacaoFisicaScreen()),
       _TelaDev('Avaliação física', () => const AvaliacaoFisicaScreen()),
     ]),
 
