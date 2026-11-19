@@ -1,20 +1,23 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/data/repositorios.dart';
+import '../data/perfil_aluno.dart';
+import '../data/perfil_repository.dart';
+
 /// Tela de edição de perfil do aluno: mesmos campos de destaque do
 /// cadastro, mas pré-preenchidos com os dados atuais e com a senha
 /// como campo opcional (só altera se o aluno digitar algo).
 class EditarPerfilAlunoScreen extends StatefulWidget {
-  final String nome;
-  final String cpf;
-  final String email;
-  final String nascimento;
+  /// Dados atuais do aluno, usados para pré-preencher os campos.
+  final PerfilAluno perfil;
+
+  /// Se não for informado, usa o definido em `core/data/repositorios.dart`.
+  final PerfilRepository? repository;
 
   const EditarPerfilAlunoScreen({
     super.key,
-    this.nome = 'Ana Beatriz Ramos',
-    this.cpf = '000.000.000-00',
-    this.email = 'ana.ramos@exemplo.com',
-    this.nascimento = '14/07/1996',
+    required this.perfil,
+    this.repository,
   });
 
   @override
@@ -35,14 +38,18 @@ class _EditarPerfilAlunoScreenState extends State<EditarPerfilAlunoScreen> {
 
   bool _enderecoAberto = false;
   bool _senhaVisivel = false;
+  bool _salvando = false;
+
+  late final PerfilRepository _repo =
+      widget.repository ?? Repositorios.perfil;
 
   @override
   void initState() {
     super.initState();
-    _nomeCtrl = TextEditingController(text: widget.nome);
-    _cpfCtrl = TextEditingController(text: widget.cpf);
-    _emailCtrl = TextEditingController(text: widget.email);
-    _nascCtrl = TextEditingController(text: widget.nascimento);
+    _nomeCtrl = TextEditingController(text: widget.perfil.nome);
+    _cpfCtrl = TextEditingController(text: widget.perfil.cpf);
+    _emailCtrl = TextEditingController(text: widget.perfil.email);
+    _nascCtrl = TextEditingController(text: widget.perfil.nascimento);
   }
 
   @override
@@ -53,6 +60,36 @@ class _EditarPerfilAlunoScreenState extends State<EditarPerfilAlunoScreen> {
     _nascCtrl.dispose();
     _senhaCtrl.dispose();
     super.dispose();
+  }
+
+  Future<void> _salvar() async {
+    if (_salvando) return;
+    setState(() => _salvando = true);
+    final messenger = ScaffoldMessenger.of(context);
+    final navigator = Navigator.of(context);
+    try {
+      await _repo.atualizarPerfil(
+        nome: _nomeCtrl.text.trim(),
+        cpf: _cpfCtrl.text.trim(),
+        email: _emailCtrl.text.trim(),
+        nascimento: _nascCtrl.text.trim(),
+        // Vazio = manter a senha atual.
+        novaSenha: _senhaCtrl.text.isEmpty ? null : _senhaCtrl.text,
+      );
+      if (!mounted) return;
+      navigator.pop(true);
+      messenger.showSnackBar(
+        const SnackBar(content: Text('Alterações salvas!')),
+      );
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _salvando = false);
+      messenger.showSnackBar(
+        const SnackBar(
+          content: Text('Não foi possível salvar as alterações. Tente novamente.'),
+        ),
+      );
+    }
   }
 
   @override
@@ -362,24 +399,30 @@ class _EditarPerfilAlunoScreenState extends State<EditarPerfilAlunoScreen> {
       child: SizedBox(
         height: 50,
         child: ElevatedButton(
-          onPressed: () {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Alterações salvas!')),
-            );
-            Navigator.of(context).maybePop();
-          },
+          onPressed: _salvando ? null : _salvar,
           style: ElevatedButton.styleFrom(
             backgroundColor: kGreen,
             foregroundColor: Colors.white,
+            disabledBackgroundColor: kGreen.withOpacity(0.6),
+            disabledForegroundColor: Colors.white,
             elevation: 0,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(10),
             ),
           ),
-          child: const Text(
-            'Salvar alterações',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-          ),
+          child: _salvando
+              ? const SizedBox(
+                  width: 22,
+                  height: 22,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2.5,
+                    color: Colors.white,
+                  ),
+                )
+              : const Text(
+                  'Salvar alterações',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                ),
         ),
       ),
     );

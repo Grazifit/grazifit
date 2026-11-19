@@ -10,6 +10,8 @@ import 'package:flutter/material.dart';
 import 'package:grazifit_app/features/inicio/screens/tela_inicio_admin.dart';
 import 'package:grazifit_app/features/agendamentos/screens/chamada_screen.dart';
 
+
+import '../features/pessoas/data/perfil_aluno.dart';
 //import '../features/inicio/screens/tela_inicio_admin.dart';
 
 import '../features/pessoas/screens/boas_vindas_alunos.dart';
@@ -72,7 +74,16 @@ class MenuDevScreen extends StatelessWidget {
         ),
       ),
       _TelaDev('Perfil do aluno', () => const TelaPerfilAluno()),
-      _TelaDev('Editar perfil do aluno', () => const EditarPerfilAlunoScreen()),
+      _TelaDev('Editar perfil do aluno', () => const EditarPerfilAlunoScreen(
+            perfil: PerfilAluno(
+              nome: 'Ana Beatriz Ramos',
+              desde: '12/03/2025',
+              email: 'ana.ramos@exemplo.com',
+              telefone: '(45) 90000-0000',
+              cpf: '000.000.000-00',
+              nascimento: '14/07/1996',
+            ),
+          )),
       _TelaDev('Cadastro de professor', () => const CadastroProfessorScreen()),
       _TelaDev('Perfil do professor', () => const PerfilProfessorScreen()),
       _TelaDev(
