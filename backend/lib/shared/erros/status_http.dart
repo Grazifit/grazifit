@@ -26,6 +26,8 @@ int statusHttp(CodigoErro codigo) => switch (codigo) {
   CodigoErro.avaliacaoJaRegistrada ||
   CodigoErro.aulaSemVagas ||
   CodigoErro.aulaInativa ||
+  CodigoErro.aulaDataPassada ||
+  CodigoErro.agendamentoForaDaJanela ||
   CodigoErro.aulaCategoriaDivergente ||
   CodigoErro.aulaProfessorDivergente => 409,
   CodigoErro.professorEmUso => 409,

@@ -1,9 +1,37 @@
 import 'package:flutter/material.dart';
 
-/// Tela de cadastro de aluno, com destaque nos campos principais
-/// e campo de senha com opção de mostrar/ocultar.
+/// Callback para salvar o formulário de cadastro do aluno.
+/// A implementação de integração pode lançar uma exceção em caso de falha.
+typedef SalvarCadastroAluno = Future<void> Function({
+  required String nome,
+  required String cpf,
+  required String email,
+  required String nascimento,
+  required String senha,
+});
+
+/// Cadastro administrativo de aluno, incluindo a ação para redefinir senha.
 class CriarCadastroAlunoScreen extends StatefulWidget {
-  const CriarCadastroAlunoScreen({super.key});
+  const CriarCadastroAlunoScreen({
+    super.key,
+    this.nomeInicial,
+    this.cpfInicial,
+    this.emailInicial,
+    this.nascimentoInicial,
+    this.senhaRedefinida = false,
+    this.onRedefinirSenha,
+    this.onSalvar,
+    this.onAbrirAvaliacao,
+  });
+
+  final String? nomeInicial;
+  final String? cpfInicial;
+  final String? emailInicial;
+  final String? nascimentoInicial;
+  final bool senhaRedefinida;
+  final Future<void> Function()? onRedefinirSenha;
+  final SalvarCadastroAluno? onSalvar;
+  final VoidCallback? onAbrirAvaliacao;
 
   @override
   State<CriarCadastroAlunoScreen> createState() =>
@@ -15,14 +43,47 @@ class _CriarCadastroAlunoScreenState extends State<CriarCadastroAlunoScreen> {
   static const Color kFieldFill = Color(0xFFF5F5F5);
   static const Color kHint = Color(0xFF9AA0A6);
 
-  final _nomeCtrl = TextEditingController(text: 'Ana Beatriz Ramos');
-  final _cpfCtrl = TextEditingController(text: '000.000.000-00');
-  final _emailCtrl = TextEditingController(text: 'ana.ramos@exemplo.com');
-  final _nascCtrl = TextEditingController(text: '14/07/1996');
+  final _nomeCtrl = TextEditingController();
+  final _cpfCtrl = TextEditingController();
+  final _emailCtrl = TextEditingController();
+  final _nascCtrl = TextEditingController();
   final _senhaCtrl = TextEditingController();
 
   bool _enderecoAberto = false;
+  bool _senhaRedefinida = false;
+  bool _redefinindoSenha = false;
   bool _senhaVisivel = false;
+  bool _salvando = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _nomeCtrl.text = widget.nomeInicial ?? '';
+    _cpfCtrl.text = widget.cpfInicial ?? '';
+    _emailCtrl.text = widget.emailInicial ?? '';
+    _nascCtrl.text = widget.nascimentoInicial ?? '';
+    _senhaRedefinida = widget.senhaRedefinida;
+  }
+
+  @override
+  void didUpdateWidget(covariant CriarCadastroAlunoScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.nomeInicial != widget.nomeInicial) {
+      _nomeCtrl.text = widget.nomeInicial ?? '';
+    }
+    if (oldWidget.cpfInicial != widget.cpfInicial) {
+      _cpfCtrl.text = widget.cpfInicial ?? '';
+    }
+    if (oldWidget.emailInicial != widget.emailInicial) {
+      _emailCtrl.text = widget.emailInicial ?? '';
+    }
+    if (oldWidget.nascimentoInicial != widget.nascimentoInicial) {
+      _nascCtrl.text = widget.nascimentoInicial ?? '';
+    }
+    if (oldWidget.senhaRedefinida != widget.senhaRedefinida) {
+      _senhaRedefinida = widget.senhaRedefinida;
+    }
+  }
 
   @override
   void dispose() {
@@ -34,31 +95,77 @@ class _CriarCadastroAlunoScreenState extends State<CriarCadastroAlunoScreen> {
     super.dispose();
   }
 
+  Future<void> _salvar() async {
+    final onSalvar = widget.onSalvar;
+    final messenger = ScaffoldMessenger.of(context);
+    if (onSalvar == null) {
+      // Sem integração, não afirmar que o cadastro foi salvo.
+      messenger.showSnackBar(
+        const SnackBar(content: Text('Cadastro aguardando integração.')),
+      );
+      return;
+    }
+
+    setState(() => _salvando = true);
+    try {
+      await onSalvar(
+        nome: _nomeCtrl.text.trim(),
+        cpf: _cpfCtrl.text.trim(),
+        email: _emailCtrl.text.trim(),
+        nascimento: _nascCtrl.text.trim(),
+        senha: _senhaCtrl.text,
+      );
+      if (!mounted) return;
+      messenger.showSnackBar(
+        const SnackBar(content: Text('Cadastro salvo!')),
+      );
+    } catch (_) {
+      if (!mounted) return;
+      messenger.showSnackBar(
+        const SnackBar(
+          content: Text('Não foi possível salvar o cadastro. Tente novamente.'),
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _salvando = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFF3F4F6),
-      body: SafeArea(
-        child: Column(
-          children: [
-            _buildHeader(context),
-            Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _buildCamposDestacados(),
-                    const SizedBox(height: 20),
-                    _buildEnderecoExpansivel(),
-                    const SizedBox(height: 12),
-                    _buildAvaliacaoFisica(),
-                  ],
+    return Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 430),
+        child: Scaffold(
+          backgroundColor: const Color(0xFFF3F4F6),
+          body: SafeArea(
+            child: Column(
+              children: [
+                _buildHeader(context),
+                Expanded(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        if (_senhaRedefinida) ...[
+                          _buildBannerSenhaRedefinida(),
+                          const SizedBox(height: 20),
+                        ],
+                        _buildCamposDestacados(),
+                        const SizedBox(height: 20),
+                        _buildEnderecoExpansivel(),
+                        const SizedBox(height: 12),
+                        _buildAvaliacaoFisica(),
+                        _buildRedefinirSenha(),
+                      ],
+                    ),
+                  ),
                 ),
-              ),
+                _buildBotaoSalvar(context),
+              ],
             ),
-            _buildBotaoSalvar(context),
-          ],
+          ),
         ),
       ),
     );
@@ -201,11 +308,7 @@ class _CriarCadastroAlunoScreenState extends State<CriarCadastroAlunoScreen> {
                 color: kHint,
                 size: 20,
               ),
-              onPressed: () {
-                setState(() {
-                  _senhaVisivel = !_senhaVisivel;
-                });
-              },
+              onPressed: () => setState(() => _senhaVisivel = !_senhaVisivel),
             ),
           ),
         ),
@@ -246,7 +349,8 @@ class _CriarCadastroAlunoScreenState extends State<CriarCadastroAlunoScreen> {
         ),
         const SizedBox(height: 6),
         const Text(
-          'Informações de saúde são preenchidas pelo próprio aluno no primeiro acesso.',
+          'Informações de saúde são preenchidas pelo próprio aluno '
+          'no primeiro acesso.',
           style: TextStyle(fontSize: 12.5, color: kHint, height: 1.4),
         ),
         AnimatedSize(
@@ -304,7 +408,7 @@ class _CriarCadastroAlunoScreenState extends State<CriarCadastroAlunoScreen> {
             style: TextStyle(fontSize: 15, color: Colors.black87),
           ),
           TextButton(
-            onPressed: () {},
+            onPressed: _abrirAvaliacao,
             style: TextButton.styleFrom(
               padding: EdgeInsets.zero,
               minimumSize: const Size(0, 0),
@@ -324,6 +428,196 @@ class _CriarCadastroAlunoScreenState extends State<CriarCadastroAlunoScreen> {
     );
   }
 
+  Widget _buildRedefinirSenha() {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 4),
+      decoration: const BoxDecoration(
+        border: Border(bottom: BorderSide(color: Color(0xFFE0E0E0))),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          const Text(
+            'Redefinir senha',
+            style: TextStyle(fontSize: 15, color: Colors.black87),
+          ),
+          TextButton(
+            onPressed: _redefinindoSenha ? null : _confirmarRedefinicaoSenha,
+            style: TextButton.styleFrom(
+              padding: EdgeInsets.zero,
+              minimumSize: const Size(0, 0),
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            ),
+            child: _redefinindoSenha
+                ? const SizedBox.square(
+                    dimension: 18,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Text(
+                    'Abrir',
+                    style: TextStyle(
+                      color: kGreen,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 15,
+                    ),
+                  ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBannerSenhaRedefinida() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      decoration: BoxDecoration(
+        color: kGreen,
+        borderRadius: BorderRadius.circular(4),
+      ),
+      child: const Row(
+        children: [
+          Icon(Icons.check, color: Colors.white, size: 22),
+          SizedBox(width: 14),
+          Text(
+            'Senha redefinida',
+            style: TextStyle(color: Colors.white, fontSize: 15),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _confirmarRedefinicaoSenha() async {
+    final nome = _nomeCtrl.text.trim();
+    final complementoNome = nome.isEmpty ? ' do aluno' : ' de $nome';
+    final confirmou = await showGeneralDialog<bool>(
+      context: context,
+      barrierDismissible: true,
+      barrierLabel: 'Fechar confirmação',
+      barrierColor: Colors.black54,
+      transitionDuration: const Duration(milliseconds: 180),
+      pageBuilder: (dialogContext, animation, secondaryAnimation) {
+        return Center(
+          child: Material(
+            color: Colors.transparent,
+            child: Dialog(
+              insetPadding: const EdgeInsets.symmetric(horizontal: 16),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(18),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(24, 24, 24, 20),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Redefinir a senha?',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.black87,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      'A senha atual$complementoNome deixa de valer. Este app '
+                      'não tem recuperação por e-mail — a nova senha é '
+                      'combinada na academia.',
+                      style: const TextStyle(
+                        fontSize: 14,
+                        height: 1.55,
+                        color: Color(0xFF374141),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        TextButton(
+                          onPressed: () =>
+                              Navigator.of(dialogContext).pop(false),
+                          child: const Text(
+                            'Voltar',
+                            style: TextStyle(color: kGreen),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        FilledButton(
+                          onPressed: () =>
+                              Navigator.of(dialogContext).pop(true),
+                          style: FilledButton.styleFrom(
+                            backgroundColor: kGreen,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 18,
+                              vertical: 12,
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                          ),
+                          child: const Text('Redefinir'),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+      transitionBuilder: (context, animation, secondaryAnimation, child) {
+        return FadeTransition(
+          opacity: animation,
+          child: ScaleTransition(
+            scale: Tween<double>(begin: 0.96, end: 1).animate(animation),
+            child: child,
+          ),
+        );
+      },
+    );
+
+    if (confirmou != true || !mounted) return;
+
+    final redefinirSenha = widget.onRedefinirSenha;
+    if (redefinirSenha == null) {
+      _mostrarMensagem('Redefinição aguardando integração.');
+      return;
+    }
+
+    setState(() => _redefinindoSenha = true);
+    try {
+      await redefinirSenha();
+      if (!mounted) return;
+      setState(() => _senhaRedefinida = true);
+    } catch (_) {
+      if (!mounted) return;
+      _mostrarMensagem(
+        'Não foi possível redefinir a senha. Tente novamente.',
+      );
+    } finally {
+      if (mounted) setState(() => _redefinindoSenha = false);
+    }
+  }
+
+  void _abrirAvaliacao() {
+    final abrirAvaliacao = widget.onAbrirAvaliacao;
+    if (abrirAvaliacao == null) {
+      _mostrarMensagem('Avaliação física aguardando integração.');
+      return;
+    }
+    abrirAvaliacao();
+  }
+
+  void _mostrarMensagem(String mensagem) {
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(content: Text(mensagem)));
+  }
+
   Widget _buildBotaoSalvar(BuildContext context) {
     return Container(
       width: double.infinity,
@@ -341,11 +635,7 @@ class _CriarCadastroAlunoScreenState extends State<CriarCadastroAlunoScreen> {
       child: SizedBox(
         height: 50,
         child: ElevatedButton(
-          onPressed: () {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Cadastro salvo!')),
-            );
-          },
+          onPressed: _salvando ? null : _salvar,
           style: ElevatedButton.styleFrom(
             backgroundColor: kGreen,
             foregroundColor: Colors.white,

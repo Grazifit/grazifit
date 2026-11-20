@@ -13,11 +13,15 @@
 /// **Fonte:** docs/arquitetura.md secao 7, incluindo os erros HTTP da F-01.
 /// Codigo novo nasce no contrato documentado, nunca apenas neste enum.
 enum CodigoErro {
-  // --- Triggers, com ERRCODE proprio (`docs/arquitetura.md` §7.2) ---
+  // --- Triggers, com ERRCODE proprio ---
   aulaSemVagas('AULA_SEM_VAGAS'),
   aulaInativa('AULA_INATIVA'),
   aulaCategoriaDivergente('AULA_CATEGORIA_DIVERGENTE'),
   aulaProfessorDivergente('AULA_PROFESSOR_DIVERGENTE'),
+
+  // --- Regras de negocio do agendamento ---
+  aulaDataPassada('AULA_DATA_PASSADA'),
+  agendamentoForaDaJanela('AGENDAMENTO_FORA_DA_JANELA'),
 
   // --- Violacao de unicidade (23505) ---
   agendamentoDuplicado('AGENDAMENTO_DUPLICADO'),
@@ -44,7 +48,7 @@ enum CodigoErro {
   professorEmUso('PROFESSOR_EM_USO'),
   professorNaoEncontrado('PROFESSOR_NAO_ENCONTRADO'),
 
-  // Jornada F-01 e autenticacao das chamadas subsequentes.
+  // Jornada e autenticacao das chamadas subsequentes.
   requisicaoInvalida('REQUISICAO_INVALIDA'),
   credenciaisInvalidas('CREDENCIAIS_INVALIDAS'),
   muitasTentativas('MUITAS_TENTATIVAS'),

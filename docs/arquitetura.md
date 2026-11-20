@@ -400,6 +400,15 @@ Os códigos são **genéricos de propósito**: valem para qualquer entidade de q
 
 Acrescentados durante a fatia de `aluno` (F-16), quando o controller passou a usar o envelope em **todo** erro; as demais entidades adotam os mesmos códigos à medida que forem migradas.
 
+Regras de negócio do agendamento, decididas no service antes do insert, com a mesma lógica de §7.4:
+
+| Origem | HTTP | Código | Jornada |
+|---|---|---|---|
+| Service de agendamento — aula com `data` anterior a hoje | `409` | `AULA_DATA_PASSADA` | F-04 |
+| Service de agendamento — agendar ou cancelar com menos de 2 horas para o início da aula | `409` | `AGENDAMENTO_FORA_DA_JANELA` | F-03, F-05 |
+| Service de agendamento — cancelar agendamento de outro aluno (mesma resposta de id inexistente, para não revelar existência) | `404` | `REGISTRO_NAO_ENCONTRADO` | F-05 |
+| Controller de agendamento — mais de 10 `POST /agendamentos` (ou 20 `PATCH /agendamentos/<id>`) por minuto do mesmo usuário; `Retry-After` em segundos | `429` | `MUITAS_TENTATIVAS` | F-03, F-05 |
+
 ---
 
 ## 8. Estado e roteamento do app — ✔ Firmada (D62)

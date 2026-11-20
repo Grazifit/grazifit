@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/data/repositorios.dart';
 import '../../../core/theme/app_colors.dart';
 import '../data/treino_detalhe.dart';
 import '../data/treinos_repository.dart';
@@ -12,8 +13,8 @@ class TelaDetalheTreinoAluno extends StatefulWidget {
   /// Nome mostrado na barra do topo enquanto os dados carregam.
   final String nome;
 
-  /// Repositório de dados. Se não for informado, usa o mock.
-  /// TODO: trocar o padrão pela implementação que chama o backend.
+  /// Repositório de dados. Se não for informado, usa o definido em
+  /// `core/data/repositorios.dart`.
   final TreinosRepository? repository;
 
   const TelaDetalheTreinoAluno({
@@ -35,12 +36,14 @@ class _TelaDetalheTreinoAlunoState extends State<TelaDetalheTreinoAluno> {
   @override
   void initState() {
     super.initState();
-    _repo = widget.repository ?? TreinosRepositoryMock();
+    _repo = widget.repository ?? Repositorios.treinos;
     _future = _repo.buscarTreino(widget.treinoId);
   }
 
   void _recarregar() {
-    setState(() => _future = _repo.buscarTreino(widget.treinoId));
+    setState(() {
+      _future = _repo.buscarTreino(widget.treinoId);
+    });
   }
 
   Future<void> _confirmar() async {
