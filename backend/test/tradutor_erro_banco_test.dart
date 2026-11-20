@@ -170,6 +170,33 @@ void main() {
       );
     });
 
+    test('uq_exercicio_nome vira NOME_EM_USO', () {
+      expect(
+        traduzirCodigoBanco(
+          sqlstate: '23505',
+          nomeConstraint: 'uq_exercicio_nome',
+        ),
+        CodigoErro.nomeEmUso,
+      );
+    });
+
+    test('FK de treino_exercicio: 23001 -> REGISTRO_EM_USO, 23503 -> null', () {
+      expect(
+        traduzirCodigoBanco(
+          sqlstate: '23001',
+          nomeConstraint: 'fk_treino_exercicio_exercicio',
+        ),
+        CodigoErro.registroEmUso,
+      );
+      expect(
+        traduzirCodigoBanco(
+          sqlstate: '23503',
+          nomeConstraint: 'fk_treino_exercicio_exercicio',
+        ),
+        isNull,
+      );
+    });
+
     test('LACUNA: constraints do schema ainda sem codigo no contrato', () {
       for (final constraint in <String>['uq_admin_cpf', 'uq_admin_email']) {
         expect(

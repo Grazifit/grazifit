@@ -3143,6 +3143,437 @@ class AgendamentoCompanion extends UpdateCompanion<AgendamentoData> {
   }
 }
 
+class $ExercicioTable extends Exercicio
+    with TableInfo<$ExercicioTable, ExercicioData> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $ExercicioTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idExercicioMeta = const VerificationMeta(
+    'idExercicio',
+  );
+  @override
+  late final GeneratedColumn<int> idExercicio = GeneratedColumn<int>(
+    'id_exercicio',
+    aliasedName,
+    false,
+    hasAutoIncrement: true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'PRIMARY KEY AUTOINCREMENT',
+    ),
+  );
+  static const VerificationMeta _idAdminCriadorMeta = const VerificationMeta(
+    'idAdminCriador',
+  );
+  @override
+  late final GeneratedColumn<int> idAdminCriador = GeneratedColumn<int>(
+    'id_admin_criador',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _nomeMeta = const VerificationMeta('nome');
+  @override
+  late final GeneratedColumn<String> nome = GeneratedColumn<String>(
+    'nome',
+    aliasedName,
+    false,
+    additionalChecks: GeneratedColumn.checkTextLength(
+      minTextLength: 1,
+      maxTextLength: 120,
+    ),
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways('UNIQUE'),
+  );
+  static const VerificationMeta _instrucoesMeta = const VerificationMeta(
+    'instrucoes',
+  );
+  @override
+  late final GeneratedColumn<String> instrucoes = GeneratedColumn<String>(
+    'instrucoes',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _descricaoMeta = const VerificationMeta(
+    'descricao',
+  );
+  @override
+  late final GeneratedColumn<String> descricao = GeneratedColumn<String>(
+    'descricao',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _dificuldadeMeta = const VerificationMeta(
+    'dificuldade',
+  );
+  @override
+  late final GeneratedColumn<String> dificuldade = GeneratedColumn<String>(
+    'dificuldade',
+    aliasedName,
+    false,
+    additionalChecks: GeneratedColumn.checkTextLength(maxTextLength: 15),
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('iniciante'),
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    idExercicio,
+    idAdminCriador,
+    nome,
+    instrucoes,
+    descricao,
+    dificuldade,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'exercicio';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<ExercicioData> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id_exercicio')) {
+      context.handle(
+        _idExercicioMeta,
+        idExercicio.isAcceptableOrUnknown(
+          data['id_exercicio']!,
+          _idExercicioMeta,
+        ),
+      );
+    }
+    if (data.containsKey('id_admin_criador')) {
+      context.handle(
+        _idAdminCriadorMeta,
+        idAdminCriador.isAcceptableOrUnknown(
+          data['id_admin_criador']!,
+          _idAdminCriadorMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_idAdminCriadorMeta);
+    }
+    if (data.containsKey('nome')) {
+      context.handle(
+        _nomeMeta,
+        nome.isAcceptableOrUnknown(data['nome']!, _nomeMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_nomeMeta);
+    }
+    if (data.containsKey('instrucoes')) {
+      context.handle(
+        _instrucoesMeta,
+        instrucoes.isAcceptableOrUnknown(data['instrucoes']!, _instrucoesMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_instrucoesMeta);
+    }
+    if (data.containsKey('descricao')) {
+      context.handle(
+        _descricaoMeta,
+        descricao.isAcceptableOrUnknown(data['descricao']!, _descricaoMeta),
+      );
+    }
+    if (data.containsKey('dificuldade')) {
+      context.handle(
+        _dificuldadeMeta,
+        dificuldade.isAcceptableOrUnknown(
+          data['dificuldade']!,
+          _dificuldadeMeta,
+        ),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {idExercicio};
+  @override
+  ExercicioData map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return ExercicioData(
+      idExercicio: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}id_exercicio'],
+      )!,
+      idAdminCriador: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}id_admin_criador'],
+      )!,
+      nome: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}nome'],
+      )!,
+      instrucoes: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}instrucoes'],
+      )!,
+      descricao: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}descricao'],
+      ),
+      dificuldade: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}dificuldade'],
+      )!,
+    );
+  }
+
+  @override
+  $ExercicioTable createAlias(String alias) {
+    return $ExercicioTable(attachedDatabase, alias);
+  }
+}
+
+class ExercicioData extends DataClass implements Insertable<ExercicioData> {
+  final int idExercicio;
+  final int idAdminCriador;
+  final String nome;
+  final String instrucoes;
+  final String? descricao;
+  final String dificuldade;
+  const ExercicioData({
+    required this.idExercicio,
+    required this.idAdminCriador,
+    required this.nome,
+    required this.instrucoes,
+    this.descricao,
+    required this.dificuldade,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id_exercicio'] = Variable<int>(idExercicio);
+    map['id_admin_criador'] = Variable<int>(idAdminCriador);
+    map['nome'] = Variable<String>(nome);
+    map['instrucoes'] = Variable<String>(instrucoes);
+    if (!nullToAbsent || descricao != null) {
+      map['descricao'] = Variable<String>(descricao);
+    }
+    map['dificuldade'] = Variable<String>(dificuldade);
+    return map;
+  }
+
+  ExercicioCompanion toCompanion(bool nullToAbsent) {
+    return ExercicioCompanion(
+      idExercicio: Value(idExercicio),
+      idAdminCriador: Value(idAdminCriador),
+      nome: Value(nome),
+      instrucoes: Value(instrucoes),
+      descricao: descricao == null && nullToAbsent
+          ? const Value.absent()
+          : Value(descricao),
+      dificuldade: Value(dificuldade),
+    );
+  }
+
+  factory ExercicioData.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return ExercicioData(
+      idExercicio: serializer.fromJson<int>(json['idExercicio']),
+      idAdminCriador: serializer.fromJson<int>(json['idAdminCriador']),
+      nome: serializer.fromJson<String>(json['nome']),
+      instrucoes: serializer.fromJson<String>(json['instrucoes']),
+      descricao: serializer.fromJson<String?>(json['descricao']),
+      dificuldade: serializer.fromJson<String>(json['dificuldade']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'idExercicio': serializer.toJson<int>(idExercicio),
+      'idAdminCriador': serializer.toJson<int>(idAdminCriador),
+      'nome': serializer.toJson<String>(nome),
+      'instrucoes': serializer.toJson<String>(instrucoes),
+      'descricao': serializer.toJson<String?>(descricao),
+      'dificuldade': serializer.toJson<String>(dificuldade),
+    };
+  }
+
+  ExercicioData copyWith({
+    int? idExercicio,
+    int? idAdminCriador,
+    String? nome,
+    String? instrucoes,
+    Value<String?> descricao = const Value.absent(),
+    String? dificuldade,
+  }) => ExercicioData(
+    idExercicio: idExercicio ?? this.idExercicio,
+    idAdminCriador: idAdminCriador ?? this.idAdminCriador,
+    nome: nome ?? this.nome,
+    instrucoes: instrucoes ?? this.instrucoes,
+    descricao: descricao.present ? descricao.value : this.descricao,
+    dificuldade: dificuldade ?? this.dificuldade,
+  );
+  ExercicioData copyWithCompanion(ExercicioCompanion data) {
+    return ExercicioData(
+      idExercicio: data.idExercicio.present
+          ? data.idExercicio.value
+          : this.idExercicio,
+      idAdminCriador: data.idAdminCriador.present
+          ? data.idAdminCriador.value
+          : this.idAdminCriador,
+      nome: data.nome.present ? data.nome.value : this.nome,
+      instrucoes: data.instrucoes.present
+          ? data.instrucoes.value
+          : this.instrucoes,
+      descricao: data.descricao.present ? data.descricao.value : this.descricao,
+      dificuldade: data.dificuldade.present
+          ? data.dificuldade.value
+          : this.dificuldade,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ExercicioData(')
+          ..write('idExercicio: $idExercicio, ')
+          ..write('idAdminCriador: $idAdminCriador, ')
+          ..write('nome: $nome, ')
+          ..write('instrucoes: $instrucoes, ')
+          ..write('descricao: $descricao, ')
+          ..write('dificuldade: $dificuldade')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    idExercicio,
+    idAdminCriador,
+    nome,
+    instrucoes,
+    descricao,
+    dificuldade,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is ExercicioData &&
+          other.idExercicio == this.idExercicio &&
+          other.idAdminCriador == this.idAdminCriador &&
+          other.nome == this.nome &&
+          other.instrucoes == this.instrucoes &&
+          other.descricao == this.descricao &&
+          other.dificuldade == this.dificuldade);
+}
+
+class ExercicioCompanion extends UpdateCompanion<ExercicioData> {
+  final Value<int> idExercicio;
+  final Value<int> idAdminCriador;
+  final Value<String> nome;
+  final Value<String> instrucoes;
+  final Value<String?> descricao;
+  final Value<String> dificuldade;
+  const ExercicioCompanion({
+    this.idExercicio = const Value.absent(),
+    this.idAdminCriador = const Value.absent(),
+    this.nome = const Value.absent(),
+    this.instrucoes = const Value.absent(),
+    this.descricao = const Value.absent(),
+    this.dificuldade = const Value.absent(),
+  });
+  ExercicioCompanion.insert({
+    this.idExercicio = const Value.absent(),
+    required int idAdminCriador,
+    required String nome,
+    required String instrucoes,
+    this.descricao = const Value.absent(),
+    this.dificuldade = const Value.absent(),
+  }) : idAdminCriador = Value(idAdminCriador),
+       nome = Value(nome),
+       instrucoes = Value(instrucoes);
+  static Insertable<ExercicioData> custom({
+    Expression<int>? idExercicio,
+    Expression<int>? idAdminCriador,
+    Expression<String>? nome,
+    Expression<String>? instrucoes,
+    Expression<String>? descricao,
+    Expression<String>? dificuldade,
+  }) {
+    return RawValuesInsertable({
+      if (idExercicio != null) 'id_exercicio': idExercicio,
+      if (idAdminCriador != null) 'id_admin_criador': idAdminCriador,
+      if (nome != null) 'nome': nome,
+      if (instrucoes != null) 'instrucoes': instrucoes,
+      if (descricao != null) 'descricao': descricao,
+      if (dificuldade != null) 'dificuldade': dificuldade,
+    });
+  }
+
+  ExercicioCompanion copyWith({
+    Value<int>? idExercicio,
+    Value<int>? idAdminCriador,
+    Value<String>? nome,
+    Value<String>? instrucoes,
+    Value<String?>? descricao,
+    Value<String>? dificuldade,
+  }) {
+    return ExercicioCompanion(
+      idExercicio: idExercicio ?? this.idExercicio,
+      idAdminCriador: idAdminCriador ?? this.idAdminCriador,
+      nome: nome ?? this.nome,
+      instrucoes: instrucoes ?? this.instrucoes,
+      descricao: descricao ?? this.descricao,
+      dificuldade: dificuldade ?? this.dificuldade,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (idExercicio.present) {
+      map['id_exercicio'] = Variable<int>(idExercicio.value);
+    }
+    if (idAdminCriador.present) {
+      map['id_admin_criador'] = Variable<int>(idAdminCriador.value);
+    }
+    if (nome.present) {
+      map['nome'] = Variable<String>(nome.value);
+    }
+    if (instrucoes.present) {
+      map['instrucoes'] = Variable<String>(instrucoes.value);
+    }
+    if (descricao.present) {
+      map['descricao'] = Variable<String>(descricao.value);
+    }
+    if (dificuldade.present) {
+      map['dificuldade'] = Variable<String>(dificuldade.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ExercicioCompanion(')
+          ..write('idExercicio: $idExercicio, ')
+          ..write('idAdminCriador: $idAdminCriador, ')
+          ..write('nome: $nome, ')
+          ..write('instrucoes: $instrucoes, ')
+          ..write('descricao: $descricao, ')
+          ..write('dificuldade: $dificuldade')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$GraziDatabase extends GeneratedDatabase {
   _$GraziDatabase(QueryExecutor e) : super(e);
   $GraziDatabaseManager get managers => $GraziDatabaseManager(this);
@@ -3151,6 +3582,7 @@ abstract class _$GraziDatabase extends GeneratedDatabase {
   late final $ProfessorTable professor = $ProfessorTable(this);
   late final $AulaTable aula = $AulaTable(this);
   late final $AgendamentoTable agendamento = $AgendamentoTable(this);
+  late final $ExercicioTable exercicio = $ExercicioTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -3161,6 +3593,7 @@ abstract class _$GraziDatabase extends GeneratedDatabase {
     professor,
     aula,
     agendamento,
+    exercicio,
   ];
 }
 
@@ -4650,6 +5083,234 @@ typedef $$AgendamentoTableProcessedTableManager =
       AgendamentoData,
       PrefetchHooks Function()
     >;
+typedef $$ExercicioTableCreateCompanionBuilder = ExercicioCompanion Function({
+  Value<int> idExercicio,
+  required int idAdminCriador,
+  required String nome,
+  required String instrucoes,
+  Value<String?> descricao,
+  Value<String> dificuldade,
+});
+typedef $$ExercicioTableUpdateCompanionBuilder = ExercicioCompanion Function({
+  Value<int> idExercicio,
+  Value<int> idAdminCriador,
+  Value<String> nome,
+  Value<String> instrucoes,
+  Value<String?> descricao,
+  Value<String> dificuldade,
+});
+
+class $$ExercicioTableFilterComposer
+    extends Composer<_$GraziDatabase, $ExercicioTable> {
+  $$ExercicioTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get idExercicio => $composableBuilder(
+    column: $table.idExercicio,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get idAdminCriador => $composableBuilder(
+    column: $table.idAdminCriador,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get nome => $composableBuilder(
+    column: $table.nome,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get instrucoes => $composableBuilder(
+    column: $table.instrucoes,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get descricao => $composableBuilder(
+    column: $table.descricao,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get dificuldade => $composableBuilder(
+    column: $table.dificuldade,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$ExercicioTableOrderingComposer
+    extends Composer<_$GraziDatabase, $ExercicioTable> {
+  $$ExercicioTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get idExercicio => $composableBuilder(
+    column: $table.idExercicio,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get idAdminCriador => $composableBuilder(
+    column: $table.idAdminCriador,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get nome => $composableBuilder(
+    column: $table.nome,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get instrucoes => $composableBuilder(
+    column: $table.instrucoes,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get descricao => $composableBuilder(
+    column: $table.descricao,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get dificuldade => $composableBuilder(
+    column: $table.dificuldade,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$ExercicioTableAnnotationComposer
+    extends Composer<_$GraziDatabase, $ExercicioTable> {
+  $$ExercicioTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get idExercicio => $composableBuilder(
+    column: $table.idExercicio,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get idAdminCriador => $composableBuilder(
+    column: $table.idAdminCriador,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get nome =>
+      $composableBuilder(column: $table.nome, builder: (column) => column);
+
+  GeneratedColumn<String> get instrucoes => $composableBuilder(
+    column: $table.instrucoes,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get descricao =>
+      $composableBuilder(column: $table.descricao, builder: (column) => column);
+
+  GeneratedColumn<String> get dificuldade => $composableBuilder(
+    column: $table.dificuldade,
+    builder: (column) => column,
+  );
+}
+
+class $$ExercicioTableTableManager
+    extends
+        RootTableManager<
+          _$GraziDatabase,
+          $ExercicioTable,
+          ExercicioData,
+          $$ExercicioTableFilterComposer,
+          $$ExercicioTableOrderingComposer,
+          $$ExercicioTableAnnotationComposer,
+          $$ExercicioTableCreateCompanionBuilder,
+          $$ExercicioTableUpdateCompanionBuilder,
+          (
+            ExercicioData,
+            BaseReferences<_$GraziDatabase, $ExercicioTable, ExercicioData>,
+          ),
+          ExercicioData,
+          PrefetchHooks Function()
+        > {
+  $$ExercicioTableTableManager(_$GraziDatabase db, $ExercicioTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$ExercicioTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$ExercicioTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$ExercicioTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<int> idExercicio = const Value.absent(),
+                Value<int> idAdminCriador = const Value.absent(),
+                Value<String> nome = const Value.absent(),
+                Value<String> instrucoes = const Value.absent(),
+                Value<String?> descricao = const Value.absent(),
+                Value<String> dificuldade = const Value.absent(),
+              }) => ExercicioCompanion(
+                idExercicio: idExercicio,
+                idAdminCriador: idAdminCriador,
+                nome: nome,
+                instrucoes: instrucoes,
+                descricao: descricao,
+                dificuldade: dificuldade,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> idExercicio = const Value.absent(),
+                required int idAdminCriador,
+                required String nome,
+                required String instrucoes,
+                Value<String?> descricao = const Value.absent(),
+                Value<String> dificuldade = const Value.absent(),
+              }) => ExercicioCompanion.insert(
+                idExercicio: idExercicio,
+                idAdminCriador: idAdminCriador,
+                nome: nome,
+                instrucoes: instrucoes,
+                descricao: descricao,
+                dificuldade: dificuldade,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<$ExercicioTable, ExercicioData>(table),
+                  BaseReferences<
+                    _$GraziDatabase,
+                    $ExercicioTable,
+                    ExercicioData
+                  >(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$ExercicioTableProcessedTableManager =
+    ProcessedTableManager<
+      _$GraziDatabase,
+      $ExercicioTable,
+      ExercicioData,
+      $$ExercicioTableFilterComposer,
+      $$ExercicioTableOrderingComposer,
+      $$ExercicioTableAnnotationComposer,
+      $$ExercicioTableCreateCompanionBuilder,
+      $$ExercicioTableUpdateCompanionBuilder,
+      (
+        ExercicioData,
+        BaseReferences<_$GraziDatabase, $ExercicioTable, ExercicioData>,
+      ),
+      ExercicioData,
+      PrefetchHooks Function()
+    >;
 
 class $GraziDatabaseManager {
   final _$GraziDatabase _db;
@@ -4663,4 +5324,6 @@ class $GraziDatabaseManager {
   $$AulaTableTableManager get aula => $$AulaTableTableManager(_db, _db.aula);
   $$AgendamentoTableTableManager get agendamento =>
       $$AgendamentoTableTableManager(_db, _db.agendamento);
+  $$ExercicioTableTableManager get exercicio =>
+      $$ExercicioTableTableManager(_db, _db.exercicio);
 }
