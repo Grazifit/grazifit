@@ -1,12 +1,9 @@
 import 'dart:math' as math;
+import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:shared/dtos/auth_dto.dart';
 
-import '../../agendamentos/screens/tela_agenda_aluno.dart';
-import '../../inicio/screens/tela_inicio_admin.dart';
-import '../../aulas/screens/minha_agenda_screen.dart';
 import '../state/auth_controller.dart';
 import '../state/auth_state.dart';
 
@@ -24,9 +21,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   static const _verde = Color(0xFF005B50);
   static const _borda = Color(0xFFBDCECA);
   static const _vermelho = Color(0xFFF21D1D);
+  static const _fonte = 'Barlow';
 
-  final _emailController = TextEditingController(text: 'ana.ramos@exemplo.com');
-  final _senhaController = TextEditingController(text: '12345678');
+  final _emailController = TextEditingController();
+  final _senhaController = TextEditingController();
 
   late bool _credenciaisInvalidas;
 
@@ -68,24 +66,22 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       return;
     }
 
-    _navegarAposLogin(sessao);
-  }
-
-  void _navegarAposLogin(LoginResponseDto sessao) {
-    final destino = switch (sessao.papel) {
-      'admin' => const TelaInicioAdmin(),
-      'aluno' => const TelaAgendaAluno(),
-      'professor' => const MinhaAgendaScreen(),
-      _ => null,
-    };
-
-    if (destino == null) return;
-    Navigator.of(context)
-        .pushReplacement(MaterialPageRoute<void>(builder: (_) => destino));
+    // Sucesso: o guard de rotas (core/routing) leva para a tela do papel.
   }
 
   @override
   Widget build(BuildContext context) {
+    final tema = Theme.of(context);
+    return Theme(
+      data: tema.copyWith(
+        textTheme: tema.textTheme.apply(fontFamily: _fonte),
+        primaryTextTheme: tema.primaryTextTheme.apply(fontFamily: _fonte),
+      ),
+      child: _tela(context),
+    );
+  }
+
+  Widget _tela(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.transparent,
       body: Stack(
@@ -178,7 +174,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         'E-mail ou senha inválidos',
                         style: TextStyle(
                           color: _vermelho,
-                          fontSize: 11,
+                          fontSize: 12,
                           height: 1.1,
                         ),
                       ),
@@ -201,7 +197,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               ),
               child: const Text(
                 'Entrar',
-                style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
+                style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
               ),
             ),
           ),
@@ -220,7 +216,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 ),
                 child: const Text(
                   'Esqueci minha senha',
-                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
                 ),
               ),
             ),
@@ -246,8 +242,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           rotulo,
           style: const TextStyle(
             color: Color(0xFF34423F),
-            fontSize: 12,
-            fontWeight: FontWeight.w600,
+            fontSize: 13,
+            fontWeight: FontWeight.w500,
           ),
         ),
         const SizedBox(height: 6),
@@ -260,13 +256,22 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             autocorrect: false,
             enableSuggestions: !ocultarTexto,
             textAlignVertical: TextAlignVertical.center,
-            style: const TextStyle(fontSize: 13, color: Color(0xFF2D3836)),
+            style: const TextStyle(
+              fontSize: 14,
+              height: 1.2,
+              color: Color(0xFF2D3836),
+            ),
             onChanged: (_) => _limparErro(),
             decoration: InputDecoration(
               isDense: true,
               filled: true,
               fillColor: Colors.white,
-              contentPadding: const EdgeInsets.symmetric(horizontal: 11),
+              // O TextField afrouxa a altura imposta pelo SizedBox; a altura de 48
+              // vem daqui: linha de 14 x 1,2 = 16,8 + 2 x 15,6 de respiro.
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 11,
+                vertical: 15.6,
+              ),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(5),
                 borderSide: BorderSide(color: corBorda),
@@ -287,57 +292,93 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   }
 }
 
+/// Fundo em malha de cores amostradas do Figma (3 colunas x 21 linhas),
+/// interpoladas por vértice. Substitui os degradês aproximados anteriores.
 class _FundoLogin extends StatelessWidget {
   const _FundoLogin();
 
+  static const _esquerda = [
+    Color(0xFF47437A), Color(0xFF4B4579), Color(0xFF5A4875),
+    Color(0xFF7A516B), Color(0xFFA15D5F), Color(0xFFC06757),
+    Color(0xFFCF6A53), Color(0xFFD46C51), Color(0xFFD66D51),
+    Color(0xFFD76F4E), Color(0xFFD7704A), Color(0xFFD17246),
+    Color(0xFFC17344), Color(0xFFA57447), Color(0xFF7F734A),
+    Color(0xFF5C714E), Color(0xFF437052), Color(0xFF377054),
+    Color(0xFF357054), Color(0xFF3B7053), Color(0xFF477051),
+  ];
+
+  static const _centro = [
+    Color(0xFFCA9C6A), Color(0xFFC7986A), Color(0xFFBD8967),
+    Color(0xFFB27C64), Color(0xFFC27A5A), Color(0xFFCF7752),
+    Color(0xFFD6764F), Color(0xFFD97A4F), Color(0xFFDB7E51),
+    Color(0xFFDD8250), Color(0xFFDD834E), Color(0xFFDA844C),
+    Color(0xFFD0824A), Color(0xFFB97E4A), Color(0xFF95784B),
+    Color(0xFF6E714F), Color(0xFF506D54), Color(0xFF416C57),
+    Color(0xFF3B6B58), Color(0xFF2F6B58), Color(0xFF346C57),
+  ];
+
+  static const _direita = [
+    Color(0xFFF0B664), Color(0xFFF0B664), Color(0xFFEEB161),
+    Color(0xFFEAA75D), Color(0xFFE39756), Color(0xFFDE884E),
+    Color(0xFFDD824C), Color(0xFFDF884E), Color(0xFFE18F51),
+    Color(0xFFE49553), Color(0xFFE49653), Color(0xFFE49653),
+    Color(0xFFDF9250), Color(0xFFCD894E), Color(0xFFAB7D4D),
+    Color(0xFF817150), Color(0xFF5D6B56), Color(0xFF4B695A),
+    Color(0xFF42675C), Color(0xFF43675C), Color(0xFF46675A),
+  ];
+
   @override
   Widget build(BuildContext context) {
-    return Stack(
-      fit: StackFit.expand,
-      children: [
-        const DecoratedBox(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [Color(0xFFF1A65E), Color(0xFFE96D4E), Color(0xFF075D50)],
-              stops: [0, 0.48, 1],
-            ),
-          ),
-        ),
-        const DecoratedBox(
-          decoration: BoxDecoration(
-            gradient: RadialGradient(
-              center: Alignment(-1, -0.9),
-              radius: 1.3,
-              colors: [Color(0xFF554980), Color(0xB78D5C79), Color(0x00554A7E)],
-              stops: [0, 0.52, 1],
-            ),
-          ),
-        ),
-        const DecoratedBox(
-          decoration: BoxDecoration(
-            gradient: RadialGradient(
-              center: Alignment(1, -1),
-              radius: 1.1,
-              colors: [Color(0xFFFFBB52), Color(0xCFF38B4D), Color(0x00F38B4D)],
-              stops: [0, 0.48, 1],
-            ),
-          ),
-        ),
-        const DecoratedBox(
-          decoration: BoxDecoration(
-            gradient: RadialGradient(
-              center: Alignment(-0.95, 0.72),
-              radius: 0.9,
-              colors: [Color(0xFF4D865D), Color(0xC43C8062), Color(0x003C8062)],
-              stops: [0, 0.52, 1],
-            ),
-          ),
-        ),
-      ],
+    return const SizedBox.expand(
+      child: CustomPaint(
+        painter: _MalhaPainter(_esquerda, _centro, _direita),
+      ),
     );
   }
+}
+
+class _MalhaPainter extends CustomPainter {
+  const _MalhaPainter(this.esquerda, this.centro, this.direita);
+
+  final List<Color> esquerda;
+  final List<Color> centro;
+  final List<Color> direita;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final colunas = [esquerda, centro, direita];
+    final linhas = esquerda.length;
+    final posicoes = <Offset>[];
+    final cores = <Color>[];
+    for (var r = 0; r < linhas; r++) {
+      final y = size.height * r / (linhas - 1);
+      for (var c = 0; c < 3; c++) {
+        posicoes.add(Offset(size.width * c / 2, y));
+        cores.add(colunas[c][r]);
+      }
+    }
+    final indices = <int>[];
+    for (var r = 0; r < linhas - 1; r++) {
+      for (var c = 0; c < 2; c++) {
+        final a = r * 3 + c;
+        final b = a + 1;
+        final d = a + 3;
+        final e = d + 1;
+        indices.addAll([a, b, d, b, e, d]);
+      }
+    }
+    final vertices = ui.Vertices(
+      ui.VertexMode.triangles,
+      posicoes,
+      colors: cores,
+      indices: indices,
+    );
+    canvas.drawVertices(vertices, BlendMode.dst, Paint());
+    vertices.dispose();
+  }
+
+  @override
+  bool shouldRepaint(covariant _MalhaPainter oldDelegate) => false;
 }
 
 class _GranulacaoPainter extends CustomPainter {
