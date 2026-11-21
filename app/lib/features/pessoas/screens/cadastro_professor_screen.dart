@@ -10,7 +10,6 @@
 // - Endereço é sub-form opcional de professor, não feature própria (D18).
 //
 // O que NÃO foi inventado, de propósito:
-// - Os campos internos do sub-form de Endereço (ver EnderecoOpcional).
 // - Tokens exatos de cor/tipografia: usa core/design_system/tokens/
 //   cores_provisorias.dart até os tokens reais existirem.
 // - Mensagens de erro de CPF/e-mail duplicado: isso é contrato de backend
@@ -24,7 +23,6 @@ import 'package:shared/erros/codigo_erro.dart';
 import '../../../core/design_system/components/app_bar_interna.dart';
 import '../../../core/design_system/components/botao_primario.dart';
 import '../../../core/design_system/components/campo_texto.dart';
-import '../../../core/design_system/components/fundo_tela.dart';
 import '../../../core/network/api_exception.dart';
 import '../../../core/utils/formatadores.dart';
 import '../../../core/utils/validadores.dart';
@@ -54,6 +52,7 @@ class _CadastroProfessorScreenState
   final _emailController = TextEditingController();
   final _senhaController = TextEditingController();
   final _telefoneController = TextEditingController();
+  final _endereco = EnderecoController();
 
   @override
   void dispose() {
@@ -62,6 +61,7 @@ class _CadastroProfessorScreenState
     _emailController.dispose();
     _senhaController.dispose();
     _telefoneController.dispose();
+    _endereco.dispose();
     super.dispose();
   }
 
@@ -78,6 +78,7 @@ class _CadastroProfessorScreenState
           email: _emailController.text,
           senha: _senhaController.text,
           telefone: _telefoneController.text,
+          endereco: _endereco.toJson(),
         );
   }
 
@@ -136,9 +137,7 @@ class _CadastroProfessorScreenState
     ref.listen(cadastroProfessorProvider, _aoMudarEstado);
     final enviando = ref.watch(cadastroProfessorProvider).isLoading;
 
-    return FundoTela(
-      child: Scaffold(
-        backgroundColor: Colors.transparent,
+    return Scaffold(
         appBar: appBarInterna(context, 'Cadastro de professor'),
         body: SafeArea(
           child: Form(
@@ -189,7 +188,8 @@ class _CadastroProfessorScreenState
                   validator: Validadores.telefone,
                 ),
                 const SizedBox(height: 20),
-                const EnderecoOpcional(
+                EnderecoOpcional(
+                  controller: _endereco,
                   // Nota de escopo do mockup (D17): professor não tem campos
                   // profissionais (CREF/especialidade).
                   nota: "Sem campos profissionais: 'professor' não tem CREF "
@@ -203,7 +203,6 @@ class _CadastroProfessorScreenState
           texto: 'Salvar cadastro',
           onPressed: enviando ? null : _salvar,
         ),
-      ),
-    );
+      );
   }
 }
