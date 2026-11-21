@@ -8,45 +8,40 @@
 // Treinos do aluno.
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../../core/design_system/components/app_bar_interna.dart';
-import '../../../../core/design_system/components/botao_primario.dart';
-import '../../../../core/design_system/components/campo_texto.dart';
-import '../../../../core/design_system/components/fundo_tela.dart';
-import '../../../../core/design_system/components/texto_apoio.dart';
-import '../../../../core/design_system/tokens/cores_provisorias.dart';
+import '../../../core/design_system/components/app_bar_interna.dart';
+import '../../../core/design_system/components/botao_primario.dart';
+import '../../../core/design_system/components/campo_texto.dart';
+import '../../../core/design_system/components/texto_apoio.dart';
+import '../../../core/design_system/tokens/cores_provisorias.dart';
+import '../../../core/state/estado_async.dart';
+import '../../vinculos/state/vinculos_providers.dart';
 
-class MontarTreinoScreen extends StatefulWidget {
-  const MontarTreinoScreen({
-    super.key,
-    this.nomeAluno = 'Ana Beatriz Ramos',
-  });
+class MontarTreinoScreen extends ConsumerStatefulWidget {
+  const MontarTreinoScreen({super.key, required this.idAluno});
 
-  final String nomeAluno;
+  final int idAluno;
 
   @override
-  State<MontarTreinoScreen> createState() => _MontarTreinoScreenState();
+  ConsumerState<MontarTreinoScreen> createState() =>
+      _MontarTreinoScreenState();
 }
 
-class _MontarTreinoScreenState extends State<MontarTreinoScreen> {
+class _MontarTreinoScreenState extends ConsumerState<MontarTreinoScreen> {
   static const _tipos = ['Força', 'Hipertrofia', 'Cardio'];
 
-  final _nomeController = TextEditingController(text: 'Inferiores A');
-  late final _alunoController = TextEditingController(text: widget.nomeAluno);
+  final _nomeController = TextEditingController();
   int _tipo = 0;
 
   // TODO(backend): exercícios vêm da feature exercicios (catálogo); séries,
-  // repetições e carga ficam em treino_exercicio. Fictício do mockup.
-  final _exercicios = <_Exercicio>[
-    const _Exercicio('Agachamento livre', 3, 12, 40),
-    const _Exercicio('Leg press', 4, 10, 80),
-    const _Exercicio('Cadeira extensora', 3, 15, 25),
-  ];
+  // repetições e carga ficam em treino_exercicio. Começa vazio: a escolha de
+  // exercício depende do catálogo, que ainda não existe.
+  final _exercicios = <_Exercicio>[];
 
   @override
   void dispose() {
     _nomeController.dispose();
-    _alunoController.dispose();
     super.dispose();
   }
 
@@ -58,15 +53,17 @@ class _MontarTreinoScreenState extends State<MontarTreinoScreen> {
     });
   }
 
-  // TODO(backend): salvar cria treino + treino_exercicio. O seletor de aluno
-  // deve listar só alunos com vínculo ativo (hoje é texto livre).
-  void _salvar() {}
+  // TODO(backend): salvar cria treino + treino_exercicio para `widget.idAluno`
+  // (aluno com vínculo ativo). Ainda não há endpoint.
+  void _salvar() {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text(TextosEstado.pendente)),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
-    return FundoTela(
-      child: Scaffold(
-        backgroundColor: Colors.transparent,
+    return Scaffold(
         appBar: appBarInterna(context, 'Montar treino'),
         body: SafeArea(
           child: ListView(
@@ -79,11 +76,27 @@ class _MontarTreinoScreenState extends State<MontarTreinoScreen> {
                 textCapitalization: TextCapitalization.sentences,
               ),
               const SizedBox(height: 20),
-              CampoTexto(
-                label: 'Aluno',
-                controller: _alunoController,
-                helper: 'Apenas alunos com vínculo ativo',
-                textCapitalization: TextCapitalization.words,
+              const Text(
+                'Aluno',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.black87,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  ref.watch(alunoDetalheProvider(widget.idAluno)).valueOrNull?.nome ??
+                      '—',
+                  style: const TextStyle(fontSize: 15, color: Colors.black87),
+                ),
               ),
               const SizedBox(height: 20),
               const Text(
@@ -158,8 +171,7 @@ class _MontarTreinoScreenState extends State<MontarTreinoScreen> {
           texto: 'Salvar treino',
           onPressed: _salvar,
         ),
-      ),
-    );
+      );
   }
 }
 

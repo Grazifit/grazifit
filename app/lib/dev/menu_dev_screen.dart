@@ -45,6 +45,7 @@ import '../features/exercicios/screens/novo_exercicio_admin_screen.dart';
 import '../features/pessoas/screens/painel_inativos_admin_screen.dart';
 import '../features/vinculos/screens/vinculos_admin_screen.dart';
 import '../core/routing/admin_shell_screen.dart';
+import '../features/inicio/screens/paginas_admin.dart';
 
 class MenuDevScreen extends StatelessWidget {
   const MenuDevScreen({super.key});
@@ -65,7 +66,7 @@ class MenuDevScreen extends StatelessWidget {
     ]),
     _GrupoDev('Pessoas', [
       _TelaDev('Login', () => const LoginScreen()),
-      _TelaDev('Home admin', () => const TelaInicioAdmin()),
+      _TelaDev('Home admin', () => const PaginaInicioAdmin()),
       _TelaDev('Cadastro de aluno', () => const CriarCadastroAlunoScreen()),
       _TelaDev(
         'Boas-vindas do aluno',
@@ -87,28 +88,24 @@ class MenuDevScreen extends StatelessWidget {
           )),
       _TelaDev('Cadastro de professor', () => const CadastroProfessorScreen()),
       _TelaDev('Perfil do professor', () => const PerfilProfessorScreen()),
-      _TelaDev(
-        'Editar perfil do professor',
-        () => const EditarPerfilProfessorScreen(),
-      ),
-      _TelaDev('Tela Usuarios admin', () => const TelaUsuariosAdmin()),
+      _TelaDev('Tela Usuarios admin', () => const PaginaUsuariosAdmin()),
     ]),
 
     _GrupoDev('Treinos', [
       _TelaDev(
         'Treinos do aluno',
-        () => const TreinosAlunoScreen(nomeAluno: 'Ana Beatriz Ramos'),
+        () => TreinosAlunoScreen(idAluno: 1),
       ),
       _TelaDev(
         'Histórico de treinos',
-        () => const HistoricoTreinosScreen(nomeAluno: 'Ana Beatriz Ramos'),
+        () => const HistoricoTreinosScreen(idAluno: 1),
       ),
       _TelaDev(
         'Registrar medida do aluno',
         () => const TelaRegistrarMedidaAluno(alturaM: 1.70),
       ),
       _TelaDev('Evolução do aluno', () => const TelaEvolucaoAluno()),
-      _TelaDev('Montar treino', () => const MontarTreinoScreen()),
+      _TelaDev('Montar treino', () => const MontarTreinoScreen(idAluno: 1)),
       _TelaDev(
         'Montar treino livre (Admin)',
         () => const MontarTreinoLivreAdminScreen(),
@@ -119,10 +116,10 @@ class MenuDevScreen extends StatelessWidget {
         () => const BibliotecaExerciciosAdminScreen(),
       ),
       _TelaDev('Treinos livres (Admin)', () => const TreinosLivresAdminScreen()),
-      _TelaDev('Chamada', () => const ChamadaScreen()),
-      _TelaDev('Detalhes da aula', () => const DetalheAulaScreen()),
+      _TelaDev('Chamada', () => const ChamadaScreen(idAula: 1)),
+      _TelaDev('Detalhes da aula', () => const DetalheAulaScreen(idAula: 1)),
       _TelaDev('Minha Agenda', () => const MinhaAgendaScreen()),
-      _TelaDev('Avaliação física', () => const AvaliacaoFisicaScreen()),
+      _TelaDev('Avaliação física', () => const AvaliacaoFisicaScreen(idAluno: 1)),
     ]),
 
     _GrupoDev('Cronogramas', [
@@ -133,7 +130,7 @@ class MenuDevScreen extends StatelessWidget {
       _TelaDev('Meus alunos', () => const MeusAlunosScreen()),
       _TelaDev(
         'Detalhe do aluno',
-        () => const AlunoDetalheScreen(nome: 'Ana Beatriz Ramos'),
+        () => const AlunoDetalheScreen(idAluno: 1),
       ),
       _TelaDev('Alunos inativos', () => const AlunosInativosScreen()),
     ]),

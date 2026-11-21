@@ -1,68 +1,67 @@
 // app/lib/features/treinos/screens/historico_treinos_screen.dart
 //
-// PROTÓTIPO VISUAL — sem integração com backend. Dados fictícios locais.
-// Integração com o backend: ver docs/handoff-front-professor.md
+// Histórico de treinos de um aluno (professor): execuções dos últimos 30
+// dias. Dados de `historicoAlunoProvider(idAluno)`.
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/design_system/components/app_bar_interna.dart';
 import '../../../core/design_system/components/cartao_lista.dart';
-import '../../../core/design_system/components/fundo_tela.dart';
 import '../../../core/design_system/components/texto_apoio.dart';
 import '../../../core/design_system/tokens/cores_provisorias.dart';
+import '../../../core/state/estado_async.dart';
+import '../../../core/utils/datas.dart';
 import '../../../core/utils/nomes.dart';
+import '../../vinculos/state/vinculos_providers.dart';
+import '../data/treinos_professor_repository.dart';
+import '../state/treinos_providers.dart';
 
-class HistoricoTreinosScreen extends StatelessWidget {
-  const HistoricoTreinosScreen({super.key, required this.nomeAluno});
+class HistoricoTreinosScreen extends ConsumerWidget {
+  const HistoricoTreinosScreen({super.key, required this.idAluno});
 
-  final String nomeAluno;
-
-  // TODO(backend): vem de historico_treino do aluno (últimos 30 dias).
-  // "Ontem, 31/08" é formatação da data: fazer no app a partir da data real.
-  // Estados a cobrir: carregando, vazio, erro, sem conexão.
-  static const _execucoes = [
-    _Execucao('Inferiores A', 'Ontem, 31/08', true),
-    _Execucao('Superiores B', '29/08', true),
-    _Execucao('Inferiores A', '27/08', false),
-    _Execucao('Full body iniciante', '25/08', true),
-  ];
+  final int idAluno;
 
   @override
-  Widget build(BuildContext context) {
-    return FundoTela(
-      child: Scaffold(
-        backgroundColor: Colors.transparent,
-        appBar: appBarInterna(context, 'Histórico de ${nomeCurto(nomeAluno)}'),
+  Widget build(BuildContext context, WidgetRef ref) {
+    final historico = ref.watch(historicoAlunoProvider(idAluno));
+    final nome = ref.watch(alunoDetalheProvider(idAluno)).valueOrNull?.nome;
+
+    return Scaffold(
+        appBar: appBarInterna(
+          context,
+          nome == null ? 'Histórico' : 'Histórico de ${nomeCurto(nome)}',
+        ),
         body: SafeArea(
-          child: ListView(
-            padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
-            children: [
-              // TODO(backend): total real de execuções no período.
-              const TextoApoio('12 execuções nos últimos 30 dias'),
-              const SizedBox(height: 16),
-              CartaoLista(
-                itens: [
-                  for (final e in _execucoes)
-                    ItemLista(
-                      titulo: '${e.treino}  ·  ${e.data}',
-                      trailing: _StatusExecucao(concluido: e.concluido),
-                    ),
-                ],
-              ),
-            ],
+          child: EstadoAsync<HistoricoAluno>(
+            valor: historico,
+            aoTentarNovamente: () =>
+                ref.invalidate(historicoAlunoProvider(idAluno)),
+            vazio: (h) => h.execucoes.isEmpty,
+            textoVazio: 'Nenhuma execução nos últimos 30 dias.',
+            dados: (h) => ListView(
+              padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+              children: [
+                TextoApoio('${h.total} execuções nos últimos 30 dias'),
+                const SizedBox(height: 16),
+                CartaoLista(
+                  itens: [
+                    for (final e in h.execucoes)
+                      ItemLista(
+                        // TODO(design): o mockup mostra "Ontem, 31/08"; aqui
+                        // só dd/MM.
+                        titulo:
+                            '${e.treino}  ·  ${Datas.diaMes(e.data) ?? e.data}',
+                        trailing: _StatusExecucao(concluido: e.concluido),
+                      ),
+                  ],
+                ),
+              ],
+            ),
           ),
         ),
-      ),
-    );
+      );
   }
-}
-
-class _Execucao {
-  const _Execucao(this.treino, this.data, this.concluido);
-
-  final String treino;
-  final String data;
-  final bool concluido;
 }
 
 class _StatusExecucao extends StatelessWidget {

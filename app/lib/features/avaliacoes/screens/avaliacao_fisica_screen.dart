@@ -1,7 +1,7 @@
 // app/lib/features/avaliacoes/screens/avaliacao_fisica_screen.dart
 //
-// PROTÓTIPO VISUAL — sem integração com backend. Dados fictícios do mockup.
-// Integração com o backend: ver docs/handoff-front-professor.md
+// Dados do aluno vêm de `alunoDetalheProvider`; salvar depende do backend de
+// avaliações. Integração: ver docs/integracao-frontend.md
 //
 // Avaliação física do aluno, edição do dia (professor): peso, altura, IMC
 // calculado automaticamente e observação. Aberta pelo item "Avaliação física"
@@ -10,38 +10,31 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/design_system/components/app_bar_interna.dart';
 import '../../../core/design_system/components/botao_primario.dart';
 import '../../../core/design_system/components/campo_texto.dart';
-import '../../../core/design_system/components/fundo_tela.dart';
 import '../../../core/design_system/tokens/cores_provisorias.dart';
+import '../../../core/state/estado_async.dart';
+import '../../vinculos/state/vinculos_providers.dart';
 
-class AvaliacaoFisicaScreen extends StatefulWidget {
-  const AvaliacaoFisicaScreen({
-    super.key,
-    this.nomeAluno = 'Ana Beatriz Ramos',
-    this.dataRegistro = '01/09',
-    this.peso = '72,5',
-    this.altura = '1,68',
-  });
+class AvaliacaoFisicaScreen extends ConsumerStatefulWidget {
+  const AvaliacaoFisicaScreen({super.key, required this.idAluno});
 
-  // Valores padrão = dados fictícios do mockup.
-  final String nomeAluno;
-  final String dataRegistro;
-  final String peso;
-  final String altura;
+  final int idAluno;
 
   @override
-  State<AvaliacaoFisicaScreen> createState() => _AvaliacaoFisicaScreenState();
+  ConsumerState<AvaliacaoFisicaScreen> createState() =>
+      _AvaliacaoFisicaScreenState();
 }
 
-class _AvaliacaoFisicaScreenState extends State<AvaliacaoFisicaScreen> {
+class _AvaliacaoFisicaScreenState extends ConsumerState<AvaliacaoFisicaScreen> {
   static const double _pesoMax = 500;
 
   final _formKey = GlobalKey<FormState>();
-  late final _pesoController = TextEditingController(text: widget.peso);
-  late final _alturaController = TextEditingController(text: widget.altura);
+  final _pesoController = TextEditingController();
+  final _alturaController = TextEditingController();
   final _imcController = TextEditingController();
   final _observacaoController = TextEditingController();
 
@@ -51,6 +44,32 @@ class _AvaliacaoFisicaScreenState extends State<AvaliacaoFisicaScreen> {
     _pesoController.addListener(_recalcularImc);
     _alturaController.addListener(_recalcularImc);
     _recalcularImc();
+    _preencherDaUltimaAvaliacao();
+  }
+
+  /// Pré-preenche peso e altura com a última avaliação do aluno.
+  Future<void> _preencherDaUltimaAvaliacao() async {
+    try {
+      final aluno =
+          await ref.read(alunoDetalheProvider(widget.idAluno).future);
+      if (!mounted) return;
+      String fmt(double? v, int casas) =>
+          v == null ? '' : v.toStringAsFixed(casas).replaceAll('.', ',');
+      if (_pesoController.text.isEmpty) {
+        _pesoController.text = fmt(aluno.ultimoPeso, 1);
+      }
+      if (_alturaController.text.isEmpty) {
+        _alturaController.text = fmt(aluno.ultimaAltura, 2);
+      }
+    } catch (_) {
+      // Sem dado: os campos ficam em branco e o erro aparece na própria
+      // tela (cabeçalho), pelo mesmo provider.
+    }
+  }
+
+  String get _hoje {
+    final d = DateTime.now();
+    return '${d.day.toString().padLeft(2, '0')}/${d.month.toString().padLeft(2, '0')}';
   }
 
   @override
@@ -90,7 +109,10 @@ class _AvaliacaoFisicaScreenState extends State<AvaliacaoFisicaScreen> {
   // O IMC é calculado no banco; aqui é só exibição. Falta validar a altura
   // (o mockup não define o intervalo).
   void _atualizar() {
-    _formKey.currentState?.validate();
+    if (!(_formKey.currentState?.validate() ?? false)) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text(TextosEstado.pendente)),
+    );
   }
 
   // TODO(specs): CampoTexto ainda não tem modo somente leitura. Mesma solução
@@ -102,9 +124,7 @@ class _AvaliacaoFisicaScreenState extends State<AvaliacaoFisicaScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return FundoTela(
-      child: Scaffold(
-        backgroundColor: Colors.transparent,
+    return Scaffold(
         appBar: appBarInterna(context, 'Avaliação física'),
         body: SafeArea(
           child: Form(
@@ -113,7 +133,8 @@ class _AvaliacaoFisicaScreenState extends State<AvaliacaoFisicaScreen> {
               padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
               children: [
                 Text(
-                  widget.nomeAluno,
+                  ref.watch(alunoDetalheProvider(widget.idAluno)).valueOrNull?.nome ??
+                      '—',
                   style: const TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.w600,
@@ -122,7 +143,7 @@ class _AvaliacaoFisicaScreenState extends State<AvaliacaoFisicaScreen> {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  'Editando o registro de hoje, ${widget.dataRegistro}',
+                  'Editando o registro de hoje, $_hoje',
                   style: const TextStyle(fontSize: 12, color: corAlerta),
                 ),
                 const SizedBox(height: 20),
@@ -175,7 +196,6 @@ class _AvaliacaoFisicaScreenState extends State<AvaliacaoFisicaScreen> {
           texto: 'Atualizar avaliação',
           onPressed: _atualizar,
         ),
-      ),
-    );
+      );
   }
 }
