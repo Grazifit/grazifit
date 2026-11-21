@@ -4,10 +4,19 @@ import 'package:shared/erros/codigo_erro.dart';
 import '../../database/database.dart' show AgendamentoData, AulaData;
 import '../../shared/autorizacao/identidade.dart';
 import '../../shared/erros/agendamento_exception.dart';
+import '../../shared/erros/aula_exception.dart';
 import '../../shared/erros/tradutor_erro_banco.dart';
 import '../aulas/aula_service.dart'
     show CancelamentoDeAgendamentos, exigirAnoDeVigencia;
 import 'agendamento_repository.dart';
+
+/// Um item da chamada: o agendamento e a presenca pedida.
+class PresencaInformada {
+  final int idAgendamento;
+  final bool presente;
+
+  const PresencaInformada({required this.idAgendamento, required this.presente});
+}
 
 /// Regras de agendamento: so o aluno reserva e cancela a propria vaga,
 /// com janela de 2 horas, lotacao, duplicidade e vigencia.
@@ -150,6 +159,128 @@ class AgendamentoService implements CancelamentoDeAgendamentos {
   Future<int> cancelarEmCascata(int idAula, {required DateTime agora}) =>
       _repository.cancelarAgendadosDaAula(idAula, agora: agora);
 
+  /// Presenca da aula: professor da aula ou admin; aluno nunca.
+  ///
+  /// Professor que nao e o da aula recebe 404, igual a aula inexistente.
+  ///
+  /// Primeiro envio (nenhum agendamento da aula com `presente` ou `faltou`):
+  /// a lista traz todos os agendamentos ativos da aula. Depois, so os itens
+  /// alterados. Tudo ou nada, na transacao com a aula travada.
+  Future<List<AgendamentoData>> registrarChamada({
+    required Identidade identidade,
+    required int idAula,
+    required List<PresencaInformada> itens,
+  }) async {
+    if (identidade.papel == Papel.aluno) throw const AcessoNegado();
+    if (itens.isEmpty) {
+      throw const ChamadaException(
+        CodigoErro.campoInvalido,
+        campo: 'corpo',
+        mensagem: 'Informe ao menos um agendamento.',
+      );
+    }
+    final vistos = <int>{};
+    for (final item in itens) {
+      if (!vistos.add(item.idAgendamento)) {
+        throw const ChamadaException(
+          CodigoErro.campoInvalido,
+          campo: 'id',
+          mensagem: 'Agendamento repetido na lista.',
+        );
+      }
+    }
+
+    return _repository.transacao(() async {
+      // Leitura sem trava: quem nao pode chamar nao segura o FOR UPDATE da aula.
+      final previa = await _repository.buscarAula(idAula);
+      if (previa == null) throw const AulaNotFoundException();
+      _exigirDonoOuAdmin(identidade, previa.aula);
+
+      final aulaTravada = await _repository.travarAulaParaChamada(idAula);
+      if (aulaTravada == null) throw const AulaNotFoundException();
+      final aula = aulaTravada.aula;
+      // Reconfere com a linha travada: o professor pode ter mudado enquanto
+      // o pedido esperava a trava.
+      _exigirDonoOuAdmin(identidade, aula);
+      if (!aula.status) {
+        throw const ChamadaException(
+          CodigoErro.aulaInativa,
+          mensagem: 'Aula cancelada nao aceita chamada.',
+        );
+      }
+      if (aulaTravada.antesDoInicio) {
+        throw const ChamadaException(
+          CodigoErro.agendamentoForaDaJanela,
+          mensagem: 'Chamada so pode ser feita a partir do inicio da aula.',
+        );
+      }
+
+      final agendamentos = await _repository.travarAgendamentosDaAula(idAula);
+      final porId = {for (final a in agendamentos) a.idAgendamento: a};
+      final primeiroEnvio = !agendamentos.any(
+        (a) => a.status == 'presente' || a.status == 'faltou',
+      );
+
+      for (final item in itens) {
+        if (porId.containsKey(item.idAgendamento)) continue;
+        if (primeiroEnvio) {
+          throw const ChamadaException(
+            CodigoErro.campoInvalido,
+            campo: 'id',
+            mensagem: 'Agendamento nao pertence a esta aula.',
+          );
+        }
+        throw const AgendamentoNotFoundException('Agendamento nao encontrado.');
+      }
+
+      for (final item in itens) {
+        if (porId[item.idAgendamento]!.status == 'cancelado') {
+          throw const ChamadaException(
+            CodigoErro.registroEmUso,
+            campo: 'id',
+            mensagem: 'Agendamento cancelado nao aceita alteracao de presenca.',
+          );
+        }
+      }
+
+      if (primeiroEnvio) {
+        final enviados = {for (final item in itens) item.idAgendamento};
+        final faltando = agendamentos.any(
+          (a) => a.status == 'agendado' && !enviados.contains(a.idAgendamento),
+        );
+        if (faltando) {
+          throw const ChamadaException(
+            CodigoErro.registroEmUso,
+            campo: 'id',
+            mensagem:
+                'Lista incompleta: envie todos os agendamentos ativos da aula.',
+          );
+        }
+      }
+
+      final presentes = [
+        for (final item in itens)
+          if (item.presente && porId[item.idAgendamento]!.status != 'presente')
+            item.idAgendamento,
+      ];
+      final faltaram = [
+        for (final item in itens)
+          if (!item.presente && porId[item.idAgendamento]!.status != 'faltou')
+            item.idAgendamento,
+      ];
+      final gravadas = await _repository.gravarPresenca(
+        presentes: presentes,
+        faltaram: faltaram,
+        agora: _agoraUtc(),
+      );
+      final porGravada = {for (final g in gravadas) g.idAgendamento: g};
+      return [
+        for (final item in itens)
+          porGravada[item.idAgendamento] ?? porId[item.idAgendamento]!,
+      ];
+    });
+  }
+
   /// Lista so os proprios agendamentos.
   Future<({List<AgendamentoData> itens, int total})> listarDoAluno(
     Identidade identidade, {
@@ -170,6 +301,16 @@ class AgendamentoService implements CancelamentoDeAgendamentos {
   /// Professor e admin nao operam agendamento.
   void _exigirAluno(Identidade identidade) {
     if (identidade.papel != Papel.aluno) throw const AcessoNegado();
+  }
+
+  /// Admin chama qualquer aula. Professor so a propria; outra aula responde
+  /// como inexistente (404), para nao revelar quais aulas existem.
+  void _exigirDonoOuAdmin(Identidade identidade, AulaData aula) {
+    if (identidade.papel == Papel.admin) return;
+    if (identidade.papel == Papel.professor && aula.idProfessor == identidade.id) {
+      return;
+    }
+    throw const AulaNotFoundException();
   }
 
   /// Instante do evento (`data_cancelamento`). Nao entra em regra: as regras

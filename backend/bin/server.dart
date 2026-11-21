@@ -69,7 +69,7 @@ void main() async {
   // Mesmo `db` nos dois repositories: a cascata entra na transacao da aula.
   final aulaRepository = AulaRepository(db);
   final aulaService = AulaService(aulaRepository, agendamentoService);
-  final aulaController = AulaController(aulaService);
+  final aulaController = AulaController(aulaService, agendamentoService);
 
   final rootRouter = Router()
     ..mount(
