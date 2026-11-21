@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:postgres/postgres.dart' as pg;
+import 'package:shared/dtos/agendamento_serializer.dart';
 import 'package:shared/dtos/aula_agendado_serializer.dart';
 import 'package:shared/dtos/aula_serializer.dart';
 import 'package:shared/dtos/pagina_serializer.dart';
@@ -8,12 +9,14 @@ import 'package:shared/erros/codigo_erro.dart';
 import 'package:shelf/shelf.dart';
 import 'package:shelf_router/shelf_router.dart';
 
-import '../../database/database.dart' show AulaData;
+import '../../database/database.dart' show AgendamentoData, AulaData;
 import '../../shared/autorizacao/identidade.dart';
+import '../../shared/erros/agendamento_exception.dart';
 import '../../shared/erros/aula_exception.dart';
 import '../../shared/erros/status_http.dart';
 import '../../shared/erros/tradutor_erro_banco.dart';
 import '../../shared/middleware/identidade_middleware.dart';
+import '../agendamentos/agendamento_service.dart';
 import 'aula_repository.dart' show AgendadoDaAula;
 import 'aula_service.dart';
 
@@ -21,7 +24,9 @@ import 'aula_service.dart';
 class AulaController {
   final AulaService _service;
 
-  AulaController(this._service);
+  final AgendamentoService _agendamentos;
+
+  AulaController(this._service, this._agendamentos);
 
   Router get router {
     final router = Router();
@@ -31,6 +36,7 @@ class AulaController {
     router.patch('/aulas/<id>', _atualizar);
     router.post('/aulas/<id>/cancelar', _cancelar);
     router.get('/aulas/<id>/agendamentos', _listarAgendados);
+    router.patch('/aulas/<id>/chamada', _chamada);
     return router;
   }
 
@@ -235,6 +241,103 @@ class AulaController {
     });
   }
 
+  /// Corpo: lista de `{id, status}`. Regras de presenca no service.
+  Future<Response> _chamada(Request req, String id) {
+    final identidade = identidadeDaRequisicao(req);
+    if (identidade == null) {
+      return Future.value(_envelope(CodigoErro.tokenInvalido));
+    }
+    return _comId(id, (idAula) async {
+      final lida = await _lerPresencas(req);
+      if (lida.erro != null) return lida.erro!;
+      final atualizados = await _agendamentos.registrarChamada(
+        identidade: identidade,
+        idAula: idAula,
+        itens: lida.itens!,
+      );
+      return _json(200, {
+        'itens': [for (final a in atualizados) _agendamentoDaChamadaJson(a)],
+      });
+    });
+  }
+
+  /// So a forma: lista de objetos com `id` inteiro e `status` aceito.
+  /// Duplicidade, pertencimento e estado ficam no service.
+  Future<({List<PresencaInformada>? itens, Response? erro})> _lerPresencas(
+    Request req,
+  ) async {
+    Object? corpo;
+    try {
+      corpo = jsonDecode(await req.readAsString());
+    } on FormatException {
+      return (itens: null, erro: _envelope(CodigoErro.jsonInvalido));
+    }
+    if (corpo is! List) {
+      return (
+        itens: null,
+        erro: _campoInvalido('corpo', 'Deve ser uma lista de {id, status}.'),
+      );
+    }
+
+    final itens = <PresencaInformada>[];
+    for (final entrada in corpo) {
+      if (entrada is! Map<String, dynamic>) {
+        return (
+          itens: null,
+          erro: _campoInvalido(
+            'corpo',
+            'Cada item deve ser um objeto {id, status}.',
+          ),
+        );
+      }
+      final desconhecido = entrada.keys
+          .where((k) => k != 'id' && k != 'status')
+          .firstOrNull;
+      if (desconhecido != null) {
+        return (
+          itens: null,
+          erro: _campoInvalido(
+            desconhecido,
+            'Campo nao aceito. Aceitos: id, status.',
+          ),
+        );
+      }
+      final id = entrada['id'];
+      if (id == null) {
+        return (
+          itens: null,
+          erro: _envelope(CodigoErro.campoObrigatorio, campo: 'id'),
+        );
+      }
+      if (id is! int) {
+        return (
+          itens: null,
+          erro: _campoInvalido('id', 'Deve ser um numero inteiro.'),
+        );
+      }
+      final status = entrada['status'];
+      if (status == null) {
+        return (
+          itens: null,
+          erro: _envelope(CodigoErro.campoObrigatorio, campo: 'status'),
+        );
+      }
+      if (status != 'presente' && status != 'faltou') {
+        return (
+          itens: null,
+          erro: _campoInvalido(
+            'status',
+            'Valores aceitos: presente, faltou.',
+          ),
+        );
+      }
+      itens.add(
+        PresencaInformada(idAgendamento: id, presente: status == 'presente'),
+      );
+    }
+    return (itens: itens, erro: null);
+  }
+
   ({int limit, int offset, Response? erro}) _paginacao(
     Map<String, String> parametros,
   ) {
@@ -411,6 +514,10 @@ class AulaController {
           codigo,
           campo: campo,
         ),
+        ChamadaException(:final codigo, :final campo, :final mensagem) =>
+          _envelope(codigo, campo: campo, mensagem: mensagem),
+        AgendamentoException(:final codigo, :final campo, :final mensagem) =>
+          _envelope(codigo, campo: campo, mensagem: mensagem),
         pg.ServerException() => _erroDoBanco(erro, stackTrace),
         _ => _erroInterno(erro, stackTrace),
       };
@@ -463,6 +570,7 @@ class AulaController {
       'Categoria difere da do cronograma da aula.',
     CodigoErro.aulaProfessorDivergente =>
       'Professor difere do do cronograma da aula.',
+    CodigoErro.aulaSemVagas => 'Aula sem vagas disponiveis.',
     CodigoErro.jsonInvalido => 'Corpo da requisicao nao e um JSON valido.',
     CodigoErro.campoObrigatorio => 'Campo obrigatorio ausente.',
     CodigoErro.campoInvalido => 'Campo invalido.',
@@ -494,6 +602,17 @@ class AulaController {
         idProfessorCancelou: aula.idProfessorCancelou,
         idAdminCancelou: aula.idAdminCancelou,
         vagasOcupadas: ocupadas,
+      );
+
+  Map<String, dynamic> _agendamentoDaChamadaJson(AgendamentoData a) =>
+      agendamentoToJson(
+        idAgendamento: a.idAgendamento,
+        idAluno: a.idAluno,
+        idAula: a.idAula,
+        dataAgendamento: a.dataAgendamento.toDateTime(),
+        status: a.status,
+        dataPresenca: a.dataPresenca?.toDateTime(),
+        dataCancelamento: a.dataCancelamento?.toDateTime(),
       );
 
   Map<String, dynamic> _agendadoJson(AgendadoDaAula a) => aulaAgendadoToJson(

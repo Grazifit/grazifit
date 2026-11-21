@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:drift_postgres/drift_postgres.dart' show PgDate, PgDateTime;
 import 'package:grazifit_backend/database/database.dart';
+import 'package:grazifit_backend/features/agendamentos/agendamento_service.dart';
 import 'package:grazifit_backend/features/aulas/aula_controller.dart';
 import 'package:grazifit_backend/features/aulas/aula_repository.dart';
 import 'package:grazifit_backend/features/aulas/aula_service.dart';
@@ -12,6 +13,8 @@ import 'package:postgres/postgres.dart' as pg;
 import 'package:shared/erros/codigo_erro.dart';
 import 'package:shelf/shelf.dart';
 import 'package:test/test.dart';
+
+import 'agendamento_fakes.dart';
 
 class _ServicoFalso implements AulaService {
   Object? erro;
@@ -176,9 +179,16 @@ void main() {
   late _ServicoFalso servico;
   late AulaController controller;
 
+  late RepositorioAgendamentoFalso repoChamada;
+
   setUp(() {
     servico = _ServicoFalso();
-    controller = AulaController(servico);
+    repoChamada = RepositorioAgendamentoFalso()
+      ..aula = aulaDe(data: DateTime(2026, 6, 9));
+    controller = AulaController(
+      servico,
+      AgendamentoService(repoChamada, agora: () => agoraFixo),
+    );
   });
 
   Future<(int, Map<String, dynamic>)> chamar(
@@ -722,6 +732,363 @@ void main() {
         404,
         CodigoErro.registroNaoEncontrado,
       );
+    });
+  });
+
+  group('PATCH /aulas/<id>/chamada', () {
+    setUp(() {
+      repoChamada.agendamentos.addAll([
+        AgendamentoData(
+          idAgendamento: 1,
+          idAluno: 5,
+          idAula: 1,
+          dataAgendamento: PgDate(year: 2026, month: 6, day: 1),
+          status: 'agendado',
+        ),
+        AgendamentoData(
+          idAgendamento: 2,
+          idAluno: 6,
+          idAula: 1,
+          dataAgendamento: PgDate(year: 2026, month: 6, day: 1),
+          status: 'agendado',
+        ),
+        AgendamentoData(
+          idAgendamento: 3,
+          idAluno: 7,
+          idAula: 1,
+          dataAgendamento: PgDate(year: 2026, month: 6, day: 1),
+          status: 'cancelado',
+          dataCancelamento: PgDateTime(DateTime.utc(2026, 6, 2)),
+        ),
+        AgendamentoData(
+          idAgendamento: 9,
+          idAluno: 9,
+          idAula: 2,
+          dataAgendamento: PgDate(year: 2026, month: 6, day: 1),
+          status: 'agendado',
+        ),
+      ]);
+    });
+
+    final listaCompleta = [
+      {'id': 1, 'status': 'presente'},
+      {'id': 2, 'status': 'faltou'},
+    ];
+
+    void esperaErroChamada(
+      (int, Map<String, dynamic>) r,
+      int status,
+      CodigoErro codigo, [
+      String? campo,
+    ]) {
+      expect(r.$1, status, reason: jsonEncode(r.$2));
+      expect(r.$2['codigo'], codigo.valor);
+      expect(r.$2['campo'], campo);
+    }
+
+    test('professor da aula envia a lista completa: 200 com os itens', () async {
+      final r = await chamar(
+        'PATCH',
+        '/aulas/1/chamada',
+        corpo: listaCompleta,
+        identidade: professor,
+      );
+      expect(r.$1, 200, reason: jsonEncode(r.$2));
+      final itens = (r.$2['itens'] as List).cast<Map<String, dynamic>>();
+      expect([for (final i in itens) i['id_agendamento']], [1, 2]);
+      expect(itens[0]['status'], 'presente');
+      expect(itens[0]['data_presenca'], isNotNull);
+      expect(itens[1]['status'], 'faltou');
+      expect(itens[1]['data_presenca'], isNull);
+    });
+
+    test('admin envia a lista: 200', () async {
+      final r = await chamar(
+        'PATCH',
+        '/aulas/1/chamada',
+        corpo: listaCompleta,
+        identidade: admin,
+      );
+      expect(r.$1, 200, reason: jsonEncode(r.$2));
+    });
+
+    test('sem identidade: 401', () async {
+      final r = await chamar(
+        'PATCH',
+        '/aulas/1/chamada',
+        corpo: listaCompleta,
+        identidade: null,
+      );
+      esperaErroChamada(r, 401, CodigoErro.tokenInvalido);
+    });
+
+    test('aluno: 403 e nada e gravado', () async {
+      final r = await chamar(
+        'PATCH',
+        '/aulas/1/chamada',
+        corpo: listaCompleta,
+        identidade: aluno,
+      );
+      esperaErroChamada(r, 403, CodigoErro.acessoNegado);
+      expect(repoChamada.agendamentos.first.status, 'agendado');
+    });
+
+    test('professor de outra aula: 404 igual a aula inexistente, nada e gravado', () async {
+      final antes = [for (final a in repoChamada.agendamentos) a.status];
+      final r = await chamar(
+        'PATCH',
+        '/aulas/1/chamada',
+        corpo: listaCompleta,
+        identidade: const Identidade(id: 99, papel: Papel.professor),
+      );
+      esperaErroChamada(r, 404, CodigoErro.registroNaoEncontrado);
+      expect([for (final a in repoChamada.agendamentos) a.status], antes);
+    });
+
+    test('CA-12: ajuste antes do primeiro envio: 409, nada muda', () async {
+      final r = await chamar(
+        'PATCH',
+        '/aulas/1/chamada',
+        corpo: [
+          {'id': 2, 'status': 'presente'},
+        ],
+        identidade: professor,
+      );
+      esperaErroChamada(r, 409, CodigoErro.registroEmUso, 'id');
+      expect(repoChamada.agendamentos[0].status, 'agendado');
+      expect(repoChamada.agendamentos[1].status, 'agendado');
+    });
+
+    test('id repetido na lista no primeiro envio: 400, nada muda', () async {
+      final r = await chamar(
+        'PATCH',
+        '/aulas/1/chamada',
+        corpo: [
+          {'id': 1, 'status': 'presente'},
+          {'id': 1, 'status': 'faltou'},
+          {'id': 2, 'status': 'presente'},
+        ],
+        identidade: professor,
+      );
+      esperaErroChamada(r, 400, CodigoErro.campoInvalido, 'id');
+      expect(repoChamada.agendamentos[0].status, 'agendado');
+      expect(repoChamada.agendamentos[1].status, 'agendado');
+    });
+
+    test('id de outra aula no primeiro envio: 400, nada muda', () async {
+      final r = await chamar(
+        'PATCH',
+        '/aulas/1/chamada',
+        corpo: [
+          {'id': 1, 'status': 'presente'},
+          {'id': 2, 'status': 'faltou'},
+          {'id': 9, 'status': 'presente'},
+        ],
+        identidade: professor,
+      );
+      esperaErroChamada(r, 400, CodigoErro.campoInvalido, 'id');
+      expect(repoChamada.agendamentos[0].status, 'agendado');
+      expect(repoChamada.agendamentos[1].status, 'agendado');
+      expect(repoChamada.agendamentos[3].status, 'agendado');
+    });
+
+    test('aula inexistente: 404', () async {
+      final r = await chamar(
+        'PATCH',
+        '/aulas/77/chamada',
+        corpo: listaCompleta,
+        identidade: professor,
+      );
+      esperaErroChamada(r, 404, CodigoErro.registroNaoEncontrado);
+    });
+
+    test('id da aula nao numerico: 400 em id', () async {
+      final r = await chamar(
+        'PATCH',
+        '/aulas/abc/chamada',
+        corpo: listaCompleta,
+        identidade: professor,
+      );
+      esperaErroChamada(r, 400, CodigoErro.campoInvalido, 'id');
+    });
+
+    test('corpo que nao e JSON: 400 JSON_INVALIDO', () async {
+      final r = await chamar(
+        'PATCH',
+        '/aulas/1/chamada',
+        corpo: '{nao-json',
+        identidade: professor,
+      );
+      esperaErroChamada(r, 400, CodigoErro.jsonInvalido);
+    });
+
+    test('corpo que nao e lista: 400 em corpo', () async {
+      final r = await chamar(
+        'PATCH',
+        '/aulas/1/chamada',
+        corpo: {'id': 1, 'status': 'presente'},
+        identidade: professor,
+      );
+      esperaErroChamada(r, 400, CodigoErro.campoInvalido, 'corpo');
+    });
+
+    test('lista vazia: 400 em corpo', () async {
+      final r = await chamar(
+        'PATCH',
+        '/aulas/1/chamada',
+        corpo: <Object>[],
+        identidade: professor,
+      );
+      esperaErroChamada(r, 400, CodigoErro.campoInvalido, 'corpo');
+    });
+
+    test('status diferente de presente e faltou: 400 em status', () async {
+      final r = await chamar(
+        'PATCH',
+        '/aulas/1/chamada',
+        corpo: [
+          {'id': 1, 'status': 'agendado'},
+        ],
+        identidade: professor,
+      );
+      esperaErroChamada(r, 400, CodigoErro.campoInvalido, 'status');
+    });
+
+    test('campo desconhecido no item: 400 com o nome do campo', () async {
+      final r = await chamar(
+        'PATCH',
+        '/aulas/1/chamada',
+        corpo: [
+          {'id': 1, 'status': 'presente', 'extra': true},
+        ],
+        identidade: professor,
+      );
+      esperaErroChamada(r, 400, CodigoErro.campoInvalido, 'extra');
+    });
+
+    test('id nao inteiro no item: 400 em id', () async {
+      final r = await chamar(
+        'PATCH',
+        '/aulas/1/chamada',
+        corpo: [
+          {'id': '1', 'status': 'presente'},
+        ],
+        identidade: professor,
+      );
+      esperaErroChamada(r, 400, CodigoErro.campoInvalido, 'id');
+    });
+
+    test('item sem id: 400 CAMPO_OBRIGATORIO em id', () async {
+      final r = await chamar(
+        'PATCH',
+        '/aulas/1/chamada',
+        corpo: [
+          {'status': 'presente'},
+        ],
+        identidade: professor,
+      );
+      esperaErroChamada(r, 400, CodigoErro.campoObrigatorio, 'id');
+    });
+
+    test('primeiro envio incompleto: 409, nada muda', () async {
+      final r = await chamar(
+        'PATCH',
+        '/aulas/1/chamada',
+        corpo: [
+          {'id': 1, 'status': 'presente'},
+        ],
+        identidade: professor,
+      );
+      esperaErroChamada(r, 409, CodigoErro.registroEmUso, 'id');
+      expect(repoChamada.agendamentos.first.status, 'agendado');
+    });
+
+    test('aula cancelada: 409 AULA_INATIVA', () async {
+      repoChamada.aula = aulaDe(data: DateTime(2026, 6, 9), status: false);
+      final r = await chamar(
+        'PATCH',
+        '/aulas/1/chamada',
+        corpo: listaCompleta,
+        identidade: professor,
+      );
+      esperaErroChamada(r, 409, CodigoErro.aulaInativa);
+    });
+
+    test('antes do inicio da aula: 409', () async {
+      repoChamada.aula = aulaDe();
+      final r = await chamar(
+        'PATCH',
+        '/aulas/1/chamada',
+        corpo: listaCompleta,
+        identidade: professor,
+      );
+      esperaErroChamada(r, 409, CodigoErro.agendamentoForaDaJanela);
+    });
+
+    test('correcao de agendamento cancelado: 409 REGISTRO_EM_USO', () async {
+      await chamar(
+        'PATCH',
+        '/aulas/1/chamada',
+        corpo: listaCompleta,
+        identidade: professor,
+      );
+      repoChamada.agendamentos.add(
+        AgendamentoData(
+          idAgendamento: 4,
+          idAluno: 8,
+          idAula: 1,
+          dataAgendamento: PgDate(year: 2026, month: 6, day: 1),
+          status: 'cancelado',
+          dataCancelamento: PgDateTime(DateTime.utc(2026, 6, 2)),
+        ),
+      );
+      final r = await chamar(
+        'PATCH',
+        '/aulas/1/chamada',
+        corpo: [
+          {'id': 4, 'status': 'presente'},
+        ],
+        identidade: professor,
+      );
+      esperaErroChamada(r, 409, CodigoErro.registroEmUso, 'id');
+    });
+
+    test('correcao com id de outra aula: 404', () async {
+      await chamar(
+        'PATCH',
+        '/aulas/1/chamada',
+        corpo: listaCompleta,
+        identidade: professor,
+      );
+      final r = await chamar(
+        'PATCH',
+        '/aulas/1/chamada',
+        corpo: [
+          {'id': 9, 'status': 'presente'},
+        ],
+        identidade: professor,
+      );
+      esperaErroChamada(r, 404, CodigoErro.registroNaoEncontrado);
+    });
+
+    test('correcao individual depois do primeiro envio: 200 so com o item', () async {
+      await chamar(
+        'PATCH',
+        '/aulas/1/chamada',
+        corpo: listaCompleta,
+        identidade: professor,
+      );
+      final r = await chamar(
+        'PATCH',
+        '/aulas/1/chamada',
+        corpo: [
+          {'id': 2, 'status': 'presente'},
+        ],
+        identidade: professor,
+      );
+      expect(r.$1, 200, reason: jsonEncode(r.$2));
+      expect(repoChamada.agendamentos[1].status, 'presente');
+      expect(repoChamada.agendamentos[0].status, 'presente');
     });
   });
 }
