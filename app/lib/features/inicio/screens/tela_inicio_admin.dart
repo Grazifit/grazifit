@@ -9,13 +9,13 @@ enum DestinoInicioAdmin { inicio, pessoas, aulas, treinos }
 
 /// Painel inicial do perfil Admin.
 ///
-/// A tela recebe dados e callbacks por construtor. A versão atual usa dados
-/// locais de demonstração e não faz chamadas de rede.
+/// A tela recebe dados e callbacks por construtor. Sem dados injetados, abre
+/// no estado vazio enquanto aguarda integração com a camada de estado.
 class TelaInicioAdmin extends StatelessWidget {
   const TelaInicioAdmin({
     super.key,
-    this.dados = InicioAdminData.exemplo,
-    this.estado = EstadoInicioAdmin.dados,
+    this.dados = InicioAdminData.vazio,
+    this.estado = EstadoInicioAdmin.vazio,
     this.onTentarNovamente,
     this.onNavegar,
     this.onAbrirAula,
