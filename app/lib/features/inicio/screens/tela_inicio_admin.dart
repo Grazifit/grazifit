@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-import '../../../core/design_system/components/fundo_tela.dart';
 import '../data/inicio_admin_data.dart';
 
 enum EstadoInicioAdmin { carregando, vazio, erro, semConexao, dados }
@@ -9,13 +8,13 @@ enum DestinoInicioAdmin { inicio, pessoas, aulas, treinos }
 
 /// Painel inicial do perfil Admin.
 ///
-/// A tela recebe dados e callbacks por construtor. A versão atual usa dados
-/// locais de demonstração e não faz chamadas de rede.
+/// A tela recebe dados e callbacks por construtor. Os dados vêm de
+/// `PaginaInicioAdmin` (Repositorios.admin).
 class TelaInicioAdmin extends StatelessWidget {
   const TelaInicioAdmin({
     super.key,
-    this.dados = InicioAdminData.exemplo,
-    this.estado = EstadoInicioAdmin.dados,
+    this.dados = InicioAdminData.vazio,
+    this.estado = EstadoInicioAdmin.carregando,
     this.onTentarNovamente,
     this.onNavegar,
     this.onAbrirAula,
@@ -36,9 +35,7 @@ class TelaInicioAdmin extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return FundoTela(
-      child: Scaffold(
-        backgroundColor: Colors.transparent,
+    return Scaffold(
         body: SafeArea(
           bottom: false,
           child: switch (estado) {
@@ -71,8 +68,7 @@ class TelaInicioAdmin extends StatelessWidget {
         bottomNavigationBar: mostrarNavegacaoInferior
             ? _navegacaoInferior(context)
             : null,
-      ),
-    );
+      );
   }
 
   Widget _conteudo(BuildContext context) {
@@ -262,8 +258,8 @@ class _CabecalhoAdmin extends StatelessWidget {
       height: 38,
       child: Stack(
         alignment: Alignment.center,
-        children: const [
-          Align(
+        children: [
+          const Align(
             alignment: Alignment.centerLeft,
             child: Text(
               'Hoje',
@@ -275,59 +271,11 @@ class _CabecalhoAdmin extends StatelessWidget {
               ),
             ),
           ),
-          _MarcaColorida(),
-        ],
-      ),
-    );
-  }
-}
-
-class _MarcaColorida extends StatelessWidget {
-  const _MarcaColorida();
-
-  @override
-  Widget build(BuildContext context) {
-    const cores = [
-      Color(0xFF126D74),
-      Color(0xFFE99A22),
-      Color(0xFF087D8A),
-      Color(0xFFF2B62B),
-    ];
-
-    return SizedBox(
-      width: 34,
-      height: 34,
-      child: Stack(
-        alignment: Alignment.center,
-        children: [
-          Positioned(
-            top: 1,
-            child: _Petala(cor: cores[0]),
-          ),
-          Positioned(
-            right: 1,
-            child: Transform.rotate(
-              angle: 1.5708,
-              child: _Petala(cor: cores[1]),
-            ),
-          ),
-          Positioned(
-            bottom: 1,
-            child: Transform.rotate(
-              angle: 3.1416,
-              child: _Petala(cor: cores[2]),
-            ),
-          ),
-          Positioned(
-            left: 1,
-            child: Transform.rotate(
-              angle: -1.5708,
-              child: _Petala(cor: cores[3]),
-            ),
-          ),
-          const DecoratedBox(
-            decoration: BoxDecoration(color: Color(0xFFEBA72A), shape: BoxShape.circle),
-            child: SizedBox(width: 4, height: 4),
+          Image.asset(
+            'lib/features/agendamentos/widgets/logo.png',
+            width: 34,
+            height: 34,
+            fit: BoxFit.contain,
           ),
         ],
       ),
@@ -335,23 +283,6 @@ class _MarcaColorida extends StatelessWidget {
   }
 }
 
-class _Petala extends StatelessWidget {
-  const _Petala({required this.cor});
-
-  final Color cor;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 8,
-      height: 15,
-      decoration: BoxDecoration(
-        color: cor,
-        borderRadius: BorderRadius.circular(99),
-      ),
-    );
-  }
-}
 
 class _IndicadorResumo extends StatelessWidget {
   const _IndicadorResumo({
