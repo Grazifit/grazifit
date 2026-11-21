@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 
+import '../../features/inicio/screens/paginas_admin.dart';
 import '../../features/inicio/screens/tela_inicio_admin.dart';
 import '../../features/pessoas/screens/tela_usuarios_admin.dart';
+import '../design_system/components/botao_sair.dart';
 
 enum _DestinoAdmin { inicio, pessoas, aulas, treinos }
 
-/// Casca de navegação visual do Admin, preparada para receber as rotas reais.
-/// Aulas e Treinos permanecem como destinos pendentes até suas telas existirem.
+/// Casca de navegação visual do Admin: Início, Pessoas, Aulas e Treinos.
 class AdminShellScreen extends StatefulWidget {
   const AdminShellScreen({super.key});
 
@@ -20,19 +21,28 @@ class _AdminShellScreenState extends State<AdminShellScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: IndexedStack(
+      body: Stack(
+        children: [
+          IndexedStack(
         index: _destino.index,
         children: [
-          TelaInicioAdmin(
+          PaginaInicioAdmin(
             mostrarNavegacaoInferior: false,
             onNavegar: (destino) => _selecionar(_DestinoAdmin.values[destino.index]),
           ),
-          TelaUsuariosAdmin(
+          PaginaUsuariosAdmin(
             mostrarNavegacaoInferior: false,
             onNavegar: (destino) => _selecionar(_DestinoAdmin.values[destino.index]),
           ),
-          const _DestinoAdminPendente(titulo: 'Aulas'),
-          const _DestinoAdminPendente(titulo: 'Treinos'),
+          const PaginaAulasAdmin(),
+          const PaginaTreinosLivresAdmin(),
+        ],
+      ),
+          const Positioned(
+            top: 0,
+            right: 4,
+            child: SafeArea(child: BotaoSair()),
+          ),
         ],
       ),
       bottomNavigationBar: _barraNavegacao(),
@@ -106,21 +116,5 @@ class _AdminShellScreenState extends State<AdminShellScreen> {
 
   void _selecionar(_DestinoAdmin destino) {
     setState(() => _destino = destino);
-  }
-}
-
-class _DestinoAdminPendente extends StatelessWidget {
-  const _DestinoAdminPendente({required this.titulo});
-
-  final String titulo;
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: Text(titulo)),
-      body: Center(
-        child: Text('A área de $titulo aguarda a implementação das telas Admin.'),
-      ),
-    );
   }
 }
