@@ -25,8 +25,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   static const _borda = Color(0xFFBDCECA);
   static const _vermelho = Color(0xFFF21D1D);
 
-  final _emailController = TextEditingController(text: 'ana.ramos@exemplo.com');
-  final _senhaController = TextEditingController(text: '12345678');
+  final _emailController = TextEditingController();
+  final _senhaController = TextEditingController();
 
   late bool _credenciaisInvalidas;
 

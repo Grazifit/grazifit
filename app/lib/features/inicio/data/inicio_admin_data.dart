@@ -11,33 +11,13 @@ class InicioAdminData {
     required this.aulas,
   });
 
-  /// Conteúdo fictício baseado no protótipo visual enviado.
-  static const exemplo = InicioAdminData(
-    dataLegivel: 'Segunda, 01 de setembro',
-    aulasHoje: 6,
-    ocupacaoPercentual: 78,
-    pessoasInativas: 3,
-    aulas: [
-      AulaAdminData(
-        horarioInicio: '07:00',
-        horarioFim: '08:00',
-        modalidade: 'Funcional',
-        formato: 'Em grupo',
-        professor: 'Prof. Marina Alves',
-        vagasOcupadas: 8,
-        vagasTotais: 12,
-      ),
-      AulaAdminData(
-        horarioInicio: '09:00',
-        horarioFim: '10:00',
-        modalidade: 'Funcional',
-        formato: 'Em grupo',
-        professor: 'Prof. Marina Alves',
-        vagasOcupadas: 11,
-        vagasTotais: 12,
-        destaqueVagas: 'Últimas vagas',
-      ),
-    ],
+  /// Valor vazio para uso antes da injeção de dados reais.
+  static const vazio = InicioAdminData(
+    dataLegivel: '',
+    aulasHoje: 0,
+    ocupacaoPercentual: 0,
+    pessoasInativas: 0,
+    aulas: [],
   );
 
   final String dataLegivel;

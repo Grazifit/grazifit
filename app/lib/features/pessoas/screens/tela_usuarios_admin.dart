@@ -13,13 +13,13 @@ enum FiltroUsuariosAdmin { ativos, inativos }
 
 /// Lista de alunos e professores do perfil Admin.
 ///
-/// A tela trabalha com dados recebidos e callbacks opcionais. A implementação
-/// atual usa conteúdo fictício e não consulta serviços externos.
+/// A tela trabalha com dados recebidos e callbacks opcionais. Sem dados
+/// injetados, apresenta o estado vazio enquanto aguarda integração.
 class TelaUsuariosAdmin extends StatefulWidget {
   const TelaUsuariosAdmin({
     super.key,
-    this.dados = UsuariosAdminData.demonstracao,
-    this.estado = EstadoUsuariosAdmin.dados,
+    this.dados = UsuariosAdminData.vazio,
+    this.estado = EstadoUsuariosAdmin.vazio,
     this.onTentarNovamente,
     this.onSelecionarUsuario,
     this.onAbrirVinculos,
