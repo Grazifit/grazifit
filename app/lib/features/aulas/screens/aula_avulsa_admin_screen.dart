@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 
 import '../../../core/design_system/components/app_bar_interna.dart';
 import '../../../core/design_system/components/botao_primario.dart';
-import '../../../core/design_system/components/fundo_tela.dart';
 import '../../../core/design_system/components/texto_apoio.dart';
 import '../data/aula_avulsa_admin_data.dart';
 
@@ -46,9 +45,7 @@ class _AulaAvulsaAdminScreenState extends State<AulaAvulsaAdminScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return FundoTela(
-      child: Scaffold(
-        backgroundColor: Colors.transparent,
+    return Scaffold(
         appBar: appBarInterna(context, 'Nova aula avulsa'),
         body: SafeArea(
           child: Form(
@@ -77,8 +74,7 @@ class _AulaAvulsaAdminScreenState extends State<AulaAvulsaAdminScreen> {
           texto: 'Criar aula',
           onPressed: _salvar,
         ),
-      ),
-    );
+      );
   }
 
   Widget _campoData() {

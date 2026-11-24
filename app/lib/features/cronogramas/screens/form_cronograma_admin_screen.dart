@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import '../../../core/design_system/components/app_bar_interna.dart';
 import '../../../core/design_system/components/botao_primario.dart';
 import '../../../core/design_system/components/campo_texto.dart';
-import '../../../core/design_system/components/fundo_tela.dart';
 import '../data/cronogramas_admin_data.dart';
 
 /// Formulário de cronograma do Admin, sem persistência ou chamada de serviço.
@@ -55,9 +54,7 @@ class _FormCronogramaAdminScreenState extends State<FormCronogramaAdminScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return FundoTela(
-      child: Scaffold(
-        backgroundColor: Colors.transparent,
+    return Scaffold(
         appBar: appBarInterna(context, 'Novo cronograma'),
         body: SafeArea(
           child: Form(
@@ -93,8 +90,7 @@ class _FormCronogramaAdminScreenState extends State<FormCronogramaAdminScreen> {
           texto: 'Salvar cronograma',
           onPressed: _salvar,
         ),
-      ),
-    );
+      );
   }
 
   Widget _dropdownCategoria() {

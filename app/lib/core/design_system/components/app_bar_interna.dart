@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 import '../tokens/cores_provisorias.dart';
 
 /// AppBar padrão das telas internas: seta de voltar + título
-/// Use sobre [FundoTela] com Scaffold transparente
+/// Use com o Scaffold da tela
 
 AppBar appBarInterna(BuildContext context, String titulo) {
   return AppBar(

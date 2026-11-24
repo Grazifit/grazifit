@@ -1,41 +1,35 @@
 // app/lib/features/vinculos/screens/meus_alunos_screen.dart
 //
-// PROTÓTIPO VISUAL — sem integração com backend. Dados fictícios locais.
-// Integração com o backend: ver docs/handoff-front-professor.md
+// Meus alunos (professor): alunos com vínculo ativo. Dados de
+// `alunosAtivosProvider` (state/), que ainda depende do backend de vínculos.
+// Integração: ver docs/integracao-frontend.md.
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/design_system/components/barra_navegacao.dart';
+import '../../../core/design_system/components/botao_sair.dart';
 import '../../../core/design_system/components/campo_busca.dart';
 import '../../../core/design_system/components/cartao_lista.dart';
 import '../../../core/design_system/components/chip_filtro.dart';
-import '../../../core/design_system/components/fundo_tela.dart';
 import '../../../core/design_system/components/texto_apoio.dart';
+import '../../../core/state/estado_async.dart';
+import '../../../core/utils/datas.dart';
+import '../data/vinculos_repository.dart';
+import '../state/vinculos_providers.dart';
 import 'aluno_detalhe_screen.dart';
 import 'alunos_inativos_screen.dart';
 
-class MeusAlunosScreen extends StatefulWidget {
+class MeusAlunosScreen extends ConsumerStatefulWidget {
   const MeusAlunosScreen({super.key});
 
   @override
-  State<MeusAlunosScreen> createState() => _MeusAlunosScreenState();
+  ConsumerState<MeusAlunosScreen> createState() => _MeusAlunosScreenState();
 }
 
-class _MeusAlunosScreenState extends State<MeusAlunosScreen> {
+class _MeusAlunosScreenState extends ConsumerState<MeusAlunosScreen> {
   final _buscaController = TextEditingController();
   String _busca = '';
-
-  // TODO(backend): trocar por alunos com vínculo ATIVO do professor logado
-  // (vinculo_professor_aluno.status = true) + data da última avaliação.
-  // Ainda não há endpoint (feature vinculos só tem README). GET /aluno é
-  // listagem geral do admin, não serve sem decisão. Ver o guia, item L3.
-  // Dados fictícios do mockup. O contador do subtítulo ("8 alunos") também é
-  // fixo aqui; no real virá do total de vínculos ativos.
-  static const _alunos = [
-    _AlunoResumo('Ana Beatriz Ramos', 'Última avaliação em 12/08'),
-    _AlunoResumo('Carlos Menezes', 'Sem avaliação registrada'),
-    _AlunoResumo('Júlia Prado', 'Última avaliação em 03/08'),
-  ];
 
   @override
   void dispose() {
@@ -43,30 +37,39 @@ class _MeusAlunosScreenState extends State<MeusAlunosScreen> {
     super.dispose();
   }
 
+  String _subtitulo(AlunoVinculado a) {
+    final dia = Datas.diaMes(a.ultimaAvaliacao);
+    return dia == null ? 'Sem avaliação registrada' : 'Última avaliação em $dia';
+  }
+
   @override
   Widget build(BuildContext context) {
+    final alunos = ref.watch(alunosAtivosProvider);
     final termo = _busca.trim().toLowerCase();
-    final filtrados =
-        _alunos.where((a) => a.nome.toLowerCase().contains(termo)).toList();
 
-    return FundoTela(
-      child: Scaffold(
-        backgroundColor: Colors.transparent,
+    return Scaffold(
         body: SafeArea(
           child: ListView(
-            padding: const EdgeInsets.fromLTRB(20, 24, 20, 24),
+            padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
             children: [
-              const Text(
-                'Meus alunos',
-                style: TextStyle(
-                  fontSize: 28,
-                  fontWeight: FontWeight.w700,
-                  color: Colors.black87,
-                ),
+              const Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      'Meus alunos',
+                      style: TextStyle(
+                        fontSize: 28,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.black87,
+                      ),
+                    ),
+                  ),
+                  BotaoSair(),
+                ],
               ),
               const SizedBox(height: 8),
-              // TODO(backend): o "8" vem do total de vínculos ativos.
-              const TextoApoio('8 alunos com vínculo ativo'),
+              if (alunos.hasValue)
+                TextoApoio('${alunos.value!.length} alunos com vínculo ativo'),
               const SizedBox(height: 20),
               CampoBusca(
                 controller: _buscaController,
@@ -80,48 +83,48 @@ class _MeusAlunosScreenState extends State<MeusAlunosScreen> {
                   const SizedBox(width: 12),
                   ChipFiltro(
                     rotulo: 'Inativos',
-                    onTap: () => Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) => const AlunosInativosScreen(),
-                      ),
-                    ),
+                    onTap: () => Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => const AlunosInativosScreen())),
                   ),
                 ],
               ),
               const SizedBox(height: 20),
-              // TODO(backend): hoje a busca filtra a lista local. Decidir se
-              // vai para o servidor (GET /aluno já tem limit/offset).
-              // Estados a cobrir: carregando, vazio, erro, sem conexão.
-              if (filtrados.isEmpty)
-                const TextoApoio('Nenhum aluno encontrado')
-              else
-                CartaoLista(
-                  itens: [
-                    for (final aluno in filtrados)
-                      ItemLista(
-                        titulo: aluno.nome,
-                        subtitulo: aluno.avaliacao,
-                        onTap: () => Navigator.of(context).push(
-                          MaterialPageRoute(
-                            builder: (_) =>
-                                AlunoDetalheScreen(nome: aluno.nome),
-                          ),
-                        ),
+              // A busca filtra a lista já carregada. Decidir se vai para o
+              // servidor (GET /aluno tem limit/offset): ver o guia, L3.
+              SizedBox(
+                height: 320,
+                child: EstadoAsync<List<AlunoVinculado>>(
+                  valor: alunos,
+                  aoTentarNovamente: () => ref.invalidate(alunosAtivosProvider),
+                  textoVazio: 'Nenhum aluno encontrado',
+                  dados: (lista) {
+                    final filtrados = lista
+                        .where((a) => a.nome.toLowerCase().contains(termo))
+                        .toList();
+                    if (filtrados.isEmpty) {
+                      return const Center(
+                        child: TextoApoio('Nenhum aluno encontrado'),
+                      );
+                    }
+                    return SingleChildScrollView(
+                      child: CartaoLista(
+                        itens: [
+                          for (final aluno in filtrados)
+                            ItemLista(
+                              titulo: aluno.nome,
+                              subtitulo: _subtitulo(aluno),
+                              onTap: () =>
+                                  Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => AlunoDetalheScreen(idAluno: aluno.idAluno))),
+                            ),
+                        ],
                       ),
-                  ],
+                    );
+                  },
                 ),
+              ),
             ],
           ),
         ),
         bottomNavigationBar: const BarraNavegacao(indiceAtual: 1),
-      ),
-    );
+      );
   }
-}
-
-class _AlunoResumo {
-  const _AlunoResumo(this.nome, this.avaliacao);
-
-  final String nome;
-  final String avaliacao;
 }

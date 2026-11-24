@@ -42,4 +42,18 @@ class AuthController extends Notifier<AuthState> {
       return null;
     }
   }
+
+  /// `POST /auth/logout`. A sessão local é encerrada mesmo que a chamada
+  /// falhe (token expirado, sem rede): o usuário pediu para sair.
+  Future<void> sair() async {
+    try {
+      await ref.read(apiClientProvider).post('/auth/logout', const {});
+    } on ApiException {
+      // Ignorado de propósito, ver acima.
+    }
+    encerrarSessao();
+  }
+
+  /// Limpa a sessão local. O guard de rotas leva para o login.
+  void encerrarSessao() => state = const AuthState();
 }

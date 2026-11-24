@@ -1,7 +1,7 @@
 /// Dados de apresentação do painel inicial administrativo.
 ///
 /// O construtor recebe os dados de fora da tela para permitir a futura ligação
-/// com o provider/API sem acoplar a interface a uma origem de dados.
+/// com a camada de dados (`Repositorios.admin`).
 class InicioAdminData {
   const InicioAdminData({
     required this.dataLegivel,
@@ -11,7 +11,7 @@ class InicioAdminData {
     required this.aulas,
   });
 
-  /// Valor vazio para uso antes da injeção de dados reais.
+  /// Estado sem dados (carregando ou erro).
   static const vazio = InicioAdminData(
     dataLegivel: '',
     aulasHoje: 0,

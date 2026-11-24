@@ -1,16 +1,13 @@
 /// Dados de apresentação da tela administrativa de usuários.
 ///
-/// Os dados são fornecidos pela camada de estado/repositório.
+/// Os dados vêm de `Repositorios.admin`.
 class UsuariosAdminData {
   const UsuariosAdminData({
     required this.alunos,
     required this.professores,
   });
 
-  static const vazio = UsuariosAdminData(
-    alunos: [],
-    professores: [],
-  );
+  static const vazio = UsuariosAdminData(alunos: [], professores: []);
 
   final List<UsuarioAdminData> alunos;
   final List<UsuarioAdminData> professores;
