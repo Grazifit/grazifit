@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-import '../../../core/design_system/components/fundo_tela.dart';
 import '../../../core/design_system/tokens/cores_provisorias.dart';
 import '../state/treinos_livres_admin_state.dart';
 
@@ -15,8 +14,10 @@ class TreinosLivresAdminScreen extends StatelessWidget {
     this.onAbrirExercicios,
     this.onTentarNovamente,
     this.onNavegar,
+    this.mostrarNavegacaoInferior = true,
   });
 
+  final bool mostrarNavegacaoInferior;
   final EstadoTreinosLivresAdmin estado;
   final List<TreinoLivreAdminItem> treinos;
   final ValueChanged<TreinoLivreAdminItem>? onAbrirTreino;
@@ -26,12 +27,10 @@ class TreinosLivresAdminScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return FundoTela(
-      child: Center(
+    return Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 430),
           child: Scaffold(
-            backgroundColor: Colors.transparent,
             body: SafeArea(
               bottom: false,
               child: Column(
@@ -80,13 +79,14 @@ class TreinosLivresAdminScreen extends StatelessWidget {
                 ],
               ),
             ),
-            bottomNavigationBar: _NavegacaoAdmin(
-              onSelecionar: (indice) => _navegar(context, indice),
-            ),
+            bottomNavigationBar: mostrarNavegacaoInferior
+                ? _NavegacaoAdmin(
+                    onSelecionar: (indice) => _navegar(context, indice),
+                  )
+                : null,
           ),
         ),
-      ),
-    );
+      );
   }
 
   Widget _conteudo(BuildContext context) {
