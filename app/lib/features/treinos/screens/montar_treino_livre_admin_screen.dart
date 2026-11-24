@@ -1,11 +1,10 @@
 import 'package:flutter/material.dart';
 
-import '../../../../core/design_system/components/app_bar_interna.dart';
-import '../../../../core/design_system/components/botao_primario.dart';
-import '../../../../core/design_system/components/campo_texto.dart';
-import '../../../../core/design_system/components/fundo_tela.dart';
-import '../../../../core/design_system/components/texto_apoio.dart';
-import '../../../../core/design_system/tokens/cores_provisorias.dart';
+import '../../../core/design_system/components/app_bar_interna.dart';
+import '../../../core/design_system/components/botao_primario.dart';
+import '../../../core/design_system/components/campo_texto.dart';
+import '../../../core/design_system/components/texto_apoio.dart';
+import '../../../core/design_system/tokens/cores_provisorias.dart';
 
 enum TipoTreinoLivreAdmin {
   resistencia('resistencia', 'Resistência'),
@@ -161,12 +160,10 @@ class _MontarTreinoLivreAdminScreenState
 
   @override
   Widget build(BuildContext context) {
-    return FundoTela(
-      child: Center(
+    return Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 430),
           child: Scaffold(
-            backgroundColor: Colors.transparent,
             appBar: appBarInterna(context, 'Montar treino livre'),
             body: SafeArea(
               child: Form(
@@ -283,8 +280,7 @@ class _MontarTreinoLivreAdminScreenState
             ),
           ),
         ),
-      ),
-    );
+      );
   }
 }
 

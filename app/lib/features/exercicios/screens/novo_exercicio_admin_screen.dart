@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import '../../../core/design_system/components/app_bar_interna.dart';
 import '../../../core/design_system/components/botao_primario.dart';
 import '../../../core/design_system/components/campo_texto.dart';
-import '../../../core/design_system/components/fundo_tela.dart';
 import '../../../core/design_system/tokens/cores_provisorias.dart';
 import '../state/novo_exercicio_admin_form_state.dart';
 
@@ -77,12 +76,10 @@ class _NovoExercicioAdminScreenState extends State<NovoExercicioAdminScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return FundoTela(
-      child: Center(
+    return Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 430),
           child: Scaffold(
-            backgroundColor: Colors.transparent,
             appBar: appBarInterna(context, 'Novo exercício'),
             body: SafeArea(
               child: Form(
@@ -150,8 +147,7 @@ class _NovoExercicioAdminScreenState extends State<NovoExercicioAdminScreen> {
             ),
           ),
         ),
-      ),
-    );
+      );
   }
 
   String? _validarObrigatorio(String? valor) {
