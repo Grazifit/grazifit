@@ -7,6 +7,7 @@ import '../data/treinos_repository.dart';
 import 'tela_detalhe_treino_aluno.dart';
 import '../../pessoas/screens/tela_perfil_aluno.dart';
 import '../../avaliacoes/screens/tela_evolucao_aluno.dart';
+import '../../../core/design_system/components/botao_sair.dart';
 
 /// Tela de treinos do aluno: treinos montados pelo professor,
 /// treinos livres e acesso ao histórico.
@@ -64,7 +65,9 @@ class _TelaTreinosAlunoState extends State<TelaTreinosAluno> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: kBackground,
-      body: SafeArea(
+      body: Stack(
+        children: [
+          SafeArea(
         bottom: false,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -98,6 +101,13 @@ class _TelaTreinosAlunoState extends State<TelaTreinosAluno> {
             ),
           ],
         ),
+      ),
+          const Positioned(
+            top: 0,
+            right: 4,
+            child: SafeArea(child: BotaoSair()),
+          ),
+        ],
       ),
       bottomNavigationBar: _buildNavInferior(),
     );

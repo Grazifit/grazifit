@@ -9,6 +9,7 @@ import '../../avaliacoes/screens/tela_evolucao_aluno.dart';
 import '../../pessoas/screens/tela_perfil_aluno.dart';
 import '../../../core/data/repositorios.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/design_system/components/botao_sair.dart';
 
 /// Tela de agenda do aluno: abas (Agenda / Meus agendamentos),
 /// filtros por modalidade e lista de aulas disponíveis.
@@ -64,7 +65,9 @@ class _TelaAgendaAlunoState extends State<TelaAgendaAluno> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: kBackground,
-      body: SafeArea(
+      body: Stack(
+        children: [
+          SafeArea(
         bottom: false,
         child: Column(
           children: [
@@ -88,6 +91,13 @@ class _TelaAgendaAlunoState extends State<TelaAgendaAluno> {
             ),
           ],
         ),
+      ),
+          const Positioned(
+            top: 0,
+            right: 4,
+            child: SafeArea(child: BotaoSair()),
+          ),
+        ],
       ),
       bottomNavigationBar: _buildNavInferior(),
     );

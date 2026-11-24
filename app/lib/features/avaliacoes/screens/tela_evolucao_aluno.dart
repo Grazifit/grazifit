@@ -9,6 +9,7 @@ import '../data/avaliacoes_repository.dart';
 import '../data/evolucao_aluno.dart';
 import '../../../core/data/repositorios.dart';
 import 'tela_registrar_medida_aluno.dart';
+import '../../../core/design_system/components/botao_sair.dart';
 
 /// Tela de evolução do aluno: peso e IMC atuais, gráfico mensal
 /// e botão para registrar uma nova medida.
@@ -98,7 +99,9 @@ class _TelaEvolucaoAlunoState extends State<TelaEvolucaoAluno> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: kBackground,
-      body: SafeArea(
+      body: Stack(
+        children: [
+          SafeArea(
         bottom: false,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -132,6 +135,13 @@ class _TelaEvolucaoAlunoState extends State<TelaEvolucaoAluno> {
             ),
           ],
         ),
+      ),
+          const Positioned(
+            top: 0,
+            right: 4,
+            child: SafeArea(child: BotaoSair()),
+          ),
+        ],
       ),
       bottomNavigationBar: _buildNavInferior(),
     );
