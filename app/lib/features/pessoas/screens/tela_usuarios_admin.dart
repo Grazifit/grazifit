@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-import '../../../core/design_system/components/fundo_tela.dart';
 import '../data/usuarios_admin_data.dart';
 
 enum EstadoUsuariosAdmin { carregando, vazio, erro, semConexao, dados }
@@ -14,12 +13,12 @@ enum FiltroUsuariosAdmin { ativos, inativos }
 /// Lista de alunos e professores do perfil Admin.
 ///
 /// A tela trabalha com dados recebidos e callbacks opcionais. A implementação
-/// atual usa conteúdo fictício e não consulta serviços externos.
+/// vêm de `PaginaUsuariosAdmin` (Repositorios.admin).
 class TelaUsuariosAdmin extends StatefulWidget {
   const TelaUsuariosAdmin({
     super.key,
-    this.dados = UsuariosAdminData.demonstracao,
-    this.estado = EstadoUsuariosAdmin.dados,
+    this.dados = UsuariosAdminData.vazio,
+    this.estado = EstadoUsuariosAdmin.carregando,
     this.onTentarNovamente,
     this.onSelecionarUsuario,
     this.onAbrirVinculos,
@@ -58,9 +57,7 @@ class _TelaUsuariosAdminState extends State<TelaUsuariosAdmin> {
 
   @override
   Widget build(BuildContext context) {
-    return FundoTela(
-      child: Scaffold(
-        backgroundColor: Colors.transparent,
+    return Scaffold(
         body: SafeArea(
           bottom: false,
           child: ListView(
@@ -83,8 +80,7 @@ class _TelaUsuariosAdminState extends State<TelaUsuariosAdmin> {
         bottomNavigationBar: widget.mostrarNavegacaoInferior
             ? _navegacaoInferior(context)
             : null,
-      ),
-    );
+      );
   }
 
   Widget _abasCategoria() {
