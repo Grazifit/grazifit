@@ -22,6 +22,9 @@ class RepositorioAgendamentoFalso implements AgendamentoRepository {
   /// Conta quantas vezes cada leitura de lock foi chamada fora de transacao.
   int leiturasSemTransacao = 0;
 
+  /// Quantas vezes a aula foi travada para chamada (FOR UPDATE).
+  int travasDaAula = 0;
+
   /// Conta todas as leituras com `FOR UPDATE` (dentro ou fora de transacao).
   int leiturasComTrava = 0;
 
@@ -158,6 +161,51 @@ class RepositorioAgendamentoFalso implements AgendamentoRepository {
       status: 'cancelado',
       dataCancelamento: Value(PgDateTime(agora)),
     );
+  }
+
+  @override
+  Future<AulaChamada?> travarAulaParaChamada(int idAula) async {
+    travasDaAula++;
+    final a = aula;
+    if (a == null || a.idAula != idAula) return null;
+    final inicio = DateTime.utc(a.data.year, a.data.month, a.data.day)
+        .add(Duration(microseconds: a.horaInicio.microseconds))
+        .add(const Duration(hours: 3));
+    return AulaChamada(
+      aula: a,
+      antesDoInicio: agora().toUtc().isBefore(inicio),
+    );
+  }
+
+  @override
+  Future<List<AgendamentoData>> travarAgendamentosDaAula(int idAula) async =>
+      agendamentos.where((a) => a.idAula == idAula).toList();
+
+  @override
+  Future<List<AgendamentoData>> gravarPresenca({
+    required List<int> presentes,
+    required List<int> faltaram,
+    required DateTime agora,
+  }) async {
+    final gravadas = <AgendamentoData>[];
+    for (var i = 0; i < agendamentos.length; i++) {
+      final a = agendamentos[i];
+      if (presentes.contains(a.idAgendamento)) {
+        agendamentos[i] = a.copyWith(
+          status: 'presente',
+          dataPresenca: Value(PgDateTime(agora)),
+        );
+      } else if (faltaram.contains(a.idAgendamento)) {
+        agendamentos[i] = a.copyWith(
+          status: 'faltou',
+          dataPresenca: const Value(null),
+        );
+      } else {
+        continue;
+      }
+      gravadas.add(agendamentos[i]);
+    }
+    return gravadas;
   }
 
   /// Chamadas de [cancelarAgendadosDaAula]: (idAula, agora).

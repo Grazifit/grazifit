@@ -359,4 +359,413 @@ void main() {
     await service.reservar(identidade: aluno, idAula: 1);
     expect(repo.leiturasSemTransacao, 0);
   });
+
+  group('registrarChamada', () {
+    const outroProfessor = Identidade(id: 99, papel: Papel.professor);
+
+    AgendamentoData ag(int id, int idAluno, String status, {int idAula = 1}) =>
+        AgendamentoData(
+          idAgendamento: id,
+          idAluno: idAluno,
+          idAula: idAula,
+          dataAgendamento: PgDate(year: 2026, month: 6, day: 1),
+          status: status,
+          dataCancelamento: status == 'cancelado'
+              ? PgDateTime(DateTime.utc(2026, 6, 2))
+              : null,
+        );
+
+    PresencaInformada p(int id, {required bool presente}) =>
+        PresencaInformada(idAgendamento: id, presente: presente);
+
+    AgendamentoData linha(int id) =>
+        repo.agendamentos.firstWhere((a) => a.idAgendamento == id);
+
+    String statusDe(int id) => linha(id).status;
+
+    List<String> fotoDosStatus() =>
+        [for (final a in repo.agendamentos) '${a.idAgendamento}:${a.status}'];
+
+    Matcher erroCodigo(CodigoErro c) => anyOf(
+      isA<ChamadaException>().having((e) => e.codigo, 'codigo', c),
+      isA<AgendamentoException>().having((e) => e.codigo, 'codigo', c),
+      isA<AulaException>().having((e) => e.codigo, 'codigo', c),
+    );
+
+    List<PresencaInformada> listaCompleta() => [
+      p(1, presente: true),
+      p(2, presente: false),
+      p(3, presente: true),
+    ];
+
+    Future<void> primeiroEnvio({Identidade quem = professor}) async {
+      await service.registrarChamada(
+        identidade: quem,
+        idAula: 1,
+        itens: listaCompleta(),
+      );
+    }
+
+    setUp(() {
+      repo.aula = aulaDe(data: DateTime(2026, 6, 9));
+      repo.agendamentos.addAll([
+        ag(1, 5, 'agendado'),
+        ag(2, 6, 'agendado'),
+        ag(3, 7, 'agendado'),
+        ag(4, 8, 'cancelado'),
+      ]);
+    });
+
+    test('CA-1: professor da aula envia a lista completa; data_presenca so em presente', () async {
+      final r = await service.registrarChamada(
+        identidade: professor,
+        idAula: 1,
+        itens: listaCompleta(),
+      );
+
+      expect([for (final a in r) a.idAgendamento], [1, 2, 3]);
+      expect(statusDe(1), 'presente');
+      expect(statusDe(2), 'faltou');
+      expect(statusDe(3), 'presente');
+      expect(linha(1).dataPresenca!.dateTime, agoraFixo);
+      expect(linha(2).dataPresenca, isNull);
+      expect(linha(3).dataPresenca!.dateTime, agoraFixo);
+    });
+
+    test('CA-2: admin envia a mesma lista', () async {
+      await service.registrarChamada(
+        identidade: admin,
+        idAula: 1,
+        itens: listaCompleta(),
+      );
+      expect(statusDe(1), 'presente');
+      expect(statusDe(2), 'faltou');
+      expect(statusDe(3), 'presente');
+    });
+
+    test('CA-3: aluno nao envia e nada e gravado', () async {
+      final antes = fotoDosStatus();
+      await expectLater(
+        service.registrarChamada(
+          identidade: aluno,
+          idAula: 1,
+          itens: listaCompleta(),
+        ),
+        throwsA(isA<AcessoNegado>()),
+      );
+      expect(fotoDosStatus(), antes);
+    });
+
+    test('CA-4: professor de outra aula: 404 igual a aula inexistente, sem travar a aula, nada e gravado', () async {
+      final antes = fotoDosStatus();
+      await expectLater(
+        service.registrarChamada(
+          identidade: outroProfessor,
+          idAula: 1,
+          itens: listaCompleta(),
+        ),
+        throwsA(erroCodigo(CodigoErro.registroNaoEncontrado)),
+      );
+      expect(repo.travasDaAula, 0);
+      expect(fotoDosStatus(), antes);
+    });
+
+    test('CA-4: professor de outra aula e aula inexistente geram o mesmo erro', () async {
+      final outra = service.registrarChamada(
+        identidade: outroProfessor,
+        idAula: 1,
+        itens: listaCompleta(),
+      );
+      final inexistente = service.registrarChamada(
+        identidade: professor,
+        idAula: 77,
+        itens: listaCompleta(),
+      );
+      await expectLater(outra, throwsA(isA<AulaNotFoundException>()));
+      await expectLater(inexistente, throwsA(isA<AulaNotFoundException>()));
+    });
+
+    test('professor da aula trava a aula uma vez; admin tambem', () async {
+      await primeiroEnvio();
+      expect(repo.travasDaAula, 1);
+      await service.registrarChamada(
+        identidade: admin,
+        idAula: 1,
+        itens: [p(2, presente: true)],
+      );
+      expect(repo.travasDaAula, 2);
+    });
+
+    test('CA-5: primeiro envio com lista incompleta: 409, nada muda', () async {
+      final antes = fotoDosStatus();
+      await expectLater(
+        service.registrarChamada(
+          identidade: professor,
+          idAula: 1,
+          itens: [p(1, presente: true), p(2, presente: false)],
+        ),
+        throwsA(erroCodigo(CodigoErro.registroEmUso)),
+      );
+      expect(fotoDosStatus(), antes);
+    });
+
+    test('CA-6: id de outra aula no primeiro envio: 400, nada muda', () async {
+      repo.agendamentos.add(ag(9, 9, 'agendado', idAula: 2));
+      final antes = fotoDosStatus();
+      await expectLater(
+        service.registrarChamada(
+          identidade: professor,
+          idAula: 1,
+          itens: [...listaCompleta(), p(9, presente: true)],
+        ),
+        throwsA(erroCodigo(CodigoErro.campoInvalido)),
+      );
+      expect(fotoDosStatus(), antes);
+    });
+
+    test('CA-6: id repetido na lista: 400, nada muda', () async {
+      final antes = fotoDosStatus();
+      await expectLater(
+        service.registrarChamada(
+          identidade: professor,
+          idAula: 1,
+          itens: [p(1, presente: true), p(1, presente: false), p(2, presente: true), p(3, presente: true)],
+        ),
+        throwsA(erroCodigo(CodigoErro.campoInvalido)),
+      );
+      expect(fotoDosStatus(), antes);
+    });
+
+    test('CA-7: agendamento cancelado fica fora da lista e nao muda', () async {
+      await primeiroEnvio();
+      expect(statusDe(4), 'cancelado');
+      expect(linha(4).dataPresenca, isNull);
+    });
+
+    test('CA-8: aula cancelada: 409, nada muda', () async {
+      repo.aula = aulaDe(data: DateTime(2026, 6, 9), status: false);
+      final antes = fotoDosStatus();
+      await expectLater(
+        service.registrarChamada(
+          identidade: professor,
+          idAula: 1,
+          itens: listaCompleta(),
+        ),
+        throwsA(erroCodigo(CodigoErro.aulaInativa)),
+      );
+      expect(fotoDosStatus(), antes);
+    });
+
+    test('CA-9: antes do inicio da aula: 409, nada muda', () async {
+      repo.aula = aulaDe();
+      final antes = fotoDosStatus();
+      await expectLater(
+        service.registrarChamada(
+          identidade: professor,
+          idAula: 1,
+          itens: listaCompleta(),
+        ),
+        throwsA(erroCodigo(CodigoErro.agendamentoForaDaJanela)),
+      );
+      expect(fotoDosStatus(), antes);
+    });
+
+    test('CA-9: no instante exato do inicio a chamada e aceita', () async {
+      final inicio = DateTime.utc(2026, 6, 9, 21); // 18:00 de Brasilia
+      repo.agora = () => inicio;
+      final noInicio = AgendamentoService(repo, agora: () => inicio);
+      await noInicio.registrarChamada(
+        identidade: professor,
+        idAula: 1,
+        itens: listaCompleta(),
+      );
+      expect(statusDe(1), 'presente');
+      expect(statusDe(2), 'faltou');
+    });
+
+    test('CA-9: um segundo antes do inicio: 409, nada muda', () async {
+      final umSegundoAntes = DateTime.utc(2026, 6, 9, 20, 59, 59);
+      repo.agora = () => umSegundoAntes;
+      final antes = AgendamentoService(repo, agora: () => umSegundoAntes);
+      final foto = fotoDosStatus();
+      await expectLater(
+        antes.registrarChamada(
+          identidade: professor,
+          idAula: 1,
+          itens: listaCompleta(),
+        ),
+        throwsA(erroCodigo(CodigoErro.agendamentoForaDaJanela)),
+      );
+      expect(fotoDosStatus(), foto);
+    });
+
+    test('CA-12: ajuste antes do primeiro envio: 409, nada muda', () async {
+      final antes = fotoDosStatus();
+      await expectLater(
+        service.registrarChamada(
+          identidade: professor,
+          idAula: 1,
+          itens: [p(2, presente: true)],
+        ),
+        throwsA(erroCodigo(CodigoErro.registroEmUso)),
+      );
+      expect(fotoDosStatus(), antes);
+    });
+
+    test('CA-10: corrige um aluno; os demais e a data_presenca original nao mudam', () async {
+      await primeiroEnvio();
+      final depois = AgendamentoService(
+        repo,
+        agora: () => agoraFixo.add(const Duration(minutes: 30)),
+      );
+
+      await depois.registrarChamada(
+        identidade: professor,
+        idAula: 1,
+        itens: [p(2, presente: true)],
+      );
+
+      expect(statusDe(2), 'presente');
+      expect(linha(2).dataPresenca!.dateTime, agoraFixo.add(const Duration(minutes: 30)));
+      expect(statusDe(1), 'presente');
+      expect(linha(1).dataPresenca!.dateTime, agoraFixo);
+      expect(statusDe(3), 'presente');
+      expect(statusDe(4), 'cancelado');
+    });
+
+    test('CA-11: presente volta para faltou e data_presenca fica nula', () async {
+      await primeiroEnvio();
+      await service.registrarChamada(
+        identidade: professor,
+        idAula: 1,
+        itens: [p(1, presente: false)],
+      );
+      expect(statusDe(1), 'faltou');
+      expect(linha(1).dataPresenca, isNull);
+    });
+
+    test('CA-16: envio so dos alterados, sem mexer nos demais', () async {
+      await primeiroEnvio();
+      repo.agendamentos.add(ag(5, 10, 'faltou'));
+      final antesDoAluno3 = linha(3);
+
+      await service.registrarChamada(
+        identidade: professor,
+        idAula: 1,
+        itens: [p(2, presente: true), p(5, presente: true)],
+      );
+
+      expect(statusDe(2), 'presente');
+      expect(statusDe(5), 'presente');
+      expect(linha(5).dataPresenca!.dateTime, agoraFixo);
+      expect(linha(3), antesDoAluno3);
+    });
+
+    test('CA-16: mesmo status enviado de novo nao regrava data_presenca', () async {
+      await primeiroEnvio();
+      final depois = AgendamentoService(
+        repo,
+        agora: () => agoraFixo.add(const Duration(hours: 1)),
+      );
+      await depois.registrarChamada(
+        identidade: professor,
+        idAula: 1,
+        itens: [p(1, presente: true)],
+      );
+      expect(linha(1).dataPresenca!.dateTime, agoraFixo);
+    });
+
+    test('CA-16: lista vazia: 400, nada muda, em qualquer fase', () async {
+      final antes = fotoDosStatus();
+      await expectLater(
+        service.registrarChamada(identidade: professor, idAula: 1, itens: const []),
+        throwsA(erroCodigo(CodigoErro.campoInvalido)),
+      );
+      expect(fotoDosStatus(), antes);
+
+      await primeiroEnvio();
+      await expectLater(
+        service.registrarChamada(identidade: professor, idAula: 1, itens: const []),
+        throwsA(erroCodigo(CodigoErro.campoInvalido)),
+      );
+    });
+
+    test('CA-13: id de agendamento de outra aula na correcao: 404, nada muda', () async {
+      await primeiroEnvio();
+      repo.agendamentos.add(ag(9, 9, 'agendado', idAula: 2));
+      final antes = fotoDosStatus();
+      await expectLater(
+        service.registrarChamada(
+          identidade: professor,
+          idAula: 1,
+          itens: [p(9, presente: true)],
+        ),
+        throwsA(erroCodigo(CodigoErro.registroNaoEncontrado)),
+      );
+      expect(fotoDosStatus(), antes);
+    });
+
+    test('CA-14: correcao por aluno: 403, nada muda', () async {
+      await primeiroEnvio();
+      final antes = fotoDosStatus();
+      await expectLater(
+        service.registrarChamada(
+          identidade: aluno,
+          idAula: 1,
+          itens: [p(2, presente: true)],
+        ),
+        throwsA(isA<AcessoNegado>()),
+      );
+      expect(fotoDosStatus(), antes);
+    });
+
+    test('CA-14: correcao por professor de outra aula: 404, nada muda', () async {
+      await primeiroEnvio();
+      final antes = fotoDosStatus();
+      await expectLater(
+        service.registrarChamada(
+          identidade: outroProfessor,
+          idAula: 1,
+          itens: [p(2, presente: true)],
+        ),
+        throwsA(erroCodigo(CodigoErro.registroNaoEncontrado)),
+      );
+      expect(fotoDosStatus(), antes);
+    });
+
+    test('CA-15: correcao de agendamento cancelado: 409, nada muda', () async {
+      await primeiroEnvio();
+      final antes = fotoDosStatus();
+      await expectLater(
+        service.registrarChamada(
+          identidade: professor,
+          idAula: 1,
+          itens: [p(4, presente: true)],
+        ),
+        throwsA(erroCodigo(CodigoErro.registroEmUso)),
+      );
+      expect(fotoDosStatus(), antes);
+    });
+
+    test('CA-15: correcao com aula cancelada: 409, nada muda', () async {
+      await primeiroEnvio();
+      repo.aula = aulaDe(data: DateTime(2026, 6, 9), status: false);
+      final antes = fotoDosStatus();
+      await expectLater(
+        service.registrarChamada(
+          identidade: professor,
+          idAula: 1,
+          itens: [p(2, presente: true)],
+        ),
+        throwsA(erroCodigo(CodigoErro.aulaInativa)),
+      );
+      expect(fotoDosStatus(), antes);
+    });
+
+    test('a chamada roda numa unica transacao com a aula travada', () async {
+      await primeiroEnvio();
+      expect(repo.transacoes, 1);
+      expect(repo.leiturasSemTransacao, 0);
+    });
+  });
 }
