@@ -1,74 +1,77 @@
 // app/lib/features/aulas/screens/detalhe_aula_screen.dart
 //
-// PROTÓTIPO VISUAL — sem integração com backend. Dados fictícios do mockup.
-// Integração com o backend: ver docs/handoff-front-professor.md
+// Dados de `detalheAulaProvider(idAula)`. Integração: docs/integracao-frontend.md
 //
 // Detalhe da aula (professor). Cobre os quatro quadros do mockup:
 // detalhe, modal "Cancelar esta aula?", aula cancelada (banner vermelho e
 // alunos como "Cancelado") e o caminho para a Chamada.
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/design_system/components/app_bar_interna.dart';
 import '../../../core/design_system/components/badge_status.dart';
 import '../../../core/design_system/components/botao_primario.dart';
 import '../../../core/design_system/components/cartao_lista.dart';
-import '../../../core/design_system/components/fundo_tela.dart';
 import '../../../core/design_system/components/texto_apoio.dart';
 import '../../../core/design_system/tokens/cores_provisorias.dart';
-import '../../agendamentos/screens/chamada_screen.dart';
+import '../../../core/network/api_exception.dart';
+import '../../../core/state/estado_async.dart';
+import '../../../core/utils/datas.dart';
+import '../data/aulas_professor_repository.dart';
+import '../state/aulas_providers.dart';
 import '../widgets/cartao_aula.dart';
+import '../../../core/data/repositorios.dart';
+import '../../agendamentos/screens/chamada_screen.dart';
 
-class DetalheAulaScreen extends StatefulWidget {
-  const DetalheAulaScreen({
-    super.key,
-    this.horario = '07:00 - 08:00',
-    this.modalidade = 'Funcional',
-    this.professor = 'Prof. Marina Alves',
-    this.vagasOcupadas = 8,
-    this.vagasTotais = 12,
-    this.alunos = const ['Ana Beatriz Ramos', 'Carlos Menezes', 'Júlia Prado'],
-    this.cancelada = false,
-    this.dataCancelamento = '01/09',
-  });
+class DetalheAulaScreen extends ConsumerWidget {
+  const DetalheAulaScreen({super.key, required this.idAula});
 
-  // Valores padrão = dados fictícios do mockup.
-  final String horario;
-  final String modalidade;
-  final String professor;
-  final int vagasOcupadas;
-  final int vagasTotais;
-  final List<String> alunos;
-
-  /// Abre a tela já no estado "aula cancelada".
-  final bool cancelada;
-  final String dataCancelamento;
+  final int idAula;
 
   @override
-  State<DetalheAulaScreen> createState() => _DetalheAulaScreenState();
+  Widget build(BuildContext context, WidgetRef ref) {
+    final detalhe = ref.watch(detalheAulaProvider(idAula));
+    final d = detalhe.valueOrNull;
+    if (d != null) return _DetalheAulaConteudo(detalhe: d);
+
+    return Scaffold(
+        appBar: appBarInterna(context, 'Detalhe da aula'),
+        body: SafeArea(
+          child: EstadoAsync<AulaProfessorDetalhe>(
+            valor: detalhe,
+            aoTentarNovamente: () => ref.invalidate(detalheAulaProvider(idAula)),
+            vazio: (_) => false,
+            dados: (_) => const SizedBox.shrink(),
+          ),
+        ),
+      );
+  }
 }
 
-class _DetalheAulaScreenState extends State<DetalheAulaScreen> {
-  late bool _cancelada = widget.cancelada;
+class _DetalheAulaConteudo extends ConsumerStatefulWidget {
+  const _DetalheAulaConteudo({required this.detalhe});
+
+  final AulaProfessorDetalhe detalhe;
+
+  @override
+  ConsumerState<_DetalheAulaConteudo> createState() =>
+      _DetalheAulaConteudoState();
+}
+
+class _DetalheAulaConteudoState extends ConsumerState<_DetalheAulaConteudo> {
+  late bool _cancelada = widget.detalhe.aula.cancelada;
+  late String? _dataCancelamento = widget.detalhe.aula.dataCancelamento;
 
   String get _avisoCancelamento {
-    final n = widget.alunos.length;
+    final n = widget.detalhe.alunos.length;
     final agendados = n == 1 ? '1 aluno está agendado' : '$n alunos estão agendados';
     return '$agendados. Os agendamentos são cancelados junto e cada aluno '
         'recebe o aviso.';
   }
 
-  void _fazerChamada() {
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => ChamadaScreen(
-          modalidade: widget.modalidade,
-          horario: widget.horario,
-          alunos: widget.alunos,
-        ),
-      ),
-    );
-  }
+  void _fazerChamada() =>
+      Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => ChamadaScreen(idAula: widget.detalhe.aula.idAula)));
 
   // TODO(backend): cancelar a aula cancela os agendamentos em cascata
   // (AulaService.cancelar → AgendamentoService.cancelarEmCascata, F-12/D9) e
@@ -109,16 +112,33 @@ class _DetalheAulaScreenState extends State<DetalheAulaScreen> {
         ],
       ),
     );
-    if (confirmou == true && mounted) {
-      setState(() => _cancelada = true);
+    if (confirmou != true || !mounted) return;
+    final mensagem = ScaffoldMessenger.of(context);
+    try {
+      await Repositorios.aulasProfessor
+          .cancelar(widget.detalhe.aula.idAula);
+    } on ApiException {
+      // TODO(design): texto do erro de cancelamento não está no mockup.
+      mensagem.showSnackBar(
+        const SnackBar(
+          content: Text('Não foi possível cancelar. Tente novamente.'),
+        ),
+      );
+      return;
+    }
+    ref.invalidate(agendaProfessorProvider);
+    ref.invalidate(detalheAulaProvider(widget.detalhe.aula.idAula));
+    if (mounted) {
+      setState(() {
+        _cancelada = true;
+        _dataCancelamento ??= widget.detalhe.data;
+      });
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    return FundoTela(
-      child: Scaffold(
-        backgroundColor: Colors.transparent,
+    return Scaffold(
         appBar: appBarInterna(context, 'Detalhe da aula'),
         body: SafeArea(
           child: ListView(
@@ -126,25 +146,25 @@ class _DetalheAulaScreenState extends State<DetalheAulaScreen> {
             children: [
               if (_cancelada) ...[
                 _BannerCancelada(
-                  texto: 'Aula cancelada por você em ${widget.dataCancelamento}',
+                  texto: 'Aula cancelada por você em ${Datas.diaMes(_dataCancelamento) ?? ''}',
                 ),
                 const SizedBox(height: 12),
               ],
               CartaoAula(
-                horario: widget.horario,
-                modalidade: widget.modalidade,
-                professor: widget.professor,
-                vagasOcupadas: widget.vagasOcupadas,
-                vagasTotais: widget.vagasTotais,
+                horario: widget.detalhe.aula.horario,
+                modalidade: widget.detalhe.aula.modalidade,
+                professor: widget.detalhe.aula.professor,
+                vagasOcupadas: widget.detalhe.aula.vagasOcupadas,
+                vagasTotais: widget.detalhe.aula.vagasTotais,
               ),
               const SizedBox(height: 16),
-              TextoApoio('Alunos agendados (${widget.alunos.length})'),
+              TextoApoio('Alunos agendados (${widget.detalhe.alunos.length})'),
               const SizedBox(height: 8),
               CartaoLista(
                 itens: [
-                  for (final aluno in widget.alunos)
+                  for (final aluno in widget.detalhe.alunos)
                     ItemLista(
-                      titulo: aluno,
+                      titulo: aluno.nome,
                       trailing: BadgeStatus(
                         texto: _cancelada ? 'Cancelado' : 'Agendado',
                       ),
@@ -176,8 +196,7 @@ class _DetalheAulaScreenState extends State<DetalheAulaScreen> {
                   ],
                 ),
               ),
-      ),
-    );
+      );
   }
 }
 
