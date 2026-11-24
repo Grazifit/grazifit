@@ -12,44 +12,43 @@
 // Sem campo de senha: o mockup desta tela não tem.
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/design_system/components/app_bar_interna.dart';
 import '../../../core/design_system/components/botao_primario.dart';
 import '../../../core/design_system/components/campo_texto.dart';
-import '../../../core/design_system/components/fundo_tela.dart';
 import '../../../core/utils/formatadores.dart';
 import '../../../core/utils/validadores.dart';
 import '../widgets/endereco_opcional.dart';
+import '../../../core/network/api_exception.dart';
+import '../data/professor_repository.dart';
+import '../state/perfil_professor_providers.dart';
+import '../../../core/data/repositorios.dart';
 
-class EditarPerfilProfessorScreen extends StatefulWidget {
-  const EditarPerfilProfessorScreen({
-    super.key,
-    this.nome = 'Marina Alves',
-    this.telefone = '(45) 90000-0001',
-    this.email = 'marina.alves@exemplo.com',
-    this.cpf = '000.000.000-01',
-  });
+class EditarPerfilProfessorScreen extends ConsumerStatefulWidget {
+  const EditarPerfilProfessorScreen({super.key, required this.professor});
 
-  // Valores padrão = dados fictícios do mockup.
-  final String nome;
-  final String telefone;
-  final String email;
-  final String cpf;
+  /// Dados atuais (a rota recebe por `extra`).
+  final Professor professor;
 
   @override
-  State<EditarPerfilProfessorScreen> createState() =>
+  ConsumerState<EditarPerfilProfessorScreen> createState() =>
       _EditarPerfilProfessorScreenState();
 }
 
 class _EditarPerfilProfessorScreenState
-    extends State<EditarPerfilProfessorScreen> {
+    extends ConsumerState<EditarPerfilProfessorScreen> {
   final _formKey = GlobalKey<FormState>();
+  bool _salvando = false;
 
-  late final _nomeController = TextEditingController(text: widget.nome);
+  late final _nomeController =
+      TextEditingController(text: widget.professor.nome);
   late final _telefoneController =
-      TextEditingController(text: widget.telefone);
-  late final _emailController = TextEditingController(text: widget.email);
-  late final _cpfController = TextEditingController(text: widget.cpf);
+      TextEditingController(text: widget.professor.telefone);
+  late final _emailController =
+      TextEditingController(text: widget.professor.email);
+  late final _cpfController =
+      TextEditingController(text: widget.professor.cpf ?? '');
 
   @override
   void dispose() {
@@ -60,15 +59,33 @@ class _EditarPerfilProfessorScreenState
     super.dispose();
   }
 
-  // TODO(backend): PATCH /professor/<id> aceita nome, email, telefone,
-  // senha e status, mas hoje só admin (L1). Aqui só nome e telefone são
-  // enviados. Limites do contrato: nome até 150, telefone até 20.
-  // Decidir se o telefone vai com máscara ou só dígitos (L5).
-  // Erros: tela escolhe o texto pelo "codigo" do envelope, nunca pela
-  // mensagem. Após salvar, o Perfil precisa refletir os dados novos.
-  // Protótipo visual: só valida formato local, não salva nada.
-  void _salvar() {
-    _formKey.currentState?.validate();
+  // PATCH /professor/<id> aceita nome, email, telefone, senha e status, mas
+  // hoje só admin (L1). Aqui só nome e telefone são enviados. Limites do
+  // contrato: nome até 150, telefone até 20. Decidir se o telefone vai com
+  // máscara ou só dígitos (L5). Erros: escolher o texto pelo "codigo" do
+  // envelope, nunca pela mensagem.
+  Future<void> _salvar() async {
+    if (_salvando || !(_formKey.currentState?.validate() ?? false)) return;
+    final mensagem = ScaffoldMessenger.of(context);
+    setState(() => _salvando = true);
+    try {
+      await Repositorios.professores.atualizar(
+            widget.professor.idProfessor,
+            nome: _nomeController.text,
+            telefone: _telefoneController.text,
+          );
+      ref.invalidate(perfilProfessorProvider);
+      if (mounted) Navigator.of(context).pop();
+    } on ApiException {
+      if (!mounted) return;
+      setState(() => _salvando = false);
+      // TODO(design): texto por código de erro; o mockup não define.
+      mensagem.showSnackBar(
+        const SnackBar(
+          content: Text('Não foi possível salvar. Tente novamente.'),
+        ),
+      );
+    }
   }
 
   // TODO(specs): CampoTexto ainda não tem modo somente leitura. Enquanto isso,
@@ -81,9 +98,7 @@ class _EditarPerfilProfessorScreenState
 
   @override
   Widget build(BuildContext context) {
-    return FundoTela(
-      child: Scaffold(
-        backgroundColor: Colors.transparent,
+    return Scaffold(
         appBar: appBarInterna(context, 'Editar perfil'),
         body: SafeArea(
           child: Form(
@@ -134,9 +149,8 @@ class _EditarPerfilProfessorScreenState
         ),
         bottomNavigationBar: BarraAcaoInferior(
           texto: 'Salvar alterações',
-          onPressed: _salvar,
+          onPressed: _salvando ? null : _salvar,
         ),
-      ),
-    );
+      );
   }
 }
