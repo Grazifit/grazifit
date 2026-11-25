@@ -8,81 +8,81 @@
 // A barra inferior (Agenda / Alunos / Perfil) já vem do design system.
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/design_system/components/barra_navegacao.dart';
 import '../../../core/design_system/components/cartao_lista.dart';
-import '../../../core/design_system/components/fundo_tela.dart';
 import '../../../core/design_system/tokens/cores_provisorias.dart';
+import '../../../core/design_system/components/botao_sair.dart';
+import '../../../core/state/estado_async.dart';
+import '../data/professor_repository.dart';
+import '../state/perfil_professor_providers.dart';
 import 'editar_perfil_professor_screen.dart';
 
-class PerfilProfessorScreen extends StatelessWidget {
-  const PerfilProfessorScreen({
-    super.key,
-    this.nome = 'Marina Alves',
-    this.desde = '04/01/2025',
-    this.email = 'marina.alves@exemplo.com',
-    this.telefone = '(45) 90000-0001',
-    this.cpf = '000.000.000-01',
-  });
+class PerfilProfessorScreen extends ConsumerWidget {
+  const PerfilProfessorScreen({super.key});
 
-  // TODO(backend): GET /professor/<id> existe, mas só admin acessa e o DTO
-  // público NÃO traz cpf nem data_cadastro ("Professora desde"). Ver o
-  // guia, itens L1 e L2.
-  // Valores padrão = dados fictícios do mockup. No real virão do backend.
-  final String nome;
-  final String desde;
-  final String email;
-  final String telefone;
-  final String cpf;
-
-  void _abrirEdicao(BuildContext context) {
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => EditarPerfilProfessorScreen(
-          nome: nome,
-          telefone: telefone,
-          email: email,
-          cpf: cpf,
-        ),
-      ),
-    );
-  }
+  /// Campo que o backend ainda não devolve.
+  static const _semDado = '—';
 
   @override
-  Widget build(BuildContext context) {
-    return FundoTela(
-      child: Scaffold(
-        backgroundColor: Colors.transparent,
+  Widget build(BuildContext context, WidgetRef ref) {
+    final perfil = ref.watch(perfilProfessorProvider);
+
+    return Scaffold(
         body: SafeArea(
-          child: ListView(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+          child: Column(
             children: [
-              _CabecalhoProfessor(nome: nome, desde: desde),
-              const SizedBox(height: 12),
-              // Valor em cima, rótulo embaixo (como no mockup).
-              CartaoLista(
-                itens: [
-                  ItemLista(titulo: email, subtitulo: 'E-mail'),
-                  ItemLista(titulo: telefone, subtitulo: 'Telefone'),
-                  ItemLista(titulo: cpf, subtitulo: 'CPF'),
-                ],
+              const Align(
+                alignment: Alignment.centerRight,
+                child: Padding(
+                  padding: EdgeInsets.only(right: 8),
+                  child: BotaoSair(),
+                ),
               ),
-              const SizedBox(height: 20),
-              SizedBox(
-                height: 52,
-                width: double.infinity,
-                child: OutlinedButton(
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: corInstitucional,
-                    side: const BorderSide(color: corInstitucional),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                  ),
-                  onPressed: () => _abrirEdicao(context),
-                  child: const Text(
-                    'Editar perfil',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+              Expanded(
+                child: EstadoAsync<Professor>(
+                  valor: perfil,
+                  aoTentarNovamente: () =>
+                      ref.invalidate(perfilProfessorProvider),
+                  vazio: (_) => false,
+                  dados: (p) => ListView(
+                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+                    children: [
+                      _CabecalhoProfessor(nome: p.nome, desde: p.desde),
+                      const SizedBox(height: 12),
+                      // Valor em cima, rótulo embaixo (como no mockup).
+                      CartaoLista(
+                        itens: [
+                          ItemLista(titulo: p.email, subtitulo: 'E-mail'),
+                          ItemLista(titulo: p.telefone, subtitulo: 'Telefone'),
+                          ItemLista(titulo: p.cpf ?? _semDado, subtitulo: 'CPF'),
+                        ],
+                      ),
+                      const SizedBox(height: 20),
+                      SizedBox(
+                        height: 52,
+                        width: double.infinity,
+                        child: OutlinedButton(
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: corInstitucional,
+                            side: const BorderSide(color: corInstitucional),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                          ),
+                          onPressed: () =>
+                              Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => EditarPerfilProfessorScreen(professor: p))),
+                          child: const Text(
+                            'Editar perfil',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ),
@@ -90,8 +90,7 @@ class PerfilProfessorScreen extends StatelessWidget {
           ),
         ),
         bottomNavigationBar: const BarraNavegacao(indiceAtual: 2),
-      ),
-    );
+      );
   }
 }
 
@@ -100,7 +99,7 @@ class _CabecalhoProfessor extends StatelessWidget {
   const _CabecalhoProfessor({required this.nome, required this.desde});
 
   final String nome;
-  final String desde;
+  final String? desde;
 
   @override
   Widget build(BuildContext context) {
@@ -140,7 +139,7 @@ class _CabecalhoProfessor extends StatelessWidget {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  'Professora desde $desde',
+                  desde == null ? '' : 'Professora desde $desde',
                   style: const TextStyle(color: Colors.white70, fontSize: 12),
                 ),
               ],

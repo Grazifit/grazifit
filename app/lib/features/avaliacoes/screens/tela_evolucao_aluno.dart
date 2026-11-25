@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../data/avaliacao_repository.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../core/design_system/components/botao_sair.dart';
 import '../../treinos/screens/tela_treino_aluno.dart';
 import '../../pessoas/screens/tela_perfil_aluno.dart';
 import 'avaliacao_fisica_screen.dart';
@@ -70,13 +71,20 @@ class _TelaEvolucaoAlunoState extends ConsumerState<TelaEvolucaoAluno> {
         child: ListView(
           padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
           children: [
-            const Text(
-              'Evolução',
-              style: TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-                color: Colors.black87,
-              ),
+            const Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    'Evolução',
+                    style: TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black87,
+                    ),
+                  ),
+                ),
+                BotaoSair(),
+              ],
             ),
             const SizedBox(height: 16),
             Row(

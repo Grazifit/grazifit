@@ -1,14 +1,23 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/data/repositorios.dart';
 import '../../../core/theme/app_colors.dart';
+import '../data/treino_resumo.dart';
+import '../data/treinos_repository.dart';
 import 'tela_detalhe_treino_aluno.dart';
 import '../../pessoas/screens/tela_perfil_aluno.dart';
 import '../../avaliacoes/screens/tela_evolucao_aluno.dart';
+import '../../../core/design_system/components/botao_sair.dart';
 
 /// Tela de treinos do aluno: treinos montados pelo professor,
 /// treinos livres e acesso ao histórico.
+///
+/// Os dados vêm de um [TreinosRepository]. Se nenhum for informado, usa o
+/// definido em `core/data/repositorios.dart`.
 class TelaTreinosAluno extends StatefulWidget {
-  const TelaTreinosAluno({super.key});
+  final TreinosRepository? repository;
+
+  const TelaTreinosAluno({super.key, this.repository});
 
   @override
   State<TelaTreinosAluno> createState() => _TelaTreinosAlunoState();
@@ -20,25 +29,29 @@ class _TelaTreinosAlunoState extends State<TelaTreinosAluno> {
 
   int _navSelecionado = 1;
 
-  // Dados de exemplo. Troque pela chamada ao backend.
-  final String _professor = 'Prof. Marina Alves';
+  late final TreinosRepository _repo;
+  late Future<TreinosDoAluno> _future;
 
-  final List<_Treino> _treinosDoProfessor = const [
-    _Treino(id: '1', nome: 'Inferiores A', objetivo: 'Força'),
-    _Treino(id: '2', nome: 'Superiores B', objetivo: 'Hipertrofia'),
-  ];
+  @override
+  void initState() {
+    super.initState();
+    _repo = widget.repository ?? Repositorios.treinos;
+    _future = _repo.buscarTreinos();
+  }
 
-  final List<_Treino> _treinosLivres = const [
-    _Treino(id: '3', nome: 'Full body iniciante', objetivo: 'Resistência'),
-    _Treino(id: '4', nome: 'Cardio leve', objetivo: 'Cardio'),
-  ];
+  void _recarregar() {
+    setState(() {
+      _future = _repo.buscarTreinos();
+    });
+  }
 
-  void _abrirTreino(_Treino treino) {
+  void _abrirTreino(TreinoResumo treino) {
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (_) => TelaDetalheTreinoAluno(
           treinoId: treino.id,
           nome: treino.nome,
+          repository: _repo,
         ),
       ),
     );
@@ -52,33 +65,118 @@ class _TelaTreinosAlunoState extends State<TelaTreinosAluno> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: kBackground,
-      body: SafeArea(
+      body: Stack(
+        children: [
+          SafeArea(
         bottom: false,
-        child: ListView(
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'Treinos',
-              style: TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-                color: Colors.black87,
+            const Padding(
+              padding: EdgeInsets.fromLTRB(16, 16, 16, 0),
+              child: Text(
+                'Treinos',
+                style: TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black87,
+                ),
               ),
             ),
-            const SizedBox(height: 16),
-            _buildSecao('Feitos para você · $_professor', _treinosDoProfessor),
-            const SizedBox(height: 20),
-            _buildSecao('Treinos livres', _treinosLivres),
-            const SizedBox(height: 20),
-            _buildHistorico(),
+            Expanded(
+              child: FutureBuilder<TreinosDoAluno>(
+                future: _future,
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState != ConnectionState.done) {
+                    return const Center(
+                      child: CircularProgressIndicator(color: kGreen),
+                    );
+                  }
+                  if (snapshot.hasError || snapshot.data == null) {
+                    return _buildErro();
+                  }
+                  return _buildConteudo(snapshot.data!);
+                },
+              ),
+            ),
           ],
         ),
+      ),
+          const Positioned(
+            top: 0,
+            right: 4,
+            child: SafeArea(child: BotaoSair()),
+          ),
+        ],
       ),
       bottomNavigationBar: _buildNavInferior(),
     );
   }
 
-  Widget _buildSecao(String titulo, List<_Treino> treinos) {
+  Widget _buildErro() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.error_outline, size: 40, color: Colors.black45),
+            const SizedBox(height: 12),
+            const Text(
+              'Não foi possível carregar os treinos.',
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 14, color: Colors.black87),
+            ),
+            const SizedBox(height: 16),
+            OutlinedButton(
+              onPressed: _recarregar,
+              style: OutlinedButton.styleFrom(
+                foregroundColor: kGreen,
+                side: const BorderSide(color: kGreen),
+              ),
+              child: const Text('Tentar novamente'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildConteudo(TreinosDoAluno dados) {
+    final vazio =
+        dados.treinosDoProfessor.isEmpty && dados.treinosLivres.isEmpty;
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
+      children: [
+        if (vazio)
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: 24),
+            child: Center(
+              child: Text(
+                'Nenhum treino disponível.',
+                style: TextStyle(fontSize: 14, color: Colors.black54),
+              ),
+            ),
+          )
+        else ...[
+          if (dados.treinosDoProfessor.isNotEmpty) ...[
+            _buildSecao(
+              'Feitos para você · ${dados.professor}',
+              dados.treinosDoProfessor,
+            ),
+            const SizedBox(height: 20),
+          ],
+          if (dados.treinosLivres.isNotEmpty) ...[
+            _buildSecao('Treinos livres', dados.treinosLivres),
+            const SizedBox(height: 20),
+          ],
+        ],
+        _buildHistorico(),
+      ],
+    );
+  }
+
+  Widget _buildSecao(String titulo, List<TreinoResumo> treinos) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -111,7 +209,7 @@ class _TelaTreinosAlunoState extends State<TelaTreinosAluno> {
     );
   }
 
-  Widget _buildLinhaTreino(_Treino treino) {
+  Widget _buildLinhaTreino(TreinoResumo treino) {
     return InkWell(
       onTap: () => _abrirTreino(treino),
       child: Padding(
@@ -245,15 +343,4 @@ class _TelaTreinosAlunoState extends State<TelaTreinosAluno> {
       ),
     );
   }
-}
-
-class _Treino {
-  final String id;
-  final String nome;
-  final String objetivo;
-  const _Treino({
-    required this.id,
-    required this.nome,
-    required this.objetivo,
-  });
 }

@@ -1,7 +1,7 @@
 {
   "_type": "export",
   "__export_format": 4,
-  "__export_date": "2026-11-08T00:00:00.000Z",
+  "__export_date": "2026-11-20T00:00:00.000Z",
   "__export_source": "grazifit.backend",
   "resources": [
     {
@@ -9,8 +9,12 @@
       "_type": "workspace",
       "parentId": null,
       "name": "GraziFit API",
-      "description": "API do backend GraziFit (Postman v2.1 — importavel no Postman e no Insomnia).\n\n- **Autenticacao:** rode **Auth › Login**; o `access_token` vai para a variavel `token` do Base Environment. Todas as rotas usam `Authorization: Bearer {{token}}`, exceto Login e Health.\n- Preencha `loginEmail` e `loginSenha` (vazias de proposito).\n- Rotas de criacao salvam o id criado na variavel correspondente (`idAdmin`, `idAluno`, `idProfessor`, `idAula`).\n- `data` em `AAAA-MM-DD`; horas em `HH:MM`. Aulas so no ano corrente ou no seguinte (`dataAula`).\n- Envelope de erro: `{ \"codigo\": \"...\", \"mensagem\": \"...\", \"campo\"?: \"...\" }`. Admin e parte de professor ainda respondem `{ \"erro\": \"...\" }`.",
+      "description": "API do backend GraziFit — export do Insomnia (formato v4). Inclui as rotas de cronogramas do administrador.\n\n## Como usar\n1. No **Base Environment**, preencha `loginEmail` e `loginSenha` (vazias de propósito) e os dados de criação em branco: `adminCpf`/`adminEmail`/`adminSenha`, `professorCpf`/`professorEmail`/`professorSenha`, `alunoCpf`/`alunoEmail`/`alunoSenha`. Não versione esses valores. Ajuste `baseUrl` se preciso.\n2. Rode **Auth › Login**. A variável `token` lê `access_token` da última resposta do login; todas as rotas usam `Authorization: Bearer {{ _.token }}` herdado da coleção, exceto Login e Health (sem autenticação).\n3. Os ids são lidos da resposta da requisição de criação correspondente (tag de resposta do Insomnia): `idAdmin` ← *Criar admin*, `idProfessor` ← *Criar professor*, `idAluno` ← *Criar aluno*, `idAula` ← *Criar aula*, `idAgendamento` ← *Reservar vaga*. Se a tag não atualizar no seu Insomnia, copie o campo `id_*` da resposta e cole na variável.\n\n## Papéis e troca de token\nHá um único `token`. Admin cria professor, aluno e aula. Reservar vaga, listar e cancelar agendamento exigem token de **aluno**; para avaliações use o aluno dono (ou admin). Troque `loginEmail`/`loginSenha` e rode o Login de novo ao mudar de papel. Registrar chamada exige token do professor da aula ou de admin e aula já iniciada.\n\n## Ordem sugerida\nInfra › Auth (admin) › Professor › Aluno (deixe *Excluir* por último) › Aulas (criar, ler, editar) › login do aluno › Agendamentos (*Reservar vaga*) › Avaliações › login do professor/admin › Aulas (*Listar agendados*, *Registrar chamada*, *Cancelar aula*) › *Cancelar agendamento* › exclusões.\n\n## Convenções\n- `data` em `AAAA-MM-DD`; horas em `HH:MM`; instantes em UTC ISO-8601. Aulas só no ano corrente ou no seguinte (`aulaData`).\n- Envelope de erro: `{ \"codigo\": \"...\", \"mensagem\": \"...\", \"campo\"?: \"...\" }`. Em `/admin` e em parte de `/professor` os erros de forma vêm como `{ \"erro\": \"...\" }`.\n- Cada requisição descreve o que faz, por que existe, quem pode executar, corpo/parâmetros, sucesso e a tabela de erros.",
       "scope": "collection",
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token }}"
+      },
       "modified": 1794168000000,
       "created": 1794168000000
     },
@@ -24,17 +28,37 @@
         "loginEmail": "",
         "loginSenha": "",
         "token": "{% response 'body', 'req_auth_login', 'b64::JC5hY2Nlc3NfdG9rZW4=::46b', 'never', 60 %}",
-        "novoCpf": "",
-        "novoEmail": "",
-        "novaSenha": "",
-        "idAdmin": "{% response 'body', 'req_admin_criar_admin', 'b64::JC5pZF9hZG1pbg==::46b', 'never', 60 %}",
-        "idAluno": "{% response 'body', 'req_aluno_criar_aluno', 'b64::JC5pZF9hbHVubw==::46b', 'never', 60 %}",
-        "idProfessor": "{% response 'body', 'req_professor_criar_professor', 'b64::JC5pZF9wcm9mZXNzb3I=::46b', 'never', 60 %}",
-        "idAula": "{% response 'body', 'req_aulas_criar_aula', 'b64::JC5pZF9hdWxh::46b', 'never', 60 %}",
-        "idAgendamento": "{% response 'body', 'req_agendamentos_reservar_vaga', 'b64::JC5pZF9hZ2VuZGFtZW50bw==::46b', 'never', 60 %}",
-        "idCronograma": "{% response 'body', 'req_cronogramas_criar', 'b64::JC5pZF9jcm9ub2dyYW1h::46b', 'never', 60 %}",
-        "dataAula": "2026-12-15",
-        "idProfessorAula": "1"
+        "idAdmin": "{% response 'body', 'req_admin_criar', 'b64::JC5pZF9hZG1pbg==::46b', 'never', 60 %}",
+        "idProfessor": "{% response 'body', 'req_professor_criar', 'b64::JC5pZF9wcm9mZXNzb3I=::46b', 'never', 60 %}",
+        "idAluno": "{% response 'body', 'req_aluno_criar', 'b64::JC5pZF9hbHVubw==::46b', 'never', 60 %}",
+        "idAula": "{% response 'body', 'req_aulas_criar', 'b64::JC5pZF9hdWxh::46b', 'never', 60 %}",
+        "idAgendamento": "{% response 'body', 'req_agendamentos_reservar', 'b64::JC5pZF9hZ2VuZGFtZW50bw==::46b', 'never', 60 %}",
+        "adminNome": "Admin Exemplo",
+        "adminCpf": "",
+        "adminEmail": "",
+        "adminSenha": "",
+        "adminTelefone": "00000000000",
+        "professorNome": "Professor Exemplo",
+        "professorCpf": "",
+        "professorEmail": "",
+        "professorSenha": "",
+        "professorTelefone": "00000000000",
+        "alunoNome": "Aluno Exemplo",
+        "alunoCpf": "",
+        "alunoEmail": "",
+        "alunoSenha": "",
+        "alunoTelefone": "00000000000",
+        "alunoDataNascimento": "2000-01-01",
+        "avaliacaoPeso": "70.5",
+        "avaliacaoAltura": "1.70",
+        "avaliacaoObservacao": "Avaliação de exemplo",
+        "aulaData": "2026-12-15",
+        "aulaHoraInicio": "07:00",
+        "aulaHoraFim": "08:00",
+        "aulaTipo": "coletiva",
+        "aulaCategoria": "pilates",
+        "aulaVagasMaxima": "10",
+        "idCronograma": "{% response 'body', 'req_cronogramas_criar', 'b64::JC5pZF9jcm9ub2dyYW1h::46b', 'never', 60 %}"
       },
       "dataPropertyOrder": {
         "&": [
@@ -42,22 +66,879 @@
           "loginEmail",
           "loginSenha",
           "token",
-          "novoCpf",
-          "novoEmail",
-          "novaSenha",
           "idAdmin",
-          "idAluno",
           "idProfessor",
+          "idAluno",
           "idAula",
           "idAgendamento",
-          "idCronograma",
-          "dataAula",
-          "idProfessorAula"
+          "adminNome",
+          "adminCpf",
+          "adminEmail",
+          "adminSenha",
+          "adminTelefone",
+          "professorNome",
+          "professorCpf",
+          "professorEmail",
+          "professorSenha",
+          "professorTelefone",
+          "alunoNome",
+          "alunoCpf",
+          "alunoEmail",
+          "alunoSenha",
+          "alunoTelefone",
+          "alunoDataNascimento",
+          "avaliacaoPeso",
+          "avaliacaoAltura",
+          "avaliacaoObservacao",
+          "aulaData",
+          "aulaHoraInicio",
+          "aulaHoraFim",
+          "aulaTipo",
+          "aulaCategoria",
+          "aulaVagasMaxima",
+          "idCronograma"
         ]
       },
       "color": null,
       "isPrivate": false,
       "metaSortKey": 1,
+      "modified": 1794168000000,
+      "created": 1794168000000
+    },
+    {
+      "_id": "fld_infra",
+      "_type": "request_group",
+      "parentId": "wrk_grazifit_api",
+      "name": "Infra",
+      "description": "Rotas de infraestrutura, consumidas pelo healthcheck do compose e não pelo app. Sem autenticação.",
+      "environment": {},
+      "environmentPropertyOrder": null,
+      "metaSortKey": 1000,
+      "modified": 1794168000000,
+      "created": 1794168000000,
+      "authentication": {
+        "type": "none"
+      }
+    },
+    {
+      "_id": "fld_auth",
+      "_type": "request_group",
+      "parentId": "wrk_grazifit_api",
+      "name": "Auth",
+      "description": "Login (público) e logout. O token do login vai para `token`.",
+      "environment": {},
+      "environmentPropertyOrder": null,
+      "metaSortKey": 2000,
+      "modified": 1794168000000,
+      "created": 1794168000000,
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token }}"
+      }
+    },
+    {
+      "_id": "fld_admin",
+      "_type": "request_group",
+      "parentId": "wrk_grazifit_api",
+      "name": "Admin",
+      "description": "Rotas `/admin`. Só admin. Erros fora do envelope (`{ erro }`), exceto 401/403.",
+      "environment": {},
+      "environmentPropertyOrder": null,
+      "metaSortKey": 3000,
+      "modified": 1794168000000,
+      "created": 1794168000000,
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token }}"
+      }
+    },
+    {
+      "_id": "fld_professor",
+      "_type": "request_group",
+      "parentId": "wrk_grazifit_api",
+      "name": "Professor",
+      "description": "Rotas `/professor`. Só admin. Erros de forma como `{ erro }`; os de regra no envelope.",
+      "environment": {},
+      "environmentPropertyOrder": null,
+      "metaSortKey": 4000,
+      "modified": 1794168000000,
+      "created": 1794168000000,
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token }}"
+      }
+    },
+    {
+      "_id": "fld_aluno",
+      "_type": "request_group",
+      "parentId": "wrk_grazifit_api",
+      "name": "Aluno",
+      "description": "Rotas `/aluno`. Admin gerencia; o aluno lê e edita só o próprio cadastro. Envelope de erro em tudo.",
+      "environment": {},
+      "environmentPropertyOrder": null,
+      "metaSortKey": 5000,
+      "modified": 1794168000000,
+      "created": 1794168000000,
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token }}"
+      }
+    },
+    {
+      "_id": "fld_avaliacoes",
+      "_type": "request_group",
+      "parentId": "wrk_grazifit_api",
+      "name": "Avaliações",
+      "description": "Rotas `/aluno/<id>/avaliacoes`. Admin ou o próprio aluno. `mensagem` de erro fixa: `Operacao rejeitada.`.",
+      "environment": {},
+      "environmentPropertyOrder": null,
+      "metaSortKey": 6000,
+      "modified": 1794168000000,
+      "created": 1794168000000,
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token }}"
+      }
+    },
+    {
+      "_id": "fld_aulas",
+      "_type": "request_group",
+      "parentId": "wrk_grazifit_api",
+      "name": "Aulas",
+      "description": "Rotas `/aulas`. Leitura livre; escrita admin/professor da aula.",
+      "environment": {},
+      "environmentPropertyOrder": null,
+      "metaSortKey": 7000,
+      "modified": 1794168000000,
+      "created": 1794168000000,
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token }}"
+      }
+    },
+    {
+      "_id": "fld_agendamentos",
+      "_type": "request_group",
+      "parentId": "wrk_grazifit_api",
+      "name": "Agendamentos",
+      "description": "Rotas `/agendamentos`. Só o aluno opera os próprios agendamentos; professor e admin recebem `403`.",
+      "environment": {},
+      "environmentPropertyOrder": null,
+      "metaSortKey": 8000,
+      "modified": 1794168000000,
+      "created": 1794168000000,
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token }}"
+      }
+    },
+    {
+      "_id": "req_infra_health",
+      "_type": "request",
+      "parentId": "fld_infra",
+      "name": "Health check",
+      "description": "## O que faz\nExecuta `SELECT 1` no banco com prazo de 2 segundos e responde se o banco está disponível.\n\n## Por que existe\nRota de infraestrutura, consumida pelo healthcheck do compose e não pelo app. O corpo é mínimo e fixo: não revela versão, causa da falha nem detalhe da conexão.\n\n## Quem pode executar\n**Público** (sem token; é uma das duas rotas sem autenticação, junto com o login).\n\n## Corpo / parâmetros\nSem corpo nem parâmetros.\n\n## Resposta de sucesso\n`200` → `{ \"status\": \"ok\" }`.\n\n## Erros\n| HTTP | `codigo` | Quando |\n|---|---|---|\n| 503 | — (corpo `{ \"status\": \"indisponivel\" }`, sem `codigo`) | banco não respondeu em 2 s ou a consulta falhou |",
+      "method": "GET",
+      "url": "{{ _.baseUrl }}/health",
+      "body": {},
+      "parameters": [],
+      "headers": [],
+      "authentication": {
+        "type": "none"
+      },
+      "metaSortKey": 1000,
+      "settingEncodeUrl": true,
+      "modified": 1794168000000,
+      "created": 1794168000000
+    },
+    {
+      "_id": "req_auth_login",
+      "_type": "request",
+      "parentId": "fld_auth",
+      "name": "Login",
+      "description": "## O que faz\nAutentica uma conta (admin, professor ou aluno) por e-mail e senha e emite um token de acesso, registrando a sessão no banco.\n\n## Por que existe\nÉ a porta de entrada da API: todas as demais rotas (exceto health) exigem o token emitido aqui. O papel do token (`admin`, `professor`, `aluno`) define o que cada rota permite.\n\n## Quem pode executar\n**Público** (sem token). Qualquer conta ativa; conta inativa recebe 401.\n\n## Corpo / parâmetros\nJSON, até 4096 bytes:\n| Campo | Tipo | Obrigatório | Regra |\n|---|---|---|---|\n| `email` | texto | sim | não vazio; comparado sem espaços nas pontas e em minúsculas |\n| `senha` | texto | sim | não vazia |\n\nPreencha `loginEmail` e `loginSenha` no Base Environment (vêm vazias de propósito). Para trocar de papel, altere essas variáveis e rode o login de novo.\n\n## Resposta de sucesso\n`200` → `{ access_token, token_type: \"Bearer\", expires_in, usuario: { id, papel, nome } }`. `expires_in` em segundos (o token vale 1 hora). `papel` é `admin`, `professor` ou `aluno`. Cabeçalho `Cache-Control: no-store`. A variável `token` do ambiente lê `access_token` desta resposta.\n\n## Erros\n| HTTP | `codigo` | Quando |\n|---|---|---|\n| 400 | `REQUISICAO_INVALIDA` | corpo não é objeto JSON, falta `email`/`senha`, valores não são texto ou estão vazios, ou corpo acima de 4096 bytes |\n| 401 | `CREDENCIAIS_INVALIDAS` | e-mail inexistente, e-mail em formato inválido, senha incorreta ou conta inativa (a mesma resposta para todos os casos) |\n| 413 | `CORPO_MUITO_GRANDE` | corpo maior que 16 KB |\n| 429 | `MUITAS_TENTATIVAS` | limite por IP (30 requisições por janela de 15 min, com bloqueio progressivo), limite por e-mail (10 por 15 min, com espera crescente após 3 falhas) ou verificações de senha simultâneas esgotadas. Traz `Retry-After` em segundos (ausente quando o IP está bloqueado até o servidor reiniciar) |",
+      "method": "POST",
+      "url": "{{ _.baseUrl }}/auth/login",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"email\": \"{{ _.loginEmail }}\",\n  \"senha\": \"{{ _.loginSenha }}\"\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {
+        "type": "none"
+      },
+      "metaSortKey": 1000,
+      "settingEncodeUrl": true,
+      "modified": 1794168000000,
+      "created": 1794168000000
+    },
+    {
+      "_id": "req_auth_logout",
+      "_type": "request",
+      "parentId": "fld_auth",
+      "name": "Logout",
+      "description": "## O que faz\nRevoga a sessão do token enviado no cabeçalho.\n\n## Por que existe\nPermite encerrar a sessão no servidor; depois disso o mesmo token passa a receber 401.\n\n## Quem pode executar\n**Qualquer papel autenticado** (admin, professor ou aluno), apenas para o próprio token.\n\n## Corpo / parâmetros\nSem corpo nem parâmetros. Rode por último: depois dele é preciso fazer login de novo.\n\n## Resposta de sucesso\n`204` sem corpo, com `Cache-Control: no-store`.\n\n## Erros\n| HTTP | `codigo` | Quando |\n|---|---|---|\n| 401 | `TOKEN_INVALIDO` | sem token, token inválido/expirado, sessão já revogada ou conta inativa |",
+      "method": "POST",
+      "url": "{{ _.baseUrl }}/auth/logout",
+      "body": {},
+      "parameters": [],
+      "headers": [],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token }}"
+      },
+      "metaSortKey": 2000,
+      "settingEncodeUrl": true,
+      "modified": 1794168000000,
+      "created": 1794168000000
+    },
+    {
+      "_id": "req_admin_criar",
+      "_type": "request",
+      "parentId": "fld_admin",
+      "name": "Criar admin",
+      "description": "## O que faz\nCria uma conta de administrador. O CPF é normalizado para só dígitos, o e-mail para minúsculas sem espaços, e a senha é gravada como hash.\n\n## Por que existe\nSó um admin pode dar acesso administrativo a outra pessoa.\n\n## Quem pode executar\n**Somente admin.** Professor e aluno recebem `403`.\n\n## Corpo / parâmetros\nJSON:\n| Campo | Tipo | Obrigatório | Regra |\n|---|---|---|---|\n| `cpf` | texto | sim | CPF válido (pontuação aceita) |\n| `senha` | texto | sim | mínimo 8 caracteres (sem máximo) |\n| `nome` | texto | sim | |\n| `email` | texto | sim | e-mail válido |\n| `telefone` | texto | não | |\n\nCampos obrigatórios ausentes ou `null` dão `400`. Valor que não é texto não é tratado como 400: sobe como erro interno (`500`). Preencha `adminCpf`, `adminEmail` e `adminSenha` no ambiente (vêm vazias).\n\n## Resposta de sucesso\n`201` → `{ id_admin, nome, email, telefone }` (`telefone` pode ser `null`). Copie `id_admin` para `idAdmin` (o ambiente já lê esse campo desta resposta).\n\n## Erros\nErros em `/admin` **não** usam o envelope, exceto 401 e 403: vêm como `{ \"erro\": \"mensagem\" }`.\n\n| HTTP | `codigo` | Quando |\n|---|---|---|\n| 400 | `{ erro }` | corpo não é objeto JSON · `Campos obrigatórios ausentes.` · `CPF inválido.` · `E-mail inválido.` · `Senha deve ter no mínimo 8 caracteres.` |\n| 401 | `TOKEN_INVALIDO` | sem `Authorization: Bearer`, token malformado/expirado/revogado, sessão inativa ou conta inativa (checado antes de qualquer rota, exceto login e health) |\n| 403 | `ACESSO_NEGADO` | chamador não é admin |\n| 409 | `{ erro }` | `CPF já cadastrado.` · `E-mail já cadastrado.` |\n| 413 | `CORPO_MUITO_GRANDE` | corpo maior que 16 KB (checado depois da autenticação) |\n| 500 | `{ erro }` ou `ERRO_INTERNO` | falha inesperada, inclusive campo com tipo diferente de texto |",
+      "method": "POST",
+      "url": "{{ _.baseUrl }}/admin",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"cpf\": \"{{ _.adminCpf }}\",\n  \"senha\": \"{{ _.adminSenha }}\",\n  \"nome\": \"{{ _.adminNome }}\",\n  \"email\": \"{{ _.adminEmail }}\",\n  \"telefone\": \"{{ _.adminTelefone }}\"\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token }}"
+      },
+      "metaSortKey": 1000,
+      "settingEncodeUrl": true,
+      "modified": 1794168000000,
+      "created": 1794168000000
+    },
+    {
+      "_id": "req_admin_buscar",
+      "_type": "request",
+      "parentId": "fld_admin",
+      "name": "Buscar admin por id",
+      "description": "## O que faz\nDevolve os dados públicos de um administrador pelo id.\n\n## Por que existe\nConsulta do cadastro administrativo; não devolve CPF nem hash de senha.\n\n## Quem pode executar\n**Somente admin** (qualquer admin consulta qualquer admin). Professor e aluno recebem `403`.\n\n## Corpo / parâmetros\nCaminho: `<id>` inteiro (`idAdmin`).\n\n## Resposta de sucesso\n`200` → `{ id_admin, nome, email, telefone }` (`telefone` pode ser `null`).\n\n## Erros\nErros em `/admin` **não** usam o envelope, exceto 401 e 403: vêm como `{ \"erro\": \"mensagem\" }`.\n\n| HTTP | `codigo` | Quando |\n|---|---|---|\n| 400 | `{ erro: \"Id inválido.\" }` | `<id>` não é inteiro |\n| 401 | `TOKEN_INVALIDO` | sem `Authorization: Bearer`, token malformado/expirado/revogado, sessão inativa ou conta inativa (checado antes de qualquer rota, exceto login e health) |\n| 403 | `ACESSO_NEGADO` | chamador não é admin |\n| 404 | `{ erro: \"Admin não encontrado.\" }` | id inexistente |\n| 500 | `{ erro }` | falha inesperada |",
+      "method": "GET",
+      "url": "{{ _.baseUrl }}/admin/{{ _.idAdmin }}",
+      "body": {},
+      "parameters": [],
+      "headers": [],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token }}"
+      },
+      "metaSortKey": 2000,
+      "settingEncodeUrl": true,
+      "modified": 1794168000000,
+      "created": 1794168000000
+    },
+    {
+      "_id": "req_admin_atualizar",
+      "_type": "request",
+      "parentId": "fld_admin",
+      "name": "Atualizar admin",
+      "description": "## O que faz\nAtualiza nome, e-mail, telefone e/ou senha de um administrador. Só os campos enviados (não nulos) mudam; texto é aparado e o e-mail vai para minúsculas; a senha é regravada como hash.\n\n## Por que existe\nManutenção do cadastro administrativo.\n\n## Quem pode executar\n**Somente admin** (qualquer admin atualiza qualquer admin). Professor e aluno recebem `403`.\n\n## Corpo / parâmetros\nCaminho: `<id>` inteiro (`idAdmin`).\nJSON (todos opcionais):\n| Campo | Tipo | Regra |\n|---|---|---|\n| `nome` | texto | |\n| `email` | texto | e-mail válido; único |\n| `telefone` | texto | |\n| `senha` | texto | mínimo 8 caracteres |\n\nValor que não é texto sobe como erro interno (`500`).\n\n## Resposta de sucesso\n`200` → `{ id_admin, nome, email, telefone }` (`telefone` pode ser `null`).\n\n## Erros\nErros em `/admin` **não** usam o envelope, exceto 401 e 403: vêm como `{ \"erro\": \"mensagem\" }`.\n\n| HTTP | `codigo` | Quando |\n|---|---|---|\n| 400 | `{ erro }` | `Id inválido.` · `JSON inválido.` · `E-mail inválido.` · `Senha deve ter no mínimo 8 caracteres.` |\n| 401 | `TOKEN_INVALIDO` | sem `Authorization: Bearer`, token malformado/expirado/revogado, sessão inativa ou conta inativa (checado antes de qualquer rota, exceto login e health) |\n| 403 | `ACESSO_NEGADO` | chamador não é admin |\n| 404 | `{ erro: \"Admin não encontrado.\" }` | id inexistente |\n| 409 | `{ erro }` | `CPF já cadastrado.` / `E-mail já cadastrado.` / `Registro duplicado.` (violação de unicidade) |\n| 413 | `CORPO_MUITO_GRANDE` | corpo maior que 16 KB (checado depois da autenticação) |\n| 500 | `{ erro }` | falha inesperada |",
+      "method": "PATCH",
+      "url": "{{ _.baseUrl }}/admin/{{ _.idAdmin }}",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"nome\": \"{{ _.adminNome }}\"\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token }}"
+      },
+      "metaSortKey": 3000,
+      "settingEncodeUrl": true,
+      "modified": 1794168000000,
+      "created": 1794168000000
+    },
+    {
+      "_id": "req_admin_excluir",
+      "_type": "request",
+      "parentId": "fld_admin",
+      "name": "Excluir admin",
+      "description": "## O que faz\nRemove o administrador do banco (exclusão real).\n\n## Por que existe\nEncerra o acesso administrativo de uma conta.\n\n## Quem pode executar\n**Somente admin.** Professor e aluno recebem `403`. O código não impede o admin de excluir a própria conta.\n\n## Corpo / parâmetros\nCaminho: `<id>` inteiro (`idAdmin`). Sem corpo.\n\n## Resposta de sucesso\n`204` sem corpo.\n\n## Erros\nErros em `/admin` **não** usam o envelope, exceto 401 e 403: vêm como `{ \"erro\": \"mensagem\" }`.\n\n| HTTP | `codigo` | Quando |\n|---|---|---|\n| 400 | `{ erro: \"Id inválido.\" }` | `<id>` não é inteiro |\n| 401 | `TOKEN_INVALIDO` | sem `Authorization: Bearer`, token malformado/expirado/revogado, sessão inativa ou conta inativa (checado antes de qualquer rota, exceto login e health) |\n| 403 | `ACESSO_NEGADO` | chamador não é admin |\n| 404 | `{ erro: \"Admin não encontrado.\" }` | id inexistente |\n| 500 | `{ erro }` | qualquer falha inesperada, inclusive do banco (não há tradução de FK nesta rota) |\n\n## Observações\nRode só ao final: exclui o admin cujo id está em `idAdmin`.",
+      "method": "DELETE",
+      "url": "{{ _.baseUrl }}/admin/{{ _.idAdmin }}",
+      "body": {},
+      "parameters": [],
+      "headers": [],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token }}"
+      },
+      "metaSortKey": 4000,
+      "settingEncodeUrl": true,
+      "modified": 1794168000000,
+      "created": 1794168000000
+    },
+    {
+      "_id": "req_professor_criar",
+      "_type": "request",
+      "parentId": "fld_professor",
+      "name": "Criar professor",
+      "description": "## O que faz\nCria um professor. CPF normalizado para dígitos, e-mail para minúsculas, senha gravada como hash; registra o admin criador.\n\n## Por que existe\nAulas só podem ser atribuídas a professores cadastrados e ativos.\n\n## Quem pode executar\n**Somente admin.** Professor e aluno recebem `403`.\n\n## Corpo / parâmetros\nJSON, todos obrigatórios (texto não vazio):\n| Campo | Regra |\n|---|---|\n| `cpf` | CPF válido (pontuação aceita) |\n| `senha` | de 8 a 12 caracteres |\n| `nome` | de 1 a 150 caracteres |\n| `telefone` | até 20 caracteres |\n| `email` | e-mail válido; único |\n\nPreencha `professorCpf`, `professorEmail` e `professorSenha` no ambiente.\n\n## Resposta de sucesso\n`201` → `{ id_professor, nome, email, telefone, status }` (`status` `true` = ativo). Copie `id_professor` para `idProfessor` (o ambiente já lê esse campo).\n\n## Erros\nErros de **forma** em `/professor` vêm como `{ \"erro\": \"mensagem\" }` (400); os de regra vêm no envelope `{ codigo, mensagem, campo? }`.\n\n| HTTP | `codigo` | Quando |\n|---|---|---|\n| 400 | `{ erro }` | JSON inválido · campo obrigatório ausente/vazio · `nome` > 150 · `telefone` > 20 · `senha` fora de 8–12 |\n| 400 | `CPF_INVALIDO` + `campo: cpf` | CPF inválido |\n| 400 | `EMAIL_INVALIDO` + `campo: email` | e-mail inválido |\n| 401 | `TOKEN_INVALIDO` | sem `Authorization: Bearer`, token malformado/expirado/revogado, sessão inativa ou conta inativa (checado antes de qualquer rota, exceto login e health) |\n| 403 | `ACESSO_NEGADO` | chamador não é admin |\n| 409 | `CPF_EM_USO` + `campo: cpf` | CPF já cadastrado |\n| 409 | `EMAIL_EM_USO` + `campo: email` | e-mail já em uso |\n| 413 | `CORPO_MUITO_GRANDE` | corpo maior que 16 KB (checado depois da autenticação) |\n| 500 | `{ erro: \"Erro interno.\" }` | falha inesperada |",
+      "method": "POST",
+      "url": "{{ _.baseUrl }}/professor",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"cpf\": \"{{ _.professorCpf }}\",\n  \"senha\": \"{{ _.professorSenha }}\",\n  \"nome\": \"{{ _.professorNome }}\",\n  \"telefone\": \"{{ _.professorTelefone }}\",\n  \"email\": \"{{ _.professorEmail }}\"\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token }}"
+      },
+      "metaSortKey": 1000,
+      "settingEncodeUrl": true,
+      "modified": 1794168000000,
+      "created": 1794168000000
+    },
+    {
+      "_id": "req_professor_buscar",
+      "_type": "request",
+      "parentId": "fld_professor",
+      "name": "Buscar professor por id",
+      "description": "## O que faz\nDevolve os dados públicos de um professor pelo id.\n\n## Por que existe\nConsulta do cadastro de professores (sem CPF nem hash de senha).\n\n## Quem pode executar\n**Somente admin.** Professor (inclusive o próprio) e aluno recebem `403`.\n\n## Corpo / parâmetros\nCaminho: `<id>` inteiro (`idProfessor`).\n\n## Resposta de sucesso\n`200` → `{ id_professor, nome, email, telefone, status }` (`status` `true` = ativo).\n\n## Erros\nErros de **forma** em `/professor` vêm como `{ \"erro\": \"mensagem\" }` (400); os de regra vêm no envelope `{ codigo, mensagem, campo? }`.\n\n| HTTP | `codigo` | Quando |\n|---|---|---|\n| 400 | `{ erro: \"Id inválido.\" }` | `<id>` não é inteiro |\n| 401 | `TOKEN_INVALIDO` | sem `Authorization: Bearer`, token malformado/expirado/revogado, sessão inativa ou conta inativa (checado antes de qualquer rota, exceto login e health) |\n| 403 | `ACESSO_NEGADO` | chamador não é admin |\n| 404 | `PROFESSOR_NAO_ENCONTRADO` | id inexistente |",
+      "method": "GET",
+      "url": "{{ _.baseUrl }}/professor/{{ _.idProfessor }}",
+      "body": {},
+      "parameters": [],
+      "headers": [],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token }}"
+      },
+      "metaSortKey": 2000,
+      "settingEncodeUrl": true,
+      "modified": 1794168000000,
+      "created": 1794168000000
+    },
+    {
+      "_id": "req_professor_atualizar",
+      "_type": "request",
+      "parentId": "fld_professor",
+      "name": "Atualizar professor",
+      "description": "## O que faz\nAtualiza nome, e-mail, telefone, senha e/ou status (ativo/inativo) do professor. Só os campos enviados mudam; texto é aparado e o e-mail vai para minúsculas.\n\n## Por que existe\nManutenção do cadastro; `status: false` inativa o professor (o login da conta inativa deixa de funcionar e novas aulas não podem ser atribuídas a ele).\n\n## Quem pode executar\n**Somente admin.** Professor e aluno recebem `403`.\n\n## Corpo / parâmetros\nCaminho: `<id>` inteiro (`idProfessor`).\nJSON (todos opcionais; o que vier precisa ter a forma certa; chave desconhecida é ignorada):\n| Campo | Tipo | Regra |\n|---|---|---|\n| `nome` | texto | de 1 a 150 caracteres |\n| `telefone` | texto | de 1 a 20 caracteres |\n| `email` | texto | não vazio; e-mail válido e único |\n| `senha` | texto | de 8 a 12 caracteres |\n| `status` | booleano | `true` ativo, `false` inativo |\n\n## Resposta de sucesso\n`200` → `{ id_professor, nome, email, telefone, status }` (`status` `true` = ativo).\n\n## Erros\nErros de **forma** em `/professor` vêm como `{ \"erro\": \"mensagem\" }` (400); os de regra vêm no envelope `{ codigo, mensagem, campo? }`.\n\n| HTTP | `codigo` | Quando |\n|---|---|---|\n| 400 | `{ erro }` | `Id inválido.` · JSON inválido · campo com forma/tamanho inválido |\n| 400 | `EMAIL_INVALIDO` + `campo: email` | e-mail inválido |\n| 401 | `TOKEN_INVALIDO` | sem `Authorization: Bearer`, token malformado/expirado/revogado, sessão inativa ou conta inativa (checado antes de qualquer rota, exceto login e health) |\n| 403 | `ACESSO_NEGADO` | chamador não é admin |\n| 404 | `PROFESSOR_NAO_ENCONTRADO` | id inexistente |\n| 409 | `EMAIL_EM_USO` + `campo: email` | e-mail já usado por outro professor |\n| 413 | `CORPO_MUITO_GRANDE` | corpo maior que 16 KB (checado depois da autenticação) |",
+      "method": "PATCH",
+      "url": "{{ _.baseUrl }}/professor/{{ _.idProfessor }}",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"nome\": \"{{ _.professorNome }}\"\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token }}"
+      },
+      "metaSortKey": 3000,
+      "settingEncodeUrl": true,
+      "modified": 1794168000000,
+      "created": 1794168000000
+    },
+    {
+      "_id": "req_professor_excluir",
+      "_type": "request",
+      "parentId": "fld_professor",
+      "name": "Excluir professor",
+      "description": "## O que faz\nRemove o professor do banco (exclusão real).\n\n## Por que existe\nPermite apagar um cadastro sem uso. Professor com vínculos, cronogramas, aulas ou treinos não pode ser excluído (o banco recusa); nesse caso o caminho é inativá-lo via `PATCH` com `status: false`.\n\n## Quem pode executar\n**Somente admin.** Professor e aluno recebem `403`.\n\n## Corpo / parâmetros\nCaminho: `<id>` inteiro (`idProfessor`). Sem corpo.\n\n## Resposta de sucesso\n`204` sem corpo.\n\n## Erros\nErros de **forma** em `/professor` vêm como `{ \"erro\": \"mensagem\" }` (400); os de regra vêm no envelope `{ codigo, mensagem, campo? }`.\n\n| HTTP | `codigo` | Quando |\n|---|---|---|\n| 400 | `{ erro: \"Id inválido.\" }` | `<id>` não é inteiro |\n| 401 | `TOKEN_INVALIDO` | sem `Authorization: Bearer`, token malformado/expirado/revogado, sessão inativa ou conta inativa (checado antes de qualquer rota, exceto login e health) |\n| 403 | `ACESSO_NEGADO` | chamador não é admin |\n| 404 | `PROFESSOR_NAO_ENCONTRADO` | id inexistente |\n| 409 | `REGISTRO_EM_USO` | professor com aula, cronograma, vínculo ou treino |\n\n## Observações\nRode só ao final: as pastas seguintes (Aulas) usam `idProfessor`.",
+      "method": "DELETE",
+      "url": "{{ _.baseUrl }}/professor/{{ _.idProfessor }}",
+      "body": {},
+      "parameters": [],
+      "headers": [],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token }}"
+      },
+      "metaSortKey": 4000,
+      "settingEncodeUrl": true,
+      "modified": 1794168000000,
+      "created": 1794168000000
+    },
+    {
+      "_id": "req_aluno_criar",
+      "_type": "request",
+      "parentId": "fld_aluno",
+      "name": "Criar aluno",
+      "description": "## O que faz\nCria um aluno. CPF normalizado para dígitos, e-mail em minúsculas, senha gravada como hash; registra o admin criador. Campos clínicos em branco viram ausência (`null`).\n\n## Por que existe\nTodo aluno nasce do cadastro feito por um admin; é o aluno que depois agenda aulas e registra avaliações.\n\n## Quem pode executar\n**Somente admin.** Professor e aluno recebem `403`.\n\n## Corpo / parâmetros\nJSON:\n| Campo | Tipo | Obrigatório | Regra |\n|---|---|---|---|\n| `cpf` | texto | sim | CPF válido |\n| `senha` | texto | sim | de 8 a 12 caracteres |\n| `nome` | texto | sim | até 150 caracteres (sem espaços nas pontas) |\n| `telefone` | texto | sim | até 20 caracteres |\n| `email` | texto | sim | e-mail válido, até 255; único |\n| `data_nascimento` | texto | sim | `AAAA-MM-DD`, data existente e anterior a hoje |\n| `id_endereco` | inteiro | não | |\n| `restricao_medica` | texto | não | |\n| `observacao_saude` | texto | não | |\n\nTexto em branco conta como ausente. Preencha `alunoCpf`, `alunoEmail` e `alunoSenha` no ambiente.\n\n## Resposta de sucesso\n`201` → `{ id_aluno, nome, email, telefone, status }` (`status` `true` = ativo). Copie `id_aluno` para `idAluno` (o ambiente já lê esse campo).\n\n## Erros\nErros no envelope `{ codigo, mensagem, campo? }`.\n\n| HTTP | `codigo` | Quando |\n|---|---|---|\n| 400 | `JSON_INVALIDO` | corpo não é objeto JSON |\n| 400 | `CAMPO_OBRIGATORIO` + `campo` | campo obrigatório ausente, vazio ou que não é texto |\n| 400 | `CAMPO_INVALIDO` + `campo` | `data_nascimento` fora de `AAAA-MM-DD`/inexistente · `nome`, `telefone`, `email` acima do tamanho · `senha` fora de 8–12 |\n| 400 | `CPF_INVALIDO` / `EMAIL_INVALIDO` / `DATA_NASCIMENTO_INVALIDA` | CPF, e-mail inválido ou nascimento hoje/futuro |\n| 401 | `TOKEN_INVALIDO` | sem `Authorization: Bearer`, token malformado/expirado/revogado, sessão inativa ou conta inativa (checado antes de qualquer rota, exceto login e health) |\n| 403 | `ACESSO_NEGADO` | chamador não é admin |\n| 409 | `CPF_EM_USO` / `EMAIL_EM_USO` | CPF ou e-mail já cadastrado |\n| 413 | `CORPO_MUITO_GRANDE` | corpo maior que 16 KB (checado depois da autenticação) |",
+      "method": "POST",
+      "url": "{{ _.baseUrl }}/aluno",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"cpf\": \"{{ _.alunoCpf }}\",\n  \"senha\": \"{{ _.alunoSenha }}\",\n  \"nome\": \"{{ _.alunoNome }}\",\n  \"telefone\": \"{{ _.alunoTelefone }}\",\n  \"email\": \"{{ _.alunoEmail }}\",\n  \"data_nascimento\": \"{{ _.alunoDataNascimento }}\"\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token }}"
+      },
+      "metaSortKey": 1000,
+      "settingEncodeUrl": true,
+      "modified": 1794168000000,
+      "created": 1794168000000
+    },
+    {
+      "_id": "req_aluno_listar",
+      "_type": "request",
+      "parentId": "fld_aluno",
+      "name": "Listar alunos",
+      "description": "## O que faz\nLista alunos de forma paginada.\n\n## Por que existe\nVisão administrativa dos alunos cadastrados, com status para decidir entre reativar e excluir.\n\n## Quem pode executar\n**Somente admin.** Professor e aluno recebem `403`.\n\n## Corpo / parâmetros\n| Parâmetro (query) | Tipo | Obrigatório | Regra |\n|---|---|---|---|\n| `limit` | inteiro | não (padrão 20) | de 1 a 100 |\n| `offset` | inteiro | não (padrão 0) | maior ou igual a 0 |\n\n## Resposta de sucesso\n`200` → `{ itens: [`{ id_aluno, nome, email, telefone, status }` (`status` `true` = ativo)], limit, offset, total }`.\n\n## Erros\nErros no envelope `{ codigo, mensagem, campo? }`.\n\n| HTTP | `codigo` | Quando |\n|---|---|---|\n| 400 | `CAMPO_INVALIDO` + `campo: limit` | `limit` não inteiro ou fora de 1 a 100 |\n| 400 | `CAMPO_INVALIDO` + `campo: offset` | `offset` não inteiro ou negativo |\n| 401 | `TOKEN_INVALIDO` | sem `Authorization: Bearer`, token malformado/expirado/revogado, sessão inativa ou conta inativa (checado antes de qualquer rota, exceto login e health) |\n| 403 | `ACESSO_NEGADO` | chamador não é admin |",
+      "method": "GET",
+      "url": "{{ _.baseUrl }}/aluno?limit=20&offset=0",
+      "body": {},
+      "parameters": [],
+      "headers": [],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token }}"
+      },
+      "metaSortKey": 2000,
+      "settingEncodeUrl": true,
+      "modified": 1794168000000,
+      "created": 1794168000000
+    },
+    {
+      "_id": "req_aluno_buscar",
+      "_type": "request",
+      "parentId": "fld_aluno",
+      "name": "Buscar aluno por id",
+      "description": "## O que faz\nDevolve os dados públicos de um aluno pelo id.\n\n## Por que existe\nPermite ao admin consultar qualquer aluno e ao aluno consultar o próprio cadastro.\n\n## Quem pode executar\n**Admin** (qualquer aluno) ou **próprio aluno** (`id` do token igual a `<id>`). Outro aluno e professor recebem `403`; a checagem de permissão vem antes da de existência.\n\n## Corpo / parâmetros\nCaminho: `<id>` inteiro (`idAluno`).\n\n## Resposta de sucesso\n`200` → `{ id_aluno, nome, email, telefone, status }` (`status` `true` = ativo).\n\n## Erros\nErros no envelope `{ codigo, mensagem, campo? }`.\n\n| HTTP | `codigo` | Quando |\n|---|---|---|\n| 400 | `CAMPO_INVALIDO` + `campo: id` | `<id>` do caminho não é inteiro |\n| 401 | `TOKEN_INVALIDO` | sem `Authorization: Bearer`, token malformado/expirado/revogado, sessão inativa ou conta inativa (checado antes de qualquer rota, exceto login e health) |\n| 403 | `ACESSO_NEGADO` | professor, ou aluno consultando outro aluno |\n| 404 | `REGISTRO_NAO_ENCONTRADO` | id inexistente (ou `<= 0`) |",
+      "method": "GET",
+      "url": "{{ _.baseUrl }}/aluno/{{ _.idAluno }}",
+      "body": {},
+      "parameters": [],
+      "headers": [],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token }}"
+      },
+      "metaSortKey": 3000,
+      "settingEncodeUrl": true,
+      "modified": 1794168000000,
+      "created": 1794168000000
+    },
+    {
+      "_id": "req_aluno_atualizar",
+      "_type": "request",
+      "parentId": "fld_aluno",
+      "name": "Atualizar aluno",
+      "description": "## O que faz\nEdita nome, telefone e/ou e-mail do aluno; só os campos enviados mudam.\n\n## Por que existe\nMantém o contato atualizado. Qualquer outra chave é recusada em vez de ignorada, para o cliente não achar que alterou algo.\n\n## Quem pode executar\n**Admin** ou **próprio aluno**. Outro aluno e professor recebem `403`. A existência é checada antes da validação de e-mail.\n\n## Corpo / parâmetros\nCaminho: `<id>` inteiro (`idAluno`).\nJSON (pelo menos um campo; texto não vazio):\n| Campo | Regra |\n|---|---|\n| `nome` | até 150 caracteres |\n| `telefone` | até 20 caracteres |\n| `email` | e-mail válido, até 255; único entre as contas |\n\n## Resposta de sucesso\n`200` → `{ id_aluno, nome, email, telefone, status }` (`status` `true` = ativo).\n\n## Erros\nErros no envelope `{ codigo, mensagem, campo? }`.\n\n| HTTP | `codigo` | Quando |\n|---|---|---|\n| 400 | `CAMPO_INVALIDO` + `campo: id` | `<id>` do caminho não é inteiro |\n| 400 | `JSON_INVALIDO` | corpo não é objeto JSON |\n| 400 | `CAMPO_OBRIGATORIO` | corpo vazio `{}` |\n| 400 | `CAMPO_INVALIDO` + `campo` | chave fora de `nome`/`telefone`/`email` · valor nulo, vazio ou não texto · tamanho excedido |\n| 400 | `EMAIL_INVALIDO` + `campo: email` | e-mail inválido |\n| 401 | `TOKEN_INVALIDO` | sem `Authorization: Bearer`, token malformado/expirado/revogado, sessão inativa ou conta inativa (checado antes de qualquer rota, exceto login e health) |\n| 403 | `ACESSO_NEGADO` | professor, ou aluno editando outro aluno |\n| 404 | `REGISTRO_NAO_ENCONTRADO` | id inexistente |\n| 409 | `EMAIL_EM_USO` + `campo: email` | e-mail de outra conta |\n| 413 | `CORPO_MUITO_GRANDE` | corpo maior que 16 KB (checado depois da autenticação) |",
+      "method": "PATCH",
+      "url": "{{ _.baseUrl }}/aluno/{{ _.idAluno }}",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"nome\": \"{{ _.alunoNome }}\"\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token }}"
+      },
+      "metaSortKey": 4000,
+      "settingEncodeUrl": true,
+      "modified": 1794168000000,
+      "created": 1794168000000
+    },
+    {
+      "_id": "req_aluno_status",
+      "_type": "request",
+      "parentId": "fld_aluno",
+      "name": "Alterar status do aluno",
+      "description": "## O que faz\nInativa (`false`) ou reativa (`true`) o aluno, preservando o histórico.\n\n## Por que existe\nAluno com histórico não pode ser excluído; inativar é a alternativa. Conta inativa não consegue autenticar e não registra avaliação.\n\n## Quem pode executar\n**Somente admin.** Professor e aluno (inclusive o próprio) recebem `403`.\n\n## Corpo / parâmetros\nCaminho: `<id>` inteiro (`idAluno`).\nJSON: `status` (booleano, obrigatório): `false` inativa, `true` reativa. Este exemplo usa `true` para não bloquear as demais requisições; com `false` o aluno deixa de autenticar.\n\n## Resposta de sucesso\n`204` sem corpo.\n\n## Erros\nErros no envelope `{ codigo, mensagem, campo? }`.\n\n| HTTP | `codigo` | Quando |\n|---|---|---|\n| 400 | `CAMPO_INVALIDO` + `campo: id` | `<id>` do caminho não é inteiro |\n| 400 | `JSON_INVALIDO` | corpo não é objeto JSON |\n| 400 | `CAMPO_OBRIGATORIO` + `campo: status` | `status` ausente ou nulo |\n| 400 | `CAMPO_INVALIDO` + `campo: status` | `status` não é booleano |\n| 401 | `TOKEN_INVALIDO` | sem `Authorization: Bearer`, token malformado/expirado/revogado, sessão inativa ou conta inativa (checado antes de qualquer rota, exceto login e health) |\n| 403 | `ACESSO_NEGADO` | chamador não é admin |\n| 404 | `REGISTRO_NAO_ENCONTRADO` | id inexistente |\n| 413 | `CORPO_MUITO_GRANDE` | corpo maior que 16 KB (checado depois da autenticação) |",
+      "method": "PATCH",
+      "url": "{{ _.baseUrl }}/aluno/{{ _.idAluno }}/status",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"status\": true\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token }}"
+      },
+      "metaSortKey": 5000,
+      "settingEncodeUrl": true,
+      "modified": 1794168000000,
+      "created": 1794168000000
+    },
+    {
+      "_id": "req_aluno_excluir",
+      "_type": "request",
+      "parentId": "fld_aluno",
+      "name": "Excluir aluno",
+      "description": "## O que faz\nExclui o aluno de verdade (não é inativação).\n\n## Por que existe\nRemove cadastro sem uso. Aluno com histórico (avaliação, vínculo, agendamento) é recusado pelo banco; a alternativa é `PATCH /aluno/<id>/status` com `false`.\n\n## Quem pode executar\n**Somente admin.** Professor e aluno recebem `403`.\n\n## Corpo / parâmetros\nCaminho: `<id>` inteiro (`idAluno`). Sem corpo.\n\n## Resposta de sucesso\n`204` sem corpo.\n\n## Erros\nErros no envelope `{ codigo, mensagem, campo? }`.\n\n| HTTP | `codigo` | Quando |\n|---|---|---|\n| 400 | `CAMPO_INVALIDO` + `campo: id` | `<id>` do caminho não é inteiro |\n| 401 | `TOKEN_INVALIDO` | sem `Authorization: Bearer`, token malformado/expirado/revogado, sessão inativa ou conta inativa (checado antes de qualquer rota, exceto login e health) |\n| 403 | `ACESSO_NEGADO` | chamador não é admin |\n| 404 | `REGISTRO_NAO_ENCONTRADO` | id inexistente (ou `<= 0`) |\n| 409 | `REGISTRO_EM_USO` | aluno com histórico |\n\n## Observações\nRode só ao final: as pastas seguintes usam `idAluno`.",
+      "method": "DELETE",
+      "url": "{{ _.baseUrl }}/aluno/{{ _.idAluno }}",
+      "body": {},
+      "parameters": [],
+      "headers": [],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token }}"
+      },
+      "metaSortKey": 6000,
+      "settingEncodeUrl": true,
+      "modified": 1794168000000,
+      "created": 1794168000000
+    },
+    {
+      "_id": "req_avaliacoes_hoje",
+      "_type": "request",
+      "parentId": "fld_avaliacoes",
+      "name": "Registrar avaliação de hoje",
+      "description": "## O que faz\nGrava a avaliação física do dia (data de hoje em `America/Sao_Paulo`). Se já existir avaliação do aluno para hoje, ela é substituída (upsert por aluno e dia).\n\n## Por que existe\nAcompanha a evolução de peso, altura e IMC do aluno; o IMC é calculado pelo banco.\n\n## Quem pode executar\nAdmin ou **próprio aluno** (`id` do token igual a `<id>`). Outro aluno e professor recebem `403`. Aluno inativo não registra (`403`, mesmo sendo o dono).\n\n## Corpo / parâmetros\nCaminho: `<id>` inteiro positivo (`idAluno`).\nJSON (chave fora desta lista é recusada):\n| Campo | Tipo | Obrigatório | Regra |\n|---|---|---|---|\n| `peso` | número | sim | maior que 0 e menor que 500; no máximo 2 casas decimais |\n| `altura` | número | sim | maior que 0 e menor que 3 (metros); no máximo 2 casas decimais |\n| `observacao` | texto ou `null` | não | até 2000 caracteres; em branco vira `null` |\n\n## Resposta de sucesso\n`200` (também na substituição do dia) → `{ id_avaliacao, id_aluno, data_avaliacao, peso, altura, imc, observacao }` (`data_avaliacao` `AAAA-MM-DD`; `peso` em kg, `altura` em metros; `imc` calculado pelo banco; `observacao` pode ser `null`).\n\n## Erros\nErros no envelope `{ codigo, mensagem, campo? }`; a `mensagem` é sempre `Operacao rejeitada.`.\n\n| HTTP | `codigo` | Quando |\n|---|---|---|\n| 400 | `JSON_INVALIDO` | corpo não é objeto JSON |\n| 400 | `CAMPO_OBRIGATORIO` + `campo` | `peso` ou `altura` ausente |\n| 400 | `CAMPO_INVALIDO` + `campo` | `id` ≤ 0 ou não inteiro · chave desconhecida · `peso`/`altura` não numérico, fora da faixa ou com mais de 2 casas · `observacao` não texto ou > 2000 · `campo: medidas` quando a combinação estoura o IMC |\n| 401 | `TOKEN_INVALIDO` | sem `Authorization: Bearer`, token malformado/expirado/revogado, sessão inativa ou conta inativa (checado antes de qualquer rota, exceto login e health) |\n| 403 | `ACESSO_NEGADO` | professor · aluno em `<id>` de outro aluno · aluno inativo |\n| 404 | `REGISTRO_NAO_ENCONTRADO` | aluno inexistente |\n| 413 | `CORPO_MUITO_GRANDE` | corpo maior que 16 KB (checado depois da autenticação) |",
+      "method": "POST",
+      "url": "{{ _.baseUrl }}/aluno/{{ _.idAluno }}/avaliacoes/hoje",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"peso\": {{ _.avaliacaoPeso }},\n  \"altura\": {{ _.avaliacaoAltura }},\n  \"observacao\": \"{{ _.avaliacaoObservacao }}\"\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token }}"
+      },
+      "metaSortKey": 1000,
+      "settingEncodeUrl": true,
+      "modified": 1794168000000,
+      "created": 1794168000000
+    },
+    {
+      "_id": "req_avaliacoes_atual",
+      "_type": "request",
+      "parentId": "fld_avaliacoes",
+      "name": "Buscar avaliação atual",
+      "description": "## O que faz\nDevolve a avaliação mais recente do aluno (maior `data_avaliacao`).\n\n## Por que existe\nMostra o estado físico mais recente sem precisar paginar o histórico.\n\n## Quem pode executar\nAdmin ou **próprio aluno** (`id` do token igual a `<id>`). Outro aluno e professor recebem `403`.\n\n## Corpo / parâmetros\nCaminho: `<id>` inteiro positivo (`idAluno`).\n\n## Resposta de sucesso\n`200` → `{ id_avaliacao, id_aluno, data_avaliacao, peso, altura, imc, observacao }` (`data_avaliacao` `AAAA-MM-DD`; `peso` em kg, `altura` em metros; `imc` calculado pelo banco; `observacao` pode ser `null`). `204` sem corpo quando o aluno ainda não tem nenhuma avaliação.\n\n## Erros\nErros no envelope `{ codigo, mensagem, campo? }`; a `mensagem` é sempre `Operacao rejeitada.`.\n\n| HTTP | `codigo` | Quando |\n|---|---|---|\n| 400 | `CAMPO_INVALIDO` + `campo: id` | `<id>` ≤ 0 ou não inteiro |\n| 401 | `TOKEN_INVALIDO` | sem `Authorization: Bearer`, token malformado/expirado/revogado, sessão inativa ou conta inativa (checado antes de qualquer rota, exceto login e health) |\n| 403 | `ACESSO_NEGADO` | professor · aluno em `<id>` de outro aluno |\n| 404 | `REGISTRO_NAO_ENCONTRADO` | aluno inexistente |",
+      "method": "GET",
+      "url": "{{ _.baseUrl }}/aluno/{{ _.idAluno }}/avaliacoes/atual",
+      "body": {},
+      "parameters": [],
+      "headers": [],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token }}"
+      },
+      "metaSortKey": 2000,
+      "settingEncodeUrl": true,
+      "modified": 1794168000000,
+      "created": 1794168000000
+    },
+    {
+      "_id": "req_avaliacoes_listar",
+      "_type": "request",
+      "parentId": "fld_avaliacoes",
+      "name": "Listar avaliações",
+      "description": "## O que faz\nLista o histórico de avaliações do aluno, da mais recente para a mais antiga.\n\n## Por que existe\nPermite acompanhar a evolução ao longo do tempo.\n\n## Quem pode executar\nAdmin ou **próprio aluno** (`id` do token igual a `<id>`). Outro aluno e professor recebem `403`.\n\n## Corpo / parâmetros\nCaminho: `<id>` inteiro positivo (`idAluno`).\n| Parâmetro (query) | Tipo | Obrigatório | Regra |\n|---|---|---|---|\n| `limit` | inteiro | não (padrão 20) | de 1 a 100 |\n| `offset` | inteiro | não (padrão 0) | maior ou igual a 0 |\n\n## Resposta de sucesso\n`200` → `{ itens: [`{ id_avaliacao, id_aluno, data_avaliacao, peso, altura, imc, observacao }` (`data_avaliacao` `AAAA-MM-DD`; `peso` em kg, `altura` em metros; `imc` calculado pelo banco; `observacao` pode ser `null`)], limit, offset, total }`.\n\n## Erros\nErros no envelope `{ codigo, mensagem, campo? }`; a `mensagem` é sempre `Operacao rejeitada.`. A permissão é checada antes de `limit`/`offset`.\n\n| HTTP | `codigo` | Quando |\n|---|---|---|\n| 400 | `CAMPO_INVALIDO` + `campo` | `id` ≤ 0 ou não inteiro · `limit` fora de 1–100 ou não inteiro · `offset` negativo ou não inteiro |\n| 401 | `TOKEN_INVALIDO` | sem `Authorization: Bearer`, token malformado/expirado/revogado, sessão inativa ou conta inativa (checado antes de qualquer rota, exceto login e health) |\n| 403 | `ACESSO_NEGADO` | professor · aluno em `<id>` de outro aluno |\n| 404 | `REGISTRO_NAO_ENCONTRADO` | aluno inexistente |",
+      "method": "GET",
+      "url": "{{ _.baseUrl }}/aluno/{{ _.idAluno }}/avaliacoes?limit=20&offset=0",
+      "body": {},
+      "parameters": [],
+      "headers": [],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token }}"
+      },
+      "metaSortKey": 3000,
+      "settingEncodeUrl": true,
+      "modified": 1794168000000,
+      "created": 1794168000000
+    },
+    {
+      "_id": "req_aulas_criar",
+      "_type": "request",
+      "parentId": "fld_aulas",
+      "name": "Criar aula",
+      "description": "## O que faz\nCria uma aula avulsa para um professor, sem vagas ocupadas.\n\n## Por que existe\nDefine a oferta de aulas que os alunos podem reservar.\n\n## Quem pode executar\n**Somente admin.** Professor e aluno recebem `403`.\n\n## Corpo / parâmetros\nJSON, todos obrigatórios (chave desconhecida é recusada):\n| Campo | Tipo | Regra |\n|---|---|---|\n| `id_professor` | inteiro | professor existente e ativo |\n| `data` | texto | `AAAA-MM-DD`, data existente, ano corrente ou seguinte, não anterior a hoje |\n| `hora_inicio` / `hora_fim` | texto | `HH:MM` (00:00–23:59); início no futuro; `hora_fim` depois de `hora_inicio` |\n| `tipo` | texto | `coletiva`, `individual` ou `experimental` |\n| `categoria` | texto | `musculacao`, `funcional`, `pilates`, `crossfit`, `danca` ou `spinning` |\n| `vagas_maxima` | inteiro | maior que 0; `individual` de 1 a 3 |\n\n## Resposta de sucesso\n`201` → `{ id_aula, id_professor, id_cronograma, data, hora_inicio, hora_fim, tipo, categoria, vagas_maxima, vagas_ocupadas, vagas_livres, status, data_cancelamento, cancelado_por }` (`data` `AAAA-MM-DD`; `hora_*` `HH:MM`; `status` `false` = aula cancelada; `data_cancelamento` em UTC ISO-8601 ou `null`; `cancelado_por` `\"admin\"`, `\"professor\"` ou `null`; `vagas_livres` = `vagas_maxima` − `vagas_ocupadas`). Na criação `vagas_ocupadas` = 0. Copie `id_aula` para `idAula` (o ambiente já lê esse campo).\n\n## Erros\nErros no envelope `{ codigo, mensagem, campo? }`.\n\n| HTTP | `codigo` | Quando |\n|---|---|---|\n| 400 | `JSON_INVALIDO` | corpo não é objeto JSON |\n| 400 | `CAMPO_OBRIGATORIO` + `campo` | campo ausente ou nulo |\n| 400 | `CAMPO_INVALIDO` + `campo` | chave desconhecida · formato/tipo errado · data fora do ano de vigência ou no passado · hora no passado · `hora_fim` ≤ início · `tipo`/`categoria` fora da lista · vagas inválidas · professor inexistente ou inativo (`campo: id_professor`) |\n| 401 | `TOKEN_INVALIDO` | sem `Authorization: Bearer`, token malformado/expirado/revogado, sessão inativa ou conta inativa (checado antes de qualquer rota, exceto login e health) |\n| 403 | `ACESSO_NEGADO` | chamador não é admin |\n| 409 | `HORARIO_CONFLITANTE` | professor já tem aula nesta data e horário |\n| 413 | `CORPO_MUITO_GRANDE` | corpo maior que 16 KB (checado depois da autenticação) |",
+      "method": "POST",
+      "url": "{{ _.baseUrl }}/aulas",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"id_professor\": {{ _.idProfessor }},\n  \"data\": \"{{ _.aulaData }}\",\n  \"hora_inicio\": \"{{ _.aulaHoraInicio }}\",\n  \"hora_fim\": \"{{ _.aulaHoraFim }}\",\n  \"tipo\": \"{{ _.aulaTipo }}\",\n  \"categoria\": \"{{ _.aulaCategoria }}\",\n  \"vagas_maxima\": {{ _.aulaVagasMaxima }}\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token }}"
+      },
+      "metaSortKey": 1000,
+      "settingEncodeUrl": true,
+      "modified": 1794168000000,
+      "created": 1794168000000
+    },
+    {
+      "_id": "req_aulas_listar",
+      "_type": "request",
+      "parentId": "fld_aulas",
+      "name": "Listar aulas",
+      "description": "## O que faz\nLista aulas de forma paginada, com filtros opcionais, trazendo a ocupação de cada uma.\n\n## Por que existe\nDá ao aluno a visão do que pode reservar e ao admin/professor a visão da grade.\n\n## Quem pode executar\n**Qualquer papel autenticado** (admin, professor, aluno); a leitura de aula é livre.\n\n## Corpo / parâmetros\n| Parâmetro (query) | Tipo | Obrigatório | Regra |\n|---|---|---|---|\n| `limit` | inteiro | não (padrão 20) | de 1 a 100 |\n| `offset` | inteiro | não (padrão 0) | maior ou igual a 0 |\n| `data` | texto | não | `AAAA-MM-DD`, data existente |\n| `idProfessor` | inteiro | não | filtra pelo professor |\n| `categoria` | texto | não | uma das categorias aceitas; vazio é recusado |\n\nOs filtros opcionais não estão na URL de exemplo; acrescente-os se quiser.\n\n## Resposta de sucesso\n`200` → `{ itens: [`{ id_aula, id_professor, id_cronograma, data, hora_inicio, hora_fim, tipo, categoria, vagas_maxima, vagas_ocupadas, vagas_livres, status, data_cancelamento, cancelado_por }` (`data` `AAAA-MM-DD`; `hora_*` `HH:MM`; `status` `false` = aula cancelada; `data_cancelamento` em UTC ISO-8601 ou `null`; `cancelado_por` `\"admin\"`, `\"professor\"` ou `null`; `vagas_livres` = `vagas_maxima` − `vagas_ocupadas`)], limit, offset, total }`.\n\n## Erros\nErros no envelope `{ codigo, mensagem, campo? }`.\n\n| HTTP | `codigo` | Quando |\n|---|---|---|\n| 400 | `CAMPO_INVALIDO` + `campo: limit` | `limit` não inteiro ou fora de 1 a 100 |\n| 400 | `CAMPO_INVALIDO` + `campo: offset` | `offset` não inteiro ou negativo |\n| 400 | `CAMPO_INVALIDO` + `campo` | `data` inválida · `idProfessor` não inteiro · `categoria` vazia ou fora da lista |\n| 401 | `TOKEN_INVALIDO` | sem `Authorization: Bearer`, token malformado/expirado/revogado, sessão inativa ou conta inativa (checado antes de qualquer rota, exceto login e health) |",
+      "method": "GET",
+      "url": "{{ _.baseUrl }}/aulas?limit=20&offset=0",
+      "body": {},
+      "parameters": [],
+      "headers": [],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token }}"
+      },
+      "metaSortKey": 2000,
+      "settingEncodeUrl": true,
+      "modified": 1794168000000,
+      "created": 1794168000000
+    },
+    {
+      "_id": "req_aulas_buscar",
+      "_type": "request",
+      "parentId": "fld_aulas",
+      "name": "Buscar aula por id",
+      "description": "## O que faz\nDevolve uma aula pelo id, com `vagas_ocupadas` e `vagas_livres`.\n\n## Por que existe\nDetalhe de uma aula para reserva, edição ou chamada.\n\n## Quem pode executar\n**Qualquer papel autenticado** (a leitura é livre).\n\n## Corpo / parâmetros\nCaminho: `<id>` inteiro (`idAula`).\n\n## Resposta de sucesso\n`200` → `{ id_aula, id_professor, id_cronograma, data, hora_inicio, hora_fim, tipo, categoria, vagas_maxima, vagas_ocupadas, vagas_livres, status, data_cancelamento, cancelado_por }` (`data` `AAAA-MM-DD`; `hora_*` `HH:MM`; `status` `false` = aula cancelada; `data_cancelamento` em UTC ISO-8601 ou `null`; `cancelado_por` `\"admin\"`, `\"professor\"` ou `null`; `vagas_livres` = `vagas_maxima` − `vagas_ocupadas`).\n\n## Erros\nErros no envelope `{ codigo, mensagem, campo? }`.\n\n| HTTP | `codigo` | Quando |\n|---|---|---|\n| 400 | `CAMPO_INVALIDO` + `campo: id` | `<id>` do caminho não é inteiro |\n| 401 | `TOKEN_INVALIDO` | sem `Authorization: Bearer`, token malformado/expirado/revogado, sessão inativa ou conta inativa (checado antes de qualquer rota, exceto login e health) |\n| 404 | `REGISTRO_NAO_ENCONTRADO` | aula inexistente |",
+      "method": "GET",
+      "url": "{{ _.baseUrl }}/aulas/{{ _.idAula }}",
+      "body": {},
+      "parameters": [],
+      "headers": [],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token }}"
+      },
+      "metaSortKey": 3000,
+      "settingEncodeUrl": true,
+      "modified": 1794168000000,
+      "created": 1794168000000
+    },
+    {
+      "_id": "req_aulas_atualizar",
+      "_type": "request",
+      "parentId": "fld_aulas",
+      "name": "Atualizar aula",
+      "description": "## O que faz\nAltera só os campos enviados da aula, com a aula travada na transação para nenhuma reserva entrar durante a edição. Só conta como alteração o valor diferente do atual. A combinação final de campos é validada.\n\n## Por que existe\nPermite corrigir horário, professor, tipo, categoria e vagas, sem quebrar quem já reservou: com agendamento ativo, data, horário e professor ficam travados e as vagas não descem abaixo da ocupação.\n\n## Quem pode executar\n**Admin** (qualquer aula) ou **professor da aula**. Aluno recebe `403`. O professor também recebe `403` se a aula é de outro professor, se já foi realizada (`data + hora_fim` passou) ou se tenta trocar `id_professor`. Aula inexistente dá `404`; aula cancelada dá `409` antes das regras do professor.\n\n## Corpo / parâmetros\nCaminho: `<id>` inteiro (`idAula`).\nJSON (pelo menos um campo; chave desconhecida é recusada; valor `null` é recusado):\n| Campo | Tipo | Regra |\n|---|---|---|\n| `id_professor` | inteiro | professor existente e ativo |\n| `data` | texto | `AAAA-MM-DD`; ano corrente ou seguinte; não pode ir para o passado |\n| `hora_inicio` / `hora_fim` | texto | `HH:MM`; não podem ficar no passado; fim depois do início |\n| `tipo` | texto | `coletiva`, `individual`, `experimental` (aula de cronograma só `coletiva`) |\n| `categoria` | texto | uma das 6 categorias |\n| `vagas_maxima` | inteiro | > 0; `individual` até 3 |\n\n## Resposta de sucesso\n`200` → `{ id_aula, id_professor, id_cronograma, data, hora_inicio, hora_fim, tipo, categoria, vagas_maxima, vagas_ocupadas, vagas_livres, status, data_cancelamento, cancelado_por }` (`data` `AAAA-MM-DD`; `hora_*` `HH:MM`; `status` `false` = aula cancelada; `data_cancelamento` em UTC ISO-8601 ou `null`; `cancelado_por` `\"admin\"`, `\"professor\"` ou `null`; `vagas_livres` = `vagas_maxima` − `vagas_ocupadas`).\n\n## Erros\nErros no envelope `{ codigo, mensagem, campo? }`.\n\n| HTTP | `codigo` | Quando |\n|---|---|---|\n| 400 | `CAMPO_INVALIDO` + `campo: id` | `<id>` do caminho não é inteiro |\n| 400 | `JSON_INVALIDO` | corpo não é objeto JSON |\n| 400 | `CAMPO_OBRIGATORIO` | corpo vazio `{}` |\n| 400 | `CAMPO_INVALIDO` + `campo` | chave desconhecida · valor nulo · formato/tipo errado · data ou hora no passado · data fora do ano de vigência · listas/limites violados · novo professor inexistente ou inativo |\n| 401 | `TOKEN_INVALIDO` | sem `Authorization: Bearer`, token malformado/expirado/revogado, sessão inativa ou conta inativa (checado antes de qualquer rota, exceto login e health) |\n| 403 | `ACESSO_NEGADO` | aluno · professor que não é o da aula · aula já realizada (professor) · professor tentando trocar `id_professor` |\n| 404 | `REGISTRO_NAO_ENCONTRADO` | aula inexistente |\n| 409 | `AULA_INATIVA` | aula cancelada |\n| 409 | `REGISTRO_EM_USO` + `campo` | aula com agendamento ativo e alteração de `data`, `hora_inicio`, `hora_fim` ou `id_professor`, ou `vagas_maxima` abaixo da ocupação |\n| 409 | `HORARIO_CONFLITANTE` | professor já tem aula nesta data e horário |\n| 409 | `AULA_CATEGORIA_DIVERGENTE` / `AULA_PROFESSOR_DIVERGENTE` | aula de cronograma: categoria ou professor diferem do cronograma |\n| 413 | `CORPO_MUITO_GRANDE` | corpo maior que 16 KB (checado depois da autenticação) |",
+      "method": "PATCH",
+      "url": "{{ _.baseUrl }}/aulas/{{ _.idAula }}",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"categoria\": \"{{ _.aulaCategoria }}\"\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token }}"
+      },
+      "metaSortKey": 4000,
+      "settingEncodeUrl": true,
+      "modified": 1794168000000,
+      "created": 1794168000000
+    },
+    {
+      "_id": "req_aulas_agendados",
+      "_type": "request",
+      "parentId": "fld_aulas",
+      "name": "Listar agendados da aula",
+      "description": "## O que faz\nLista os alunos agendados na aula, sem os agendamentos cancelados.\n\n## Por que existe\nDá ao professor e ao admin a lista de quem vem à aula, base da chamada.\n\n## Quem pode executar\n**Admin** (qualquer aula) ou **professor da aula**. Aluno recebe `403`. Professor de outra aula recebe `403` (aula inexistente dá `404`).\n\n## Corpo / parâmetros\nCaminho: `<id>` inteiro (`idAula`).\n| Parâmetro (query) | Tipo | Obrigatório | Regra |\n|---|---|---|---|\n| `limit` | inteiro | não (padrão 20) | de 1 a 100 |\n| `offset` | inteiro | não (padrão 0) | maior ou igual a 0 |\n\n## Resposta de sucesso\n`200` → `{ itens: [{ id_agendamento, id_aluno, nome_aluno, status }], limit, offset, total }`. Não traz CPF nem contato.\n\n## Erros\nErros no envelope `{ codigo, mensagem, campo? }`.\n\n| HTTP | `codigo` | Quando |\n|---|---|---|\n| 400 | `CAMPO_INVALIDO` + `campo: id` | `<id>` do caminho não é inteiro |\n| 400 | `CAMPO_INVALIDO` + `campo` | `limit` fora de 1–100 ou `offset` negativo/não inteiro |\n| 401 | `TOKEN_INVALIDO` | sem `Authorization: Bearer`, token malformado/expirado/revogado, sessão inativa ou conta inativa (checado antes de qualquer rota, exceto login e health) |\n| 403 | `ACESSO_NEGADO` | aluno · professor que não é o da aula |\n| 404 | `REGISTRO_NAO_ENCONTRADO` | aula inexistente |",
+      "method": "GET",
+      "url": "{{ _.baseUrl }}/aulas/{{ _.idAula }}/agendamentos?limit=20&offset=0",
+      "body": {},
+      "parameters": [],
+      "headers": [],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token }}"
+      },
+      "metaSortKey": 5000,
+      "settingEncodeUrl": true,
+      "modified": 1794168000000,
+      "created": 1794168000000
+    },
+    {
+      "_id": "req_aulas_chamada",
+      "_type": "request",
+      "parentId": "fld_aulas",
+      "name": "Registrar chamada",
+      "description": "## O que faz\nRegistra a presença (`presente`) ou falta (`faltou`) dos agendamentos da aula, tudo ou nada, na transação com a aula travada. `presente` grava `data_presenca` (UTC); `faltou` deixa `data_presenca` nula. Só os itens enviados mudam.\n\n## Por que existe\nFecha o ciclo do agendamento depois da aula: o professor registra quem compareceu.\n\n- **Primeiro envio** (nenhum agendamento da aula está `presente`/`faltou`): a lista deve trazer **todos** os agendamentos `agendado` da aula.\n- **Envios seguintes:** pode ser parcial; só entram itens a corrigir.\n\n## Quem pode executar\n**Professor da aula** ou **admin** (qualquer aula). Aluno recebe `403`, mas só depois de o corpo passar na validação de forma (corpo malformado dá `400` antes). Professor que **não** é o da aula recebe `404` (igual a aula inexistente, para não revelar que a aula existe).\n\n## Corpo / parâmetros\nCaminho: `<id>` inteiro (`idAula`).\n**O corpo é uma lista JSON na raiz** (não um objeto `{ itens: [...] }`; o objeto `{ itens }` só aparece na resposta). Cada item:\n| Campo | Tipo | Obrigatório | Regra |\n|---|---|---|---|\n| `id` | inteiro | sim | `id_agendamento` da aula |\n| `status` | texto | sim | `presente` ou `faltou` |\n\nChave diferente de `id`/`status` é recusada. Lista vazia e `id` repetido são recusados. Este exemplo usa um só agendamento (`idAgendamento`, copiado de *Reservar vaga*); com mais agendados ativos, inclua todos no primeiro envio. A chamada só é aceita a partir de `data + hora_inicio` (fuso `America/Sao_Paulo`), então com uma aula futura a resposta é `409 AGENDAMENTO_FORA_DA_JANELA`.\n\n## Resposta de sucesso\n`200` → `{ itens: [`{ id_agendamento, id_aluno, id_aula, data_agendamento, status, data_presenca, data_cancelamento }` (`data_agendamento` `AAAA-MM-DD`; `data_presenca` e `data_cancelamento` em UTC ISO-8601 ou `null`; `status` `agendado`, `presente`, `faltou` ou `cancelado`)] }`, um por item enviado, na ordem enviada; item cujo status não mudou volta com o estado atual.\n\n## Erros\nErros no envelope `{ codigo, mensagem, campo? }`.\n\n| HTTP | `codigo` | Quando |\n|---|---|---|\n| 400 | `CAMPO_INVALIDO` + `campo: id` | `<id>` do caminho não é inteiro |\n| 400 | `JSON_INVALIDO` | corpo não é JSON válido |\n| 400 | `CAMPO_INVALIDO` + `campo: corpo` | corpo não é lista · item não é objeto · **lista vazia** |\n| 400 | `CAMPO_OBRIGATORIO` + `campo` | item sem `id` ou sem `status` |\n| 400 | `CAMPO_INVALIDO` + `campo` | `id` não inteiro · `status` fora de `presente`/`faltou` · chave desconhecida · **`id` duplicado** na lista (`campo: id`) · `id` que não é agendamento da aula, **no primeiro envio** (`campo: id`) |\n| 401 | `TOKEN_INVALIDO` | sem `Authorization: Bearer`, token malformado/expirado/revogado, sessão inativa ou conta inativa (checado antes de qualquer rota, exceto login e health) |\n| 403 | `ACESSO_NEGADO` | aluno |\n| 404 | `REGISTRO_NAO_ENCONTRADO` | aula inexistente · **professor que não é o da aula** · `id` que não pertence à aula, **depois do primeiro envio** |\n| 409 | `AULA_INATIVA` | **aula cancelada** (checada antes dos itens) |\n| 409 | `AGENDAMENTO_FORA_DA_JANELA` | **chamada antes do início** da aula |\n| 409 | `REGISTRO_EM_USO` + `campo: id` | **primeiro envio com lista incompleta** (falta agendamento `agendado`) · item cujo agendamento está `cancelado` |\n| 413 | `CORPO_MUITO_GRANDE` | corpo maior que 16 KB (checado depois da autenticação) |",
+      "method": "PATCH",
+      "url": "{{ _.baseUrl }}/aulas/{{ _.idAula }}/chamada",
+      "body": {
+        "mimeType": "application/json",
+        "text": "[\n  {\n    \"id\": {{ _.idAgendamento }},\n    \"status\": \"presente\"\n  }\n]"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token }}"
+      },
+      "metaSortKey": 6000,
+      "settingEncodeUrl": true,
+      "modified": 1794168000000,
+      "created": 1794168000000
+    },
+    {
+      "_id": "req_aulas_cancelar",
+      "_type": "request",
+      "parentId": "fld_aulas",
+      "name": "Cancelar aula",
+      "description": "## O que faz\nCancela a aula (`status = false`, grava `data_cancelamento` e quem cancelou) e, na mesma transação, cancela em cascata todos os agendamentos `agendado` dela com o mesmo instante.\n\n## Por que existe\nAula que não vai acontecer deve liberar os alunos sem exigir cancelamento um a um. Aula já cancelada é idempotente.\n\n## Quem pode executar\n**Admin** (qualquer aula) ou **professor da aula**. Aluno recebe `403`; professor de outra aula recebe `403` (aula inexistente dá `404`).\n\n## Corpo / parâmetros\nCaminho: `<id>` inteiro (`idAula`). Sem corpo; o que vier é ignorado.\n\n## Resposta de sucesso\n`200` → `{ id_aula, id_professor, id_cronograma, data, hora_inicio, hora_fim, tipo, categoria, vagas_maxima, vagas_ocupadas, vagas_livres, status, data_cancelamento, cancelado_por }` (`data` `AAAA-MM-DD`; `hora_*` `HH:MM`; `status` `false` = aula cancelada; `data_cancelamento` em UTC ISO-8601 ou `null`; `cancelado_por` `\"admin\"`, `\"professor\"` ou `null`; `vagas_livres` = `vagas_maxima` − `vagas_ocupadas`), com `status: false`, `data_cancelamento` preenchida e `cancelado_por` `admin` ou `professor`. Aula já cancelada devolve `200` com o estado atual, sem alterar.\n\n## Erros\nErros no envelope `{ codigo, mensagem, campo? }`.\n\n| HTTP | `codigo` | Quando |\n|---|---|---|\n| 400 | `CAMPO_INVALIDO` + `campo: id` | `<id>` do caminho não é inteiro |\n| 401 | `TOKEN_INVALIDO` | sem `Authorization: Bearer`, token malformado/expirado/revogado, sessão inativa ou conta inativa (checado antes de qualquer rota, exceto login e health) |\n| 403 | `ACESSO_NEGADO` | aluno · professor que não é o da aula |\n| 404 | `REGISTRO_NAO_ENCONTRADO` | aula inexistente |\n| 409 | `AULA_DATA_PASSADA` | aula já realizada (`data + hora_fim` já passou) e ainda ativa |\n\n## Observações\nRode por último na pasta Aulas: depois dela os agendamentos `agendado` da aula ficam `cancelado`.",
+      "method": "POST",
+      "url": "{{ _.baseUrl }}/aulas/{{ _.idAula }}/cancelar",
+      "body": {},
+      "parameters": [],
+      "headers": [],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token }}"
+      },
+      "metaSortKey": 7000,
+      "settingEncodeUrl": true,
+      "modified": 1794168000000,
+      "created": 1794168000000
+    },
+    {
+      "_id": "req_agendamentos_reservar",
+      "_type": "request",
+      "parentId": "fld_agendamentos",
+      "name": "Reservar vaga",
+      "description": "## O que faz\nReserva uma vaga do aluno logado na aula. Se o aluno já teve agendamento cancelado nesta aula, a mesma linha é reativada (mesmo `id_agendamento`). A reserva roda na transação com a aula travada.\n\n## Por que existe\nÉ como o aluno ocupa vaga. Regras, nesta ordem: aula existe → ativa → data não passada → ano de vigência → pelo menos 2 horas de antecedência do início → sem agendamento ativo duplicado → vaga disponível. Data e janela são calculadas no banco (`America/Sao_Paulo`).\n\n## Quem pode executar\n**Somente aluno** (o id vem do token). Professor e admin recebem `403`.\n\n## Corpo / parâmetros\nJSON:\n| Campo | Tipo | Obrigatório | Regra |\n|---|---|---|---|\n| `id_aula` | inteiro | sim | aula existente |\n\nChave desconhecida é recusada. Limite: 10 requisições por minuto por usuário (conta também as que falham depois da autenticação).\n\n## Resposta de sucesso\n`201` → `{ id_agendamento, id_aluno, id_aula, data_agendamento, status, data_presenca, data_cancelamento }` (`data_agendamento` `AAAA-MM-DD`; `data_presenca` e `data_cancelamento` em UTC ISO-8601 ou `null`; `status` `agendado`, `presente`, `faltou` ou `cancelado`). Copie `id_agendamento` para `idAgendamento` (o ambiente já lê esse campo).\n\n## Erros\nErros no envelope `{ codigo, mensagem, campo? }`.\n\n| HTTP | `codigo` | Quando |\n|---|---|---|\n| 400 | `JSON_INVALIDO` | corpo não é objeto JSON |\n| 400 | `CAMPO_OBRIGATORIO` + `campo: id_aula` | `id_aula` ausente ou nulo |\n| 400 | `CAMPO_INVALIDO` + `campo` | chave desconhecida · `id_aula` não inteiro · `campo: data` quando o ano da aula não é o corrente nem o seguinte |\n| 401 | `TOKEN_INVALIDO` | sem `Authorization: Bearer`, token malformado/expirado/revogado, sessão inativa ou conta inativa (checado antes de qualquer rota, exceto login e health) |\n| 403 | `ACESSO_NEGADO` | admin ou professor |\n| 404 | `REGISTRO_NAO_ENCONTRADO` | aula inexistente |\n| 409 | `AULA_INATIVA` | aula cancelada |\n| 409 | `AULA_DATA_PASSADA` | data da aula anterior a hoje |\n| 409 | `AGENDAMENTO_FORA_DA_JANELA` | faltam menos de 2 h para o início, ou a aula já começou |\n| 409 | `AGENDAMENTO_DUPLICADO` | aluno já tem agendamento ativo na aula |\n| 409 | `AULA_SEM_VAGAS` | ocupação já atingiu `vagas_maxima` |\n| 413 | `CORPO_MUITO_GRANDE` | corpo maior que 16 KB (checado depois da autenticação) |\n| 429 | `MUITAS_TENTATIVAS` | mais de 10 `POST` por minuto do mesmo usuário; traz `Retry-After` em segundos |",
+      "method": "POST",
+      "url": "{{ _.baseUrl }}/agendamentos",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"id_aula\": {{ _.idAula }}\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token }}"
+      },
+      "metaSortKey": 1000,
+      "settingEncodeUrl": true,
+      "modified": 1794168000000,
+      "created": 1794168000000
+    },
+    {
+      "_id": "req_agendamentos_listar",
+      "_type": "request",
+      "parentId": "fld_agendamentos",
+      "name": "Listar meus agendamentos",
+      "description": "## O que faz\nLista os agendamentos do aluno logado (todos os status), em ordem de id.\n\n## Por que existe\nMostra ao aluno suas reservas, presenças e cancelamentos.\n\n## Quem pode executar\n**Somente aluno**, e só vê os próprios. Professor e admin recebem `403`.\n\n## Corpo / parâmetros\n| Parâmetro (query) | Tipo | Obrigatório | Regra |\n|---|---|---|---|\n| `limit` | inteiro | não (padrão 20) | de 1 a 100 |\n| `offset` | inteiro | não (padrão 0) | maior ou igual a 0 |\n\n## Resposta de sucesso\n`200` → `{ itens: [`{ id_agendamento, id_aluno, id_aula, data_agendamento, status, data_presenca, data_cancelamento }` (`data_agendamento` `AAAA-MM-DD`; `data_presenca` e `data_cancelamento` em UTC ISO-8601 ou `null`; `status` `agendado`, `presente`, `faltou` ou `cancelado`)], limit, offset, total }`.\n\n## Erros\nErros no envelope `{ codigo, mensagem, campo? }`.\n\n| HTTP | `codigo` | Quando |\n|---|---|---|\n| 400 | `CAMPO_INVALIDO` + `campo: limit` | `limit` não inteiro ou fora de 1 a 100 |\n| 400 | `CAMPO_INVALIDO` + `campo: offset` | `offset` não inteiro ou negativo |\n| 401 | `TOKEN_INVALIDO` | sem `Authorization: Bearer`, token malformado/expirado/revogado, sessão inativa ou conta inativa (checado antes de qualquer rota, exceto login e health) |\n| 403 | `ACESSO_NEGADO` | admin ou professor |",
+      "method": "GET",
+      "url": "{{ _.baseUrl }}/agendamentos?limit=20&offset=0",
+      "body": {},
+      "parameters": [],
+      "headers": [],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token }}"
+      },
+      "metaSortKey": 2000,
+      "settingEncodeUrl": true,
+      "modified": 1794168000000,
+      "created": 1794168000000
+    },
+    {
+      "_id": "req_agendamentos_cancelar",
+      "_type": "request",
+      "parentId": "fld_agendamentos",
+      "name": "Cancelar agendamento",
+      "description": "## O que faz\nCancela o agendamento do aluno (`status = cancelado`, grava `data_cancelamento`). Agendamento já cancelado devolve `200` com o estado atual.\n\n## Por que existe\nLibera a vaga para outro aluno. Só é permitido com pelo menos 2 horas de antecedência do início da aula (calculado no banco, `America/Sao_Paulo`).\n\n## Quem pode executar\n**Somente aluno, dono do agendamento.** Agendamento de outro aluno responde `404`, igual a id inexistente, para não revelar que o id existe. Professor e admin recebem `403`.\n\n## Corpo / parâmetros\nCaminho: `<id>` inteiro (`idAgendamento`).\nJSON:\n| Campo | Tipo | Obrigatório | Regra |\n|---|---|---|---|\n| `status` | texto | sim | único valor aceito: `cancelado` |\n\nChave desconhecida é recusada. Limite: 20 requisições por minuto por usuário.\n\n## Resposta de sucesso\n`200` → `{ id_agendamento, id_aluno, id_aula, data_agendamento, status, data_presenca, data_cancelamento }` (`data_agendamento` `AAAA-MM-DD`; `data_presenca` e `data_cancelamento` em UTC ISO-8601 ou `null`; `status` `agendado`, `presente`, `faltou` ou `cancelado`).\n\n## Erros\nErros no envelope `{ codigo, mensagem, campo? }`.\n\n| HTTP | `codigo` | Quando |\n|---|---|---|\n| 400 | `CAMPO_INVALIDO` + `campo: id` | `<id>` do caminho não é inteiro |\n| 400 | `JSON_INVALIDO` | corpo não é objeto JSON |\n| 400 | `CAMPO_OBRIGATORIO` + `campo: status` | `status` ausente ou nulo |\n| 400 | `CAMPO_INVALIDO` + `campo` | chave desconhecida · `status` diferente de `cancelado` |\n| 401 | `TOKEN_INVALIDO` | sem `Authorization: Bearer`, token malformado/expirado/revogado, sessão inativa ou conta inativa (checado antes de qualquer rota, exceto login e health) |\n| 403 | `ACESSO_NEGADO` | admin ou professor |\n| 404 | `REGISTRO_NAO_ENCONTRADO` | agendamento inexistente ou de outro aluno |\n| 409 | `AGENDAMENTO_FORA_DA_JANELA` | faltam menos de 2 h para o início, ou a aula já começou |\n| 413 | `CORPO_MUITO_GRANDE` | corpo maior que 16 KB (checado depois da autenticação) |\n| 429 | `MUITAS_TENTATIVAS` | mais de 20 `PATCH` por minuto do mesmo usuário; traz `Retry-After` |",
+      "method": "PATCH",
+      "url": "{{ _.baseUrl }}/agendamentos/{{ _.idAgendamento }}",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"status\": \"cancelado\"\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token }}"
+      },
+      "metaSortKey": 3000,
+      "settingEncodeUrl": true,
       "modified": 1794168000000,
       "created": 1794168000000
     },
@@ -215,906 +1096,6 @@
       "settingEncodeUrl": true,
       "modified": 1794960000000,
       "created": 1794960000000
-    },
-    {
-      "_id": "fld_auth",
-      "_type": "request_group",
-      "parentId": "wrk_grazifit_api",
-      "name": "Auth",
-      "description": "",
-      "environment": {},
-      "metaSortKey": 1000,
-      "modified": 1794168000000,
-      "created": 1794168000000
-    },
-    {
-      "_id": "fld_admin",
-      "_type": "request_group",
-      "parentId": "wrk_grazifit_api",
-      "name": "Admin",
-      "description": "Rotas `/admin`.",
-      "environment": {},
-      "metaSortKey": 2000,
-      "modified": 1794168000000,
-      "created": 1794168000000
-    },
-    {
-      "_id": "fld_aluno",
-      "_type": "request_group",
-      "parentId": "wrk_grazifit_api",
-      "name": "Aluno",
-      "description": "Rotas `/aluno`. Já segue o envelope de erro em tudo.",
-      "environment": {},
-      "metaSortKey": 3000,
-      "modified": 1794168000000,
-      "created": 1794168000000
-    },
-    {
-      "_id": "fld_professor",
-      "_type": "request_group",
-      "parentId": "wrk_grazifit_api",
-      "name": "Professor",
-      "description": "Rotas `/professor`.",
-      "environment": {},
-      "metaSortKey": 4000,
-      "modified": 1794168000000,
-      "created": 1794168000000
-    },
-    {
-      "_id": "fld_aulas",
-      "_type": "request_group",
-      "parentId": "wrk_grazifit_api",
-      "name": "Aulas",
-      "description": "Rotas `/aulas`.",
-      "environment": {},
-      "metaSortKey": 5000,
-      "modified": 1794168000000,
-      "created": 1794168000000
-    },
-    {
-      "_id": "fld_agendamentos",
-      "_type": "request_group",
-      "parentId": "wrk_grazifit_api",
-      "name": "Agendamentos",
-      "description": "Rotas `/agendamentos`. Só o aluno opera os próprios agendamentos; professor e admin recebem `403`.",
-      "environment": {},
-      "metaSortKey": 5500,
-      "modified": 1794168000000,
-      "created": 1794168000000
-    },
-    {
-      "_id": "fld_aulas_cenarios_de_validacao",
-      "_type": "request_group",
-      "parentId": "wrk_grazifit_api",
-      "name": "Aulas — cenarios de validacao",
-      "description": "Requests que devem falhar, um por regra. Rode **Aulas › Criar aula** antes.",
-      "environment": {},
-      "metaSortKey": 6000,
-      "modified": 1794168000000,
-      "created": 1794168000000
-    },
-    {
-      "_id": "fld_infra",
-      "_type": "request_group",
-      "parentId": "wrk_grazifit_api",
-      "name": "Infra",
-      "description": "Rotas de infraestrutura, consumidas pelo healthcheck do compose e não pelo app.",
-      "environment": {},
-      "metaSortKey": 7000,
-      "modified": 1794168000000,
-      "created": 1794168000000
-    },
-    {
-      "_id": "req_auth_login",
-      "_type": "request",
-      "parentId": "fld_auth",
-      "name": "Login",
-      "description": "Admin, professor ou aluno.\n\n**Sucesso:** `200` → `{ access_token, token_type, expires_in, usuario: { id, papel, nome } }`.\n\n**Erros:** `400 REQUISICAO_INVALIDA` · `401 CREDENCIAIS_INVALIDAS` · `429 MUITAS_TENTATIVAS`.",
-      "method": "POST",
-      "url": "{{ _.baseUrl }}/auth/login",
-      "body": {
-        "mimeType": "application/json",
-        "text": "{\n  \"email\": \"{{ _.loginEmail }}\",\n  \"senha\": \"{{ _.loginSenha }}\"\n}"
-      },
-      "parameters": [],
-      "headers": [
-        {
-          "name": "Content-Type",
-          "value": "application/json"
-        }
-      ],
-      "authentication": {},
-      "metaSortKey": 1000,
-      "settingEncodeUrl": true,
-      "modified": 1794168000000,
-      "created": 1794168000000
-    },
-    {
-      "_id": "req_auth_logout",
-      "_type": "request",
-      "parentId": "fld_auth",
-      "name": "Logout",
-      "description": "Encerra a sessao do token atual. **Sucesso:** `204`. Sem token valido: `401 TOKEN_INVALIDO`.",
-      "method": "POST",
-      "url": "{{ _.baseUrl }}/auth/logout",
-      "body": {},
-      "parameters": [],
-      "headers": [],
-      "authentication": {
-        "type": "bearer",
-        "token": "{{ _.token }}"
-      },
-      "metaSortKey": 2000,
-      "settingEncodeUrl": true,
-      "modified": 1794168000000,
-      "created": 1794168000000
-    },
-    {
-      "_id": "req_admin_criar_admin",
-      "_type": "request",
-      "parentId": "fld_admin",
-      "name": "Criar admin",
-      "description": "**Aceita (JSON)**\n| Campo | Obrig. | Regra |\n|---|---|---|\n| `cpf` | sim | CPF válido; pontuação é removida |\n| `senha` | sim | mínimo 8 caracteres |\n| `nome` | sim | texto |\n| `email` | sim | e-mail válido; gravado em minúsculas |\n| `telefone` | não | texto |\n\n**Sucesso:** `201` → `{ id_admin, nome, email, telefone }`\n\n**Erros** — Todos os erros vêm como `{ \"erro\": \"<mensagem>\" }` (ainda sem o envelope D64).\n| HTTP | Quando |\n|---|---|\n| 400 | JSON inválido · campo obrigatório ausente · CPF inválido · e-mail inválido · senha < 8 |\n| 409 | CPF ou e-mail já cadastrado |\n| 500 | qualquer outra falha |",
-      "method": "POST",
-      "url": "{{ _.baseUrl }}/admin",
-      "body": {
-        "mimeType": "application/json",
-        "text": "{\n  \"cpf\": \"{{ _.novoCpf }}\",\n  \"senha\": \"{{ _.novaSenha }}\",\n  \"nome\": \"Admin Teste\",\n  \"email\": \"{{ _.novoEmail }}\",\n  \"telefone\": \"11999990000\"\n}"
-      },
-      "parameters": [],
-      "headers": [
-        {
-          "name": "Content-Type",
-          "value": "application/json"
-        }
-      ],
-      "authentication": {
-        "type": "bearer",
-        "token": "{{ _.token }}"
-      },
-      "metaSortKey": 1000,
-      "settingEncodeUrl": true,
-      "modified": 1794168000000,
-      "created": 1794168000000
-    },
-    {
-      "_id": "req_admin_buscar_admin_por_id",
-      "_type": "request",
-      "parentId": "fld_admin",
-      "name": "Buscar admin por id",
-      "description": "**Aceita:** `id` inteiro na rota.\n\n**Sucesso:** `200` → `{ id_admin, nome, email, telefone }`\n\n**Erros** — Todos os erros vêm como `{ \"erro\": \"<mensagem>\" }` (ainda sem o envelope D64).\n| HTTP | Quando |\n|---|---|\n| 400 | id não é inteiro |\n| 404 | admin não existe |\n| 500 | qualquer outra falha |",
-      "method": "GET",
-      "url": "{{ _.baseUrl }}/admin/{{ _.idAdmin }}",
-      "body": {},
-      "parameters": [],
-      "headers": [],
-      "authentication": {
-        "type": "bearer",
-        "token": "{{ _.token }}"
-      },
-      "metaSortKey": 2000,
-      "settingEncodeUrl": true,
-      "modified": 1794168000000,
-      "created": 1794168000000
-    },
-    {
-      "_id": "req_admin_atualizar_admin",
-      "_type": "request",
-      "parentId": "fld_admin",
-      "name": "Atualizar admin",
-      "description": "**Aceita (JSON):** só os campos que mudam. Chaves desconhecidas são ignoradas.\n| Campo | Regra |\n|---|---|\n| `nome` | texto |\n| `email` | e-mail válido |\n| `telefone` | texto |\n| `senha` | mínimo 8 caracteres |\n\n**Sucesso:** `200` → admin atualizado\n\n**Erros** — Todos os erros vêm como `{ \"erro\": \"<mensagem>\" }` (ainda sem o envelope D64).\n| HTTP | Quando |\n|---|---|\n| 400 | id não é inteiro · JSON inválido · e-mail inválido · senha < 8 |\n| 404 | admin não existe |\n| 409 | e-mail já cadastrado |\n| 500 | qualquer outra falha |",
-      "method": "PATCH",
-      "url": "{{ _.baseUrl }}/admin/{{ _.idAdmin }}",
-      "body": {
-        "mimeType": "application/json",
-        "text": "{\n  \"nome\": \"Admin Renomeado\",\n  \"telefone\": \"11988887777\"\n}"
-      },
-      "parameters": [],
-      "headers": [
-        {
-          "name": "Content-Type",
-          "value": "application/json"
-        }
-      ],
-      "authentication": {
-        "type": "bearer",
-        "token": "{{ _.token }}"
-      },
-      "metaSortKey": 3000,
-      "settingEncodeUrl": true,
-      "modified": 1794168000000,
-      "created": 1794168000000
-    },
-    {
-      "_id": "req_admin_excluir_admin",
-      "_type": "request",
-      "parentId": "fld_admin",
-      "name": "Excluir admin",
-      "description": "**Aceita:** `id` inteiro na rota.\n\n**Sucesso:** `204`, sem corpo\n\n**Erros** — Todos os erros vêm como `{ \"erro\": \"<mensagem>\" }` (ainda sem o envelope D64).\n| HTTP | Quando |\n|---|---|\n| 400 | id não é inteiro |\n| 404 | admin não existe |\n| 500 | qualquer outra falha |",
-      "method": "DELETE",
-      "url": "{{ _.baseUrl }}/admin/{{ _.idAdmin }}",
-      "body": {},
-      "parameters": [],
-      "headers": [],
-      "authentication": {
-        "type": "bearer",
-        "token": "{{ _.token }}"
-      },
-      "metaSortKey": 4000,
-      "settingEncodeUrl": true,
-      "modified": 1794168000000,
-      "created": 1794168000000
-    },
-    {
-      "_id": "req_aluno_criar_aluno",
-      "_type": "request",
-      "parentId": "fld_aluno",
-      "name": "Criar aluno",
-      "description": "**Aceita (JSON)**\n| Campo | Obrig. | Regra |\n|---|---|---|\n| `cpf` | sim | CPF válido; pontuação é removida |\n| `senha` | sim | 8 a 12 caracteres |\n| `nome` | sim | até 150 |\n| `telefone` | sim | até 20 |\n| `email` | sim | e-mail válido, até 255; gravado em minúsculas |\n| `data_nascimento` | sim | `AAAA-MM-DD`, data existente e anterior a hoje |\n| `id_endereco` | não | inteiro |\n| `restricao_medica` | não | texto; em branco vira `null` |\n| `observacao_saude` | não | texto; em branco vira `null` |\n\n**Sucesso:** `201` → `{ id_aluno, nome, email, telefone, status }`\n\n**Erros** — Todos os erros vêm no envelope `{ codigo, mensagem, campo? }`.\n| HTTP | `codigo` | Quando |\n|---|---|---|\n| 400 | `JSON_INVALIDO` | corpo não é um objeto JSON |\n| 400 | `CAMPO_OBRIGATORIO` + `campo` | obrigatório ausente ou em branco |\n| 400 | `CAMPO_INVALIDO` + `campo` | tamanho fora do limite · data fora do formato |\n| 400 | `CPF_INVALIDO` / `EMAIL_INVALIDO` | formato inválido |\n| 400 | `DATA_NASCIMENTO_INVALIDA` | data hoje ou no futuro |\n| 409 | `CPF_EM_USO` / `EMAIL_EM_USO` | já cadastrado |\n| 500 | `ERRO_INTERNO` | falha não mapeada (ex.: `id_endereco` inexistente) |",
-      "method": "POST",
-      "url": "{{ _.baseUrl }}/aluno",
-      "body": {
-        "mimeType": "application/json",
-        "text": "{\n  \"cpf\": \"{{ _.novoCpf }}\",\n  \"senha\": \"{{ _.novaSenha }}\",\n  \"nome\": \"Aluno Teste\",\n  \"telefone\": \"11999990000\",\n  \"email\": \"{{ _.novoEmail }}\",\n  \"data_nascimento\": \"1995-04-20\",\n  \"restricao_medica\": \"\",\n  \"observacao_saude\": \"\"\n}"
-      },
-      "parameters": [],
-      "headers": [
-        {
-          "name": "Content-Type",
-          "value": "application/json"
-        }
-      ],
-      "authentication": {
-        "type": "bearer",
-        "token": "{{ _.token }}"
-      },
-      "metaSortKey": 1000,
-      "settingEncodeUrl": true,
-      "modified": 1794168000000,
-      "created": 1794168000000
-    },
-    {
-      "_id": "req_aluno_listar_alunos",
-      "_type": "request",
-      "parentId": "fld_aluno",
-      "name": "Listar alunos",
-      "description": "**Aceita (query)**\n| Parâmetro | Padrão | Regra |\n|---|---|---|\n| `limit` | 20 | inteiro de 1 a 100 |\n| `offset` | 0 | inteiro ≥ 0 |\n\n**Sucesso:** `200` → `{ itens: [aluno], limit, offset, total }`. Há próxima página se `offset + itens.length < total`.\n\n**Erros** — Todos os erros vêm no envelope `{ codigo, mensagem, campo? }`.\n| HTTP | `codigo` | Quando |\n|---|---|---|\n| 400 | `CAMPO_INVALIDO` + `campo` | `limit` ou `offset` fora da regra |\n| 500 | `ERRO_INTERNO` | falha não mapeada |",
-      "method": "GET",
-      "url": "{{ _.baseUrl }}/aluno?limit=20&offset=0",
-      "body": {},
-      "parameters": [],
-      "headers": [],
-      "authentication": {
-        "type": "bearer",
-        "token": "{{ _.token }}"
-      },
-      "metaSortKey": 2000,
-      "settingEncodeUrl": true,
-      "modified": 1794168000000,
-      "created": 1794168000000
-    },
-    {
-      "_id": "req_aluno_buscar_aluno_por_id",
-      "_type": "request",
-      "parentId": "fld_aluno",
-      "name": "Buscar aluno por id",
-      "description": "**Aceita:** `id` inteiro na rota.\n\n**Sucesso:** `200` → `{ id_aluno, nome, email, telefone, status }`\n\n**Erros** — Todos os erros vêm no envelope `{ codigo, mensagem, campo? }`.\n| HTTP | `codigo` | Quando |\n|---|---|---|\n| 400 | `CAMPO_INVALIDO` (`campo: id`) | id não é inteiro |\n| 404 | `REGISTRO_NAO_ENCONTRADO` | aluno não existe |\n| 500 | `ERRO_INTERNO` | falha não mapeada |",
-      "method": "GET",
-      "url": "{{ _.baseUrl }}/aluno/{{ _.idAluno }}",
-      "body": {},
-      "parameters": [],
-      "headers": [],
-      "authentication": {
-        "type": "bearer",
-        "token": "{{ _.token }}"
-      },
-      "metaSortKey": 3000,
-      "settingEncodeUrl": true,
-      "modified": 1794168000000,
-      "created": 1794168000000
-    },
-    {
-      "_id": "req_aluno_atualizar_aluno",
-      "_type": "request",
-      "parentId": "fld_aluno",
-      "name": "Atualizar aluno",
-      "description": "**Aceita (JSON):** só `nome`, `telefone` e `email`, ao menos um. Mesmos limites do cadastro.\nQualquer outra chave é **recusada** (status tem rota própria).\n\n**Sucesso:** `200` → aluno atualizado\n\n**Erros** — Todos os erros vêm no envelope `{ codigo, mensagem, campo? }`.\n| HTTP | `codigo` | Quando |\n|---|---|---|\n| 400 | `JSON_INVALIDO` | corpo não é um objeto JSON |\n| 400 | `CAMPO_OBRIGATORIO` | corpo vazio `{}` |\n| 400 | `CAMPO_INVALIDO` + `campo` | id inválido · chave não editável · valor `null`/vazio · tamanho |\n| 400 | `EMAIL_INVALIDO` | formato inválido |\n| 404 | `REGISTRO_NAO_ENCONTRADO` | aluno não existe |\n| 409 | `EMAIL_EM_USO` | e-mail de outro aluno |\n| 500 | `ERRO_INTERNO` | falha não mapeada |",
-      "method": "PATCH",
-      "url": "{{ _.baseUrl }}/aluno/{{ _.idAluno }}",
-      "body": {
-        "mimeType": "application/json",
-        "text": "{\n  \"nome\": \"Aluno Renomeado\",\n  \"telefone\": \"11988887777\"\n}"
-      },
-      "parameters": [],
-      "headers": [
-        {
-          "name": "Content-Type",
-          "value": "application/json"
-        }
-      ],
-      "authentication": {
-        "type": "bearer",
-        "token": "{{ _.token }}"
-      },
-      "metaSortKey": 4000,
-      "settingEncodeUrl": true,
-      "modified": 1794168000000,
-      "created": 1794168000000
-    },
-    {
-      "_id": "req_aluno_alterar_status_do_aluno",
-      "_type": "request",
-      "parentId": "fld_aluno",
-      "name": "Alterar status do aluno",
-      "description": "**Aceita (JSON):** `{ \"status\": false }` inativa · `{ \"status\": true }` reativa.\n\n**Sucesso:** `204`, sem corpo\n\n**Erros** — Todos os erros vêm no envelope `{ codigo, mensagem, campo? }`.\n| HTTP | `codigo` | Quando |\n|---|---|---|\n| 400 | `JSON_INVALIDO` | corpo não é um objeto JSON |\n| 400 | `CAMPO_OBRIGATORIO` (`campo: status`) | `status` ausente |\n| 400 | `CAMPO_INVALIDO` + `campo` | id inválido · `status` não é booleano |\n| 404 | `REGISTRO_NAO_ENCONTRADO` | aluno não existe |\n| 500 | `ERRO_INTERNO` | falha não mapeada |",
-      "method": "PATCH",
-      "url": "{{ _.baseUrl }}/aluno/{{ _.idAluno }}/status",
-      "body": {
-        "mimeType": "application/json",
-        "text": "{\n  \"status\": false\n}"
-      },
-      "parameters": [],
-      "headers": [
-        {
-          "name": "Content-Type",
-          "value": "application/json"
-        }
-      ],
-      "authentication": {
-        "type": "bearer",
-        "token": "{{ _.token }}"
-      },
-      "metaSortKey": 5000,
-      "settingEncodeUrl": true,
-      "modified": 1794168000000,
-      "created": 1794168000000
-    },
-    {
-      "_id": "req_aluno_excluir_aluno",
-      "_type": "request",
-      "parentId": "fld_aluno",
-      "name": "Excluir aluno",
-      "description": "**Aceita:** `id` inteiro na rota. Exclusão definitiva; para manter o histórico, inative.\n\n**Sucesso:** `204`, sem corpo\n\n**Erros** — Todos os erros vêm no envelope `{ codigo, mensagem, campo? }`.\n| HTTP | `codigo` | Quando |\n|---|---|---|\n| 400 | `CAMPO_INVALIDO` (`campo: id`) | id não é inteiro |\n| 404 | `REGISTRO_NAO_ENCONTRADO` | aluno não existe |\n| 409 | `REGISTRO_EM_USO` | aluno tem avaliação, vínculo, agendamento ou histórico |\n| 500 | `ERRO_INTERNO` | falha não mapeada |",
-      "method": "DELETE",
-      "url": "{{ _.baseUrl }}/aluno/{{ _.idAluno }}",
-      "body": {},
-      "parameters": [],
-      "headers": [],
-      "authentication": {
-        "type": "bearer",
-        "token": "{{ _.token }}"
-      },
-      "metaSortKey": 6000,
-      "settingEncodeUrl": true,
-      "modified": 1794168000000,
-      "created": 1794168000000
-    },
-    {
-      "_id": "req_professor_criar_professor",
-      "_type": "request",
-      "parentId": "fld_professor",
-      "name": "Criar professor",
-      "description": "**Aceita (JSON)**\n| Campo | Obrig. | Regra |\n|---|---|---|\n| `cpf` | sim | CPF válido; pontuação é removida |\n| `senha` | sim | 8 a 12 caracteres |\n| `nome` | sim | até 150 |\n| `telefone` | sim | até 20 |\n| `email` | sim | e-mail válido; gravado em minúsculas |\n\n**Sucesso:** `201` → `{ id_professor, nome, email, telefone, status }`\n\n**Erros** — Dois formatos: erro de **forma** (JSON, obrigatório, tamanho, id) e o 500 vêm como `{ \"erro\": \"<mensagem>\" }`; erro de **regra/banco** vem no envelope `{ codigo, mensagem, campo? }`.\n| HTTP | Retorno | Quando |\n|---|---|---|\n| 400 | `{ erro }` | JSON inválido · obrigatório ausente · tamanho fora do limite |\n| 400 | `CPF_INVALIDO` / `EMAIL_INVALIDO` | formato inválido |\n| 409 | `CPF_EM_USO` / `EMAIL_EM_USO` | já cadastrado |\n| 500 | `{ erro }` | falha não mapeada |",
-      "method": "POST",
-      "url": "{{ _.baseUrl }}/professor",
-      "body": {
-        "mimeType": "application/json",
-        "text": "{\n  \"cpf\": \"{{ _.novoCpf }}\",\n  \"senha\": \"{{ _.novaSenha }}\",\n  \"nome\": \"Professor Teste\",\n  \"telefone\": \"11999990000\",\n  \"email\": \"{{ _.novoEmail }}\"\n}"
-      },
-      "parameters": [],
-      "headers": [
-        {
-          "name": "Content-Type",
-          "value": "application/json"
-        }
-      ],
-      "authentication": {
-        "type": "bearer",
-        "token": "{{ _.token }}"
-      },
-      "metaSortKey": 1000,
-      "settingEncodeUrl": true,
-      "modified": 1794168000000,
-      "created": 1794168000000
-    },
-    {
-      "_id": "req_professor_buscar_professor_por_id",
-      "_type": "request",
-      "parentId": "fld_professor",
-      "name": "Buscar professor por id",
-      "description": "**Aceita:** `id` inteiro na rota.\n\n**Sucesso:** `200` → `{ id_professor, nome, email, telefone, status }`\n\n**Erros** — Dois formatos: erro de **forma** (JSON, obrigatório, tamanho, id) e o 500 vêm como `{ \"erro\": \"<mensagem>\" }`; erro de **regra/banco** vem no envelope `{ codigo, mensagem, campo? }`.\n| HTTP | Retorno | Quando |\n|---|---|---|\n| 400 | `{ erro }` | id não é inteiro |\n| 404 | `REGISTRO_NAO_ENCONTRADO` | professor não existe |\n| 500 | `{ erro }` | falha não mapeada |",
-      "method": "GET",
-      "url": "{{ _.baseUrl }}/professor/{{ _.idProfessor }}",
-      "body": {},
-      "parameters": [],
-      "headers": [],
-      "authentication": {
-        "type": "bearer",
-        "token": "{{ _.token }}"
-      },
-      "metaSortKey": 2000,
-      "settingEncodeUrl": true,
-      "modified": 1794168000000,
-      "created": 1794168000000
-    },
-    {
-      "_id": "req_professor_atualizar_professor",
-      "_type": "request",
-      "parentId": "fld_professor",
-      "name": "Atualizar professor",
-      "description": "**Aceita (JSON):** só os campos que mudam. Chaves desconhecidas são ignoradas.\n| Campo | Regra |\n|---|---|\n| `nome` | 1 a 150 |\n| `telefone` | 1 a 20 |\n| `email` | e-mail válido, não vazio |\n| `senha` | 8 a 12 |\n| `status` | booleano (`false` inativa, `true` reativa) |\n\n**Sucesso:** `200` → professor atualizado\n\n**Erros** — Dois formatos: erro de **forma** (JSON, obrigatório, tamanho, id) e o 500 vêm como `{ \"erro\": \"<mensagem>\" }`; erro de **regra/banco** vem no envelope `{ codigo, mensagem, campo? }`.\n| HTTP | Retorno | Quando |\n|---|---|---|\n| 400 | `{ erro }` | id inválido · JSON inválido · campo fora da regra |\n| 400 | `EMAIL_INVALIDO` | formato inválido |\n| 404 | `REGISTRO_NAO_ENCONTRADO` | professor não existe |\n| 409 | `EMAIL_EM_USO` | e-mail de outro professor |\n| 500 | `{ erro }` | falha não mapeada |",
-      "method": "PATCH",
-      "url": "{{ _.baseUrl }}/professor/{{ _.idProfessor }}",
-      "body": {
-        "mimeType": "application/json",
-        "text": "{\n  \"nome\": \"Professor Renomeado\",\n  \"status\": true\n}"
-      },
-      "parameters": [],
-      "headers": [
-        {
-          "name": "Content-Type",
-          "value": "application/json"
-        }
-      ],
-      "authentication": {
-        "type": "bearer",
-        "token": "{{ _.token }}"
-      },
-      "metaSortKey": 3000,
-      "settingEncodeUrl": true,
-      "modified": 1794168000000,
-      "created": 1794168000000
-    },
-    {
-      "_id": "req_professor_excluir_professor",
-      "_type": "request",
-      "parentId": "fld_professor",
-      "name": "Excluir professor",
-      "description": "**Aceita:** `id` inteiro na rota. Exclusão definitiva; para manter o histórico, use `status: false` no PATCH.\n\n**Sucesso:** `204`, sem corpo\n\n**Erros** — Dois formatos: erro de **forma** (JSON, obrigatório, tamanho, id) e o 500 vêm como `{ \"erro\": \"<mensagem>\" }`; erro de **regra/banco** vem no envelope `{ codigo, mensagem, campo? }`.\n| HTTP | Retorno | Quando |\n|---|---|---|\n| 400 | `{ erro }` | id não é inteiro |\n| 404 | `REGISTRO_NAO_ENCONTRADO` | professor não existe |\n| 409 | `REGISTRO_EM_USO` | professor tem vínculo, cronograma, aula ou treino |\n| 500 | `{ erro }` | falha não mapeada |",
-      "method": "DELETE",
-      "url": "{{ _.baseUrl }}/professor/{{ _.idProfessor }}",
-      "body": {},
-      "parameters": [],
-      "headers": [],
-      "authentication": {
-        "type": "bearer",
-        "token": "{{ _.token }}"
-      },
-      "metaSortKey": 4000,
-      "settingEncodeUrl": true,
-      "modified": 1794168000000,
-      "created": 1794168000000
-    },
-    {
-      "_id": "req_aulas_criar_aula",
-      "_type": "request",
-      "parentId": "fld_aulas",
-      "name": "Criar aula",
-      "description": "**Só admin.**\n\n**Aceita (JSON)** — todos obrigatórios; chave desconhecida é recusada.\n| Campo | Regra |\n|---|---|\n| `id_professor` | inteiro; professor existente e ativo |\n| `data` | `AAAA-MM-DD`, ano corrente ou seguinte |\n| `hora_inicio` / `hora_fim` | `HH:MM`; fim depois do início |\n| `tipo` | `coletiva`, `individual` ou `experimental` |\n| `categoria` | `musculacao`, `funcional`, `pilates`, `crossfit`, `danca`, `spinning` |\n| `vagas_maxima` | inteiro > 0; `individual` de 1 a 3 |\n\n**Sucesso:** `201` → `{ id_aula, id_professor, id_cronograma, data, hora_inicio, hora_fim, tipo, categoria, vagas_maxima, vagas_ocupadas, vagas_livres, status, data_cancelamento, cancelado_por }` (`data_cancelamento` e `cancelado_por` `null` em aula ativa; `vagas_ocupadas` = 0 e `vagas_livres` = `vagas_maxima` na criação). Toda rota que devolve aula traz os mesmos campos; `vagas_ocupadas` não conta `cancelado` nem `faltou`. Copie `id_aula` para `idAula`.\n\n**Erros** — Todos os erros vêm no envelope `{ codigo, mensagem, campo? }`.\n| HTTP | `codigo` | Quando |\n|---|---|---|\n| 400 | `JSON_INVALIDO` | corpo não é objeto JSON |\n| 400 | `CAMPO_OBRIGATORIO` + `campo` | campo ausente |\n| 400 | `CAMPO_INVALIDO` + `campo` | formato, regra ou professor inativo |\n| 401 | `TOKEN_INVALIDO` | sem token |\n| 403 | `ACESSO_NEGADO` | não é admin |\n| 409 | `HORARIO_CONFLITANTE` | professor já tem aula na mesma data e hora |",
-      "method": "POST",
-      "url": "{{ _.baseUrl }}/aulas",
-      "body": {
-        "mimeType": "application/json",
-        "text": "{\n  \"id_professor\": {{ _.idProfessorAula }},\n  \"data\": \"{{ _.dataAula }}\",\n  \"hora_inicio\": \"07:00\",\n  \"hora_fim\": \"08:00\",\n  \"tipo\": \"coletiva\",\n  \"categoria\": \"pilates\",\n  \"vagas_maxima\": 10\n}"
-      },
-      "parameters": [],
-      "headers": [
-        {
-          "name": "Content-Type",
-          "value": "application/json"
-        }
-      ],
-      "authentication": {
-        "type": "bearer",
-        "token": "{{ _.token }}"
-      },
-      "metaSortKey": 1000,
-      "settingEncodeUrl": true,
-      "modified": 1794168000000,
-      "created": 1794168000000
-    },
-    {
-      "_id": "req_aulas_listar_aulas",
-      "_type": "request",
-      "parentId": "fld_aulas",
-      "name": "Listar aulas",
-      "description": "**Todos os perfis.**\n\n**Aceita (query)**\n| Parâmetro | Padrão | Regra |\n|---|---|---|\n| `limit` | 20 | 1 a 100 |\n| `offset` | 0 | ≥ 0 |\n| `data` | — | `AAAA-MM-DD` |\n| `categoria` | — | uma das 6 categorias |\n| `idProfessor` | — | inteiro |\n\n**Sucesso:** `200` → `{ itens: [aula], limit, offset, total }`, em ordem de data e hora.\n\n**Erros** — Todos os erros vêm no envelope `{ codigo, mensagem, campo? }`.\n| HTTP | `codigo` | Quando |\n|---|---|---|\n| 400 | `CAMPO_INVALIDO` + `campo` | parâmetro fora da regra |",
-      "method": "GET",
-      "url": "{{ _.baseUrl }}/aulas?limit=20&offset=0",
-      "body": {},
-      "parameters": [],
-      "headers": [
-        {
-          "name": "Content-Type",
-          "value": "application/json"
-        }
-      ],
-      "authentication": {
-        "type": "bearer",
-        "token": "{{ _.token }}"
-      },
-      "metaSortKey": 2000,
-      "settingEncodeUrl": true,
-      "modified": 1794168000000,
-      "created": 1794168000000
-    },
-    {
-      "_id": "req_aulas_buscar_aula_por_id",
-      "_type": "request",
-      "parentId": "fld_aulas",
-      "name": "Buscar aula por id",
-      "description": "**Todos os perfis.**\n\n**Sucesso:** `200` → aula.\n\n**Erros** — Todos os erros vêm no envelope `{ codigo, mensagem, campo? }`.\n| HTTP | `codigo` | Quando |\n|---|---|---|\n| 400 | `CAMPO_INVALIDO` (`id`) | id não numérico |\n| 404 | `REGISTRO_NAO_ENCONTRADO` | aula não existe |",
-      "method": "GET",
-      "url": "{{ _.baseUrl }}/aulas/{{ _.idAula }}",
-      "body": {},
-      "parameters": [],
-      "headers": [
-        {
-          "name": "Content-Type",
-          "value": "application/json"
-        }
-      ],
-      "authentication": {
-        "type": "bearer",
-        "token": "{{ _.token }}"
-      },
-      "metaSortKey": 3000,
-      "settingEncodeUrl": true,
-      "modified": 1794168000000,
-      "created": 1794168000000
-    },
-    {
-      "_id": "req_aulas_atualizar_aula",
-      "_type": "request",
-      "parentId": "fld_aulas",
-      "name": "Atualizar aula",
-      "description": "**Admin** em qualquer aula; **professor** só na própria, ainda não realizada.\n\n**Aceita (JSON):** os mesmos campos do cadastro, ao menos um; só os enviados mudam. `null` e chave desconhecida são recusados.\n\n**Regras**\n- Aula cancelada não é editável.\n- Com agendamentos ativos: data, horários e professor travados; vagas não descem abaixo da ocupação.\n- Professor não troca o professor nem move a aula para o passado (data ou horário).\n- Nova data: ano corrente ou seguinte.\n\n**Sucesso:** `200` → aula atualizada.\n\n**Erros** — Todos os erros vêm no envelope `{ codigo, mensagem, campo? }`.\n| HTTP | `codigo` | Quando |\n|---|---|---|\n| 400 | `CAMPO_OBRIGATORIO` | corpo `{}` |\n| 400 | `CAMPO_INVALIDO` + `campo` | formato, regra ou data/horário no passado (professor) |\n| 403 | `ACESSO_NEGADO` | aluno · aula de outro professor · aula realizada · troca de professor |\n| 404 | `REGISTRO_NAO_ENCONTRADO` | aula não existe |\n| 409 | `AULA_INATIVA` | aula cancelada |\n| 409 | `REGISTRO_EM_USO` + `campo` | alteração travada por agendamentos |\n| 409 | `HORARIO_CONFLITANTE` | novo horário conflita |\n| 409 | `AULA_CATEGORIA_DIVERGENTE` / `AULA_PROFESSOR_DIVERGENTE` | aula de cronograma |",
-      "method": "PATCH",
-      "url": "{{ _.baseUrl }}/aulas/{{ _.idAula }}",
-      "body": {
-        "mimeType": "application/json",
-        "text": "{\n  \"vagas_maxima\": 12,\n  \"hora_fim\": \"09:00\"\n}"
-      },
-      "parameters": [],
-      "headers": [
-        {
-          "name": "Content-Type",
-          "value": "application/json"
-        }
-      ],
-      "authentication": {
-        "type": "bearer",
-        "token": "{{ _.token }}"
-      },
-      "metaSortKey": 4000,
-      "settingEncodeUrl": true,
-      "modified": 1794168000000,
-      "created": 1794168000000
-    },
-    {
-      "_id": "req_aulas_cancelar_aula",
-      "_type": "request",
-      "parentId": "fld_aulas",
-      "name": "Cancelar aula",
-      "description": "**Admin** em qualquer aula; **professor** só na própria.\n\n**Sem corpo.** A aula não é apagada: fica `status: false` com quem cancelou e quando.\n\n**Regras**\n- Na mesma transação, os agendamentos `agendado` da aula viram `cancelado`; `presente` e `faltou` não mudam.\n- Sem janela mínima de antecedência.\n- Aula já cancelada: `200` com o estado atual, sem alterar nada. Não há reativação.\n\n**Sucesso:** `200` → aula, com `data_cancelamento` (UTC ISO-8601) e `cancelado_por` (`admin` ou `professor`).\n\n**Erros** — Todos os erros vêm no envelope `{ codigo, mensagem, campo? }`.\n| HTTP | `codigo` | Quando |\n|---|---|---|\n| 400 | `CAMPO_INVALIDO` (`id`) | id não numérico |\n| 401 | `TOKEN_INVALIDO` | sem token |\n| 403 | `ACESSO_NEGADO` | aluno · aula de outro professor |\n| 404 | `REGISTRO_NAO_ENCONTRADO` | aula não existe |\n| 409 | `AULA_DATA_PASSADA` | aula já realizada (data + `hora_fim` ≤ agora) |",
-      "method": "POST",
-      "url": "{{ _.baseUrl }}/aulas/{{ _.idAula }}/cancelar",
-      "body": {},
-      "parameters": [],
-      "headers": [],
-      "authentication": {
-        "type": "bearer",
-        "token": "{{ _.token }}"
-      },
-      "metaSortKey": 5000,
-      "settingEncodeUrl": true,
-      "modified": 1794168000000,
-      "created": 1794168000000
-    },
-    {
-      "_id": "req_aulas_listar_agendados_da_aula",
-      "_type": "request",
-      "parentId": "fld_aulas",
-      "name": "Listar agendados da aula",
-      "description": "**Admin** em qualquer aula; **professor** só na própria. Aluno não acessa. Vale para aula ativa ou cancelada.\n\n**Aceita (query)**\n| Parâmetro | Padrão | Regra |\n|---|---|---|\n| `limit` | 20 | 1 a 100 |\n| `offset` | 0 | ≥ 0 |\n\n**Sucesso:** `200` → `{ itens: [{ id_agendamento, id_aluno, nome_aluno, status }], limit, offset, total }`, sem os `cancelado`, em ordem de `nome_aluno` e depois `id_agendamento`. Sem CPF, contato ou dados de saúde.\n\n**Erros** — Todos os erros vêm no envelope `{ codigo, mensagem, campo? }`.\n| HTTP | `codigo` | Quando |\n|---|---|---|\n| 400 | `CAMPO_INVALIDO` + `campo` | `id` não numérico · `limit`/`offset` fora da regra |\n| 401 | `TOKEN_INVALIDO` | sem token |\n| 403 | `ACESSO_NEGADO` | aluno · aula de outro professor |\n| 404 | `REGISTRO_NAO_ENCONTRADO` | aula não existe |",
-      "method": "GET",
-      "url": "{{ _.baseUrl }}/aulas/{{ _.idAula }}/agendamentos?limit=20&offset=0",
-      "body": {},
-      "parameters": [],
-      "headers": [
-        {
-          "name": "Content-Type",
-          "value": "application/json"
-        }
-      ],
-      "authentication": {
-        "type": "bearer",
-        "token": "{{ _.token }}"
-      },
-      "metaSortKey": 6000,
-      "settingEncodeUrl": true,
-      "modified": 1794168000000,
-      "created": 1794168000000
-    },
-    {
-      "_id": "req_aulas_cenarios_de_validacao_sem_token_401",
-      "_type": "request",
-      "parentId": "fld_aulas_cenarios_de_validacao",
-      "name": "Sem token (401)",
-      "description": "Esperado: `401` `TOKEN_INVALIDO`.",
-      "method": "GET",
-      "url": "{{ _.baseUrl }}/aulas",
-      "body": {},
-      "parameters": [],
-      "headers": [],
-      "authentication": {},
-      "metaSortKey": 1000,
-      "settingEncodeUrl": true,
-      "modified": 1794168000000,
-      "created": 1794168000000
-    },
-    {
-      "_id": "req_aulas_cenarios_de_validacao_data_fora_do_ano_de_vigencia_400",
-      "_type": "request",
-      "parentId": "fld_aulas_cenarios_de_validacao",
-      "name": "Data fora do ano de vigencia (400)",
-      "description": "Esperado: `400` `CAMPO_INVALIDO`, `campo: data`.",
-      "method": "POST",
-      "url": "{{ _.baseUrl }}/aulas",
-      "body": {
-        "mimeType": "application/json",
-        "text": "{\n  \"id_professor\": {{ _.idProfessorAula }},\n  \"data\": \"2020-01-10\",\n  \"hora_inicio\": \"10:00\",\n  \"hora_fim\": \"11:00\",\n  \"tipo\": \"coletiva\",\n  \"categoria\": \"pilates\",\n  \"vagas_maxima\": 10\n}"
-      },
-      "parameters": [],
-      "headers": [
-        {
-          "name": "Content-Type",
-          "value": "application/json"
-        }
-      ],
-      "authentication": {
-        "type": "bearer",
-        "token": "{{ _.token }}"
-      },
-      "metaSortKey": 2000,
-      "settingEncodeUrl": true,
-      "modified": 1794168000000,
-      "created": 1794168000000
-    },
-    {
-      "_id": "req_aulas_cenarios_de_validacao_individual_com_4_vagas_400",
-      "_type": "request",
-      "parentId": "fld_aulas_cenarios_de_validacao",
-      "name": "Individual com 4 vagas (400)",
-      "description": "Esperado: `400` `CAMPO_INVALIDO`, `campo: vagas_maxima`.",
-      "method": "POST",
-      "url": "{{ _.baseUrl }}/aulas",
-      "body": {
-        "mimeType": "application/json",
-        "text": "{\n  \"id_professor\": {{ _.idProfessorAula }},\n  \"data\": \"{{ _.dataAula }}\",\n  \"hora_inicio\": \"10:00\",\n  \"hora_fim\": \"11:00\",\n  \"tipo\": \"individual\",\n  \"categoria\": \"pilates\",\n  \"vagas_maxima\": 4\n}"
-      },
-      "parameters": [],
-      "headers": [
-        {
-          "name": "Content-Type",
-          "value": "application/json"
-        }
-      ],
-      "authentication": {
-        "type": "bearer",
-        "token": "{{ _.token }}"
-      },
-      "metaSortKey": 3000,
-      "settingEncodeUrl": true,
-      "modified": 1794168000000,
-      "created": 1794168000000
-    },
-    {
-      "_id": "req_aulas_cenarios_de_validacao_hora_com_segundos_400",
-      "_type": "request",
-      "parentId": "fld_aulas_cenarios_de_validacao",
-      "name": "Hora com segundos (400)",
-      "description": "Esperado: `400` `CAMPO_INVALIDO`, `campo: hora_inicio`.",
-      "method": "POST",
-      "url": "{{ _.baseUrl }}/aulas",
-      "body": {
-        "mimeType": "application/json",
-        "text": "{\n  \"id_professor\": {{ _.idProfessorAula }},\n  \"data\": \"{{ _.dataAula }}\",\n  \"hora_inicio\": \"10:00:00\",\n  \"hora_fim\": \"11:00\",\n  \"tipo\": \"coletiva\",\n  \"categoria\": \"pilates\",\n  \"vagas_maxima\": 10\n}"
-      },
-      "parameters": [],
-      "headers": [
-        {
-          "name": "Content-Type",
-          "value": "application/json"
-        }
-      ],
-      "authentication": {
-        "type": "bearer",
-        "token": "{{ _.token }}"
-      },
-      "metaSortKey": 4000,
-      "settingEncodeUrl": true,
-      "modified": 1794168000000,
-      "created": 1794168000000
-    },
-    {
-      "_id": "req_aulas_cenarios_de_validacao_horario_conflitante_409",
-      "_type": "request",
-      "parentId": "fld_aulas_cenarios_de_validacao",
-      "name": "Horario conflitante (409)",
-      "description": "Mesmo professor, data e hora de **Criar aula**. Esperado: `409` `HORARIO_CONFLITANTE`.",
-      "method": "POST",
-      "url": "{{ _.baseUrl }}/aulas",
-      "body": {
-        "mimeType": "application/json",
-        "text": "{\n  \"id_professor\": {{ _.idProfessorAula }},\n  \"data\": \"{{ _.dataAula }}\",\n  \"hora_inicio\": \"07:00\",\n  \"hora_fim\": \"08:00\",\n  \"tipo\": \"coletiva\",\n  \"categoria\": \"pilates\",\n  \"vagas_maxima\": 10\n}"
-      },
-      "parameters": [],
-      "headers": [
-        {
-          "name": "Content-Type",
-          "value": "application/json"
-        }
-      ],
-      "authentication": {
-        "type": "bearer",
-        "token": "{{ _.token }}"
-      },
-      "metaSortKey": 5000,
-      "settingEncodeUrl": true,
-      "modified": 1794168000000,
-      "created": 1794168000000
-    },
-    {
-      "_id": "req_aulas_cenarios_de_validacao_campo_nao_aceito_no_patch_400",
-      "_type": "request",
-      "parentId": "fld_aulas_cenarios_de_validacao",
-      "name": "Campo nao aceito no PATCH (400)",
-      "description": "Esperado: `400` `CAMPO_INVALIDO`, `campo: status`.",
-      "method": "PATCH",
-      "url": "{{ _.baseUrl }}/aulas/{{ _.idAula }}",
-      "body": {
-        "mimeType": "application/json",
-        "text": "{\n  \"status\": false\n}"
-      },
-      "parameters": [],
-      "headers": [
-        {
-          "name": "Content-Type",
-          "value": "application/json"
-        }
-      ],
-      "authentication": {
-        "type": "bearer",
-        "token": "{{ _.token }}"
-      },
-      "metaSortKey": 6000,
-      "settingEncodeUrl": true,
-      "modified": 1794168000000,
-      "created": 1794168000000
-    },
-    {
-      "_id": "req_aulas_cenarios_de_validacao_aula_inexistente_404",
-      "_type": "request",
-      "parentId": "fld_aulas_cenarios_de_validacao",
-      "name": "Aula inexistente (404)",
-      "description": "Esperado: `404` `REGISTRO_NAO_ENCONTRADO`.",
-      "method": "GET",
-      "url": "{{ _.baseUrl }}/aulas/999999999",
-      "body": {},
-      "parameters": [],
-      "headers": [
-        {
-          "name": "Content-Type",
-          "value": "application/json"
-        }
-      ],
-      "authentication": {
-        "type": "bearer",
-        "token": "{{ _.token }}"
-      },
-      "metaSortKey": 7000,
-      "settingEncodeUrl": true,
-      "modified": 1794168000000,
-      "created": 1794168000000
-    },
-    {
-      "_id": "req_agendamentos_reservar_vaga",
-      "_type": "request",
-      "parentId": "fld_agendamentos",
-      "name": "Reservar vaga",
-      "description": "**Só aluno** (token de aluno).\n\n**Aceita (JSON):** `{ id_aula }` (inteiro, obrigatório); chave desconhecida é recusada.\n\n**Regras** (nesta ordem): aula existe → ativa → data não passada → ano corrente ou seguinte → ao menos 2 h antes do início → sem agendamento ativo do aluno na aula → com vaga.\n\n**Sucesso:** `201` → `{ id_agendamento, id_aluno, id_aula, data_agendamento, status, data_presenca, data_cancelamento }`. Copie `id_agendamento` para `idAgendamento`.\n\n**Erros** — Todos os erros vêm no envelope `{ codigo, mensagem, campo? }`.\n| HTTP | `codigo` | Quando |\n|---|---|---|\n| 400 | `JSON_INVALIDO` | corpo não é objeto JSON |\n| 400 | `CAMPO_OBRIGATORIO` (`id_aula`) | campo ausente |\n| 400 | `CAMPO_INVALIDO` + `campo` | `id_aula` não inteiro · chave desconhecida · ano fora da vigência (`data`) |\n| 401 | `TOKEN_INVALIDO` | sem token |\n| 403 | `ACESSO_NEGADO` | não é aluno |\n| 404 | `REGISTRO_NAO_ENCONTRADO` | aula não existe |\n| 409 | `AULA_INATIVA` | aula cancelada |\n| 409 | `AULA_DATA_PASSADA` | data anterior a hoje |\n| 409 | `AGENDAMENTO_FORA_DA_JANELA` | menos de 2 h para o início |\n| 409 | `AGENDAMENTO_DUPLICADO` | aluno já tem agendamento na aula |\n| 409 | `AULA_SEM_VAGAS` | aula lotada |\n| 429 | `MUITAS_TENTATIVAS` | limite por usuário (header `Retry-After`) |",
-      "method": "POST",
-      "url": "{{ _.baseUrl }}/agendamentos",
-      "body": {
-        "mimeType": "application/json",
-        "text": "{\n  \"id_aula\": {{ _.idAula }}\n}"
-      },
-      "parameters": [],
-      "headers": [
-        {
-          "name": "Content-Type",
-          "value": "application/json"
-        }
-      ],
-      "authentication": {
-        "type": "bearer",
-        "token": "{{ _.token }}"
-      },
-      "metaSortKey": 1000,
-      "settingEncodeUrl": true,
-      "modified": 1794168000000,
-      "created": 1794168000000
-    },
-    {
-      "_id": "req_agendamentos_listar_meus_agendamentos",
-      "_type": "request",
-      "parentId": "fld_agendamentos",
-      "name": "Listar meus agendamentos",
-      "description": "**Só aluno:** lista os próprios agendamentos, de qualquer status.\n\n**Aceita (query)**\n| Parâmetro | Padrão | Regra |\n|---|---|---|\n| `limit` | 20 | 1 a 100 |\n| `offset` | 0 | ≥ 0 |\n\n**Sucesso:** `200` → `{ itens: [agendamento], limit, offset, total }`, em ordem de `id_agendamento`.\n\n**Erros** — Todos os erros vêm no envelope `{ codigo, mensagem, campo? }`.\n| HTTP | `codigo` | Quando |\n|---|---|---|\n| 400 | `CAMPO_INVALIDO` + `campo` | `limit`/`offset` fora da regra |\n| 401 | `TOKEN_INVALIDO` | sem token |\n| 403 | `ACESSO_NEGADO` | não é aluno |",
-      "method": "GET",
-      "url": "{{ _.baseUrl }}/agendamentos?limit=20&offset=0",
-      "body": {},
-      "parameters": [],
-      "headers": [
-        {
-          "name": "Content-Type",
-          "value": "application/json"
-        }
-      ],
-      "authentication": {
-        "type": "bearer",
-        "token": "{{ _.token }}"
-      },
-      "metaSortKey": 2000,
-      "settingEncodeUrl": true,
-      "modified": 1794168000000,
-      "created": 1794168000000
-    },
-    {
-      "_id": "req_agendamentos_cancelar_agendamento",
-      "_type": "request",
-      "parentId": "fld_agendamentos",
-      "name": "Cancelar agendamento",
-      "description": "**Só aluno**, no próprio agendamento.\n\n**Aceita (JSON):** só `{ \"status\": \"cancelado\" }`.\n\n**Regras**\n- Ao menos 2 h antes do início da aula.\n- Já cancelado: `200` com o estado atual.\n- Agendamento de outro aluno responde como inexistente (`404`).\n\n**Sucesso:** `200` → agendamento, com `data_cancelamento` (UTC ISO-8601).\n\n**Erros** — Todos os erros vêm no envelope `{ codigo, mensagem, campo? }`.\n| HTTP | `codigo` | Quando |\n|---|---|---|\n| 400 | `JSON_INVALIDO` | corpo não é objeto JSON |\n| 400 | `CAMPO_OBRIGATORIO` (`status`) | campo ausente |\n| 400 | `CAMPO_INVALIDO` + `campo` | `id` não numérico · `status` diferente de `cancelado` · chave desconhecida |\n| 401 | `TOKEN_INVALIDO` | sem token |\n| 403 | `ACESSO_NEGADO` | não é aluno |\n| 404 | `REGISTRO_NAO_ENCONTRADO` | agendamento ou aula não existe, ou é de outro aluno |\n| 409 | `AGENDAMENTO_FORA_DA_JANELA` | menos de 2 h para o início |\n| 429 | `MUITAS_TENTATIVAS` | limite por usuário (header `Retry-After`) |",
-      "method": "PATCH",
-      "url": "{{ _.baseUrl }}/agendamentos/{{ _.idAgendamento }}",
-      "body": {
-        "mimeType": "application/json",
-        "text": "{\n  \"status\": \"cancelado\"\n}"
-      },
-      "parameters": [],
-      "headers": [
-        {
-          "name": "Content-Type",
-          "value": "application/json"
-        }
-      ],
-      "authentication": {
-        "type": "bearer",
-        "token": "{{ _.token }}"
-      },
-      "metaSortKey": 3000,
-      "settingEncodeUrl": true,
-      "modified": 1794168000000,
-      "created": 1794168000000
-    },
-    {
-      "_id": "req_infra_health_check",
-      "_type": "request",
-      "parentId": "fld_infra",
-      "name": "Health check",
-      "description": "**Aceita:** nada (sem corpo, sem parâmetros, sem autenticação).\n\n**Sucesso:** `200` → `{ \"status\": \"ok\" }` — processo no ar e o banco respondeu a um `SELECT 1` em até 2 s.\n\n**Falha:** `503` → `{ \"status\": \"indisponivel\" }` — banco fora do ar ou lento. O corpo é fixo e não revela a causa.\n\nNo Docker, a porta publicada é `BACKEND_PUBLIC_PORT` (padrão `8080`) em `127.0.0.1`.",
-      "method": "GET",
-      "url": "{{ _.baseUrl }}/health",
-      "body": {},
-      "parameters": [],
-      "headers": [],
-      "authentication": {},
-      "metaSortKey": 1000,
-      "settingEncodeUrl": true,
-      "modified": 1794168000000,
-      "created": 1794168000000
     }
   ]
 }

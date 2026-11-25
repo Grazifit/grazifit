@@ -1,36 +1,31 @@
 // app/lib/features/vinculos/screens/alunos_inativos_screen.dart
 //
-// PROTÓTIPO VISUAL — sem integração com backend. Dados fictícios locais.
-// Integração com o backend: ver docs/handoff-front-professor.md
+// Alunos vinculados sem acesso recente. A regra dos "30 dias" é do backend
+// (não recalcular aqui). Dados de `alunosInativosProvider`.
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/design_system/components/app_bar_interna.dart';
 import '../../../core/design_system/components/campo_busca.dart';
 import '../../../core/design_system/components/cartao_lista.dart';
 import '../../../core/design_system/components/chip_filtro.dart';
-import '../../../core/design_system/components/fundo_tela.dart';
 import '../../../core/design_system/components/texto_apoio.dart';
+import '../../../core/state/estado_async.dart';
+import '../data/vinculos_repository.dart';
+import '../state/vinculos_providers.dart';
 
-class AlunosInativosScreen extends StatefulWidget {
+class AlunosInativosScreen extends ConsumerStatefulWidget {
   const AlunosInativosScreen({super.key});
 
   @override
-  State<AlunosInativosScreen> createState() => _AlunosInativosScreenState();
+  ConsumerState<AlunosInativosScreen> createState() =>
+      _AlunosInativosScreenState();
 }
 
-class _AlunosInativosScreenState extends State<AlunosInativosScreen> {
+class _AlunosInativosScreenState extends ConsumerState<AlunosInativosScreen> {
   final _buscaController = TextEditingController();
   String _busca = '';
-
-  // TODO(backend): alunos vinculados sem acesso há 30 dias. A base é
-  // aluno.data_ultimo_acesso (nulo = nunca acessou; tratar esse caso).
-  // A regra dos "30 dias" deve vir do backend, não ser recalculada aqui.
-  static const _inativos = [
-    _AlunoInativo('Carlos Menezes', 47),
-    _AlunoInativo('Júlia Prado', 38),
-    _AlunoInativo('Bruno Tavares', 31),
-  ];
 
   @override
   void dispose() {
@@ -38,15 +33,16 @@ class _AlunosInativosScreenState extends State<AlunosInativosScreen> {
     super.dispose();
   }
 
+  String _subtitulo(AlunoInativo a) => a.diasSemAcesso == null
+      ? 'Nunca acessou'
+      : '${a.diasSemAcesso} dias sem acesso';
+
   @override
   Widget build(BuildContext context) {
+    final inativos = ref.watch(alunosInativosProvider);
     final termo = _busca.trim().toLowerCase();
-    final filtrados =
-        _inativos.where((a) => a.nome.toLowerCase().contains(termo)).toList();
 
-    return FundoTela(
-      child: Scaffold(
-        backgroundColor: Colors.transparent,
+    return Scaffold(
         appBar: appBarInterna(context, 'Inativos'),
         body: SafeArea(
           child: ListView(
@@ -64,34 +60,44 @@ class _AlunosInativosScreenState extends State<AlunosInativosScreen> {
                 children: [
                   ChipFiltro(
                     rotulo: 'Meus alunos',
-                    onTap: () => Navigator.of(context).maybePop(),
+                    onTap: () => Navigator.of(context).pop(),
                   ),
                 ],
               ),
               const SizedBox(height: 20),
-              if (filtrados.isEmpty)
-                const TextoApoio('Nenhum aluno encontrado')
-              else
-                CartaoLista(
-                  itens: [
-                    for (final a in filtrados)
-                      ItemLista(
-                        titulo: a.nome,
-                        subtitulo: '${a.diasSemAcesso} dias sem acesso',
+              SizedBox(
+                height: 320,
+                child: EstadoAsync<List<AlunoInativo>>(
+                  valor: inativos,
+                  aoTentarNovamente: () =>
+                      ref.invalidate(alunosInativosProvider),
+                  textoVazio: 'Nenhum aluno encontrado',
+                  dados: (lista) {
+                    final filtrados = lista
+                        .where((a) => a.nome.toLowerCase().contains(termo))
+                        .toList();
+                    if (filtrados.isEmpty) {
+                      return const Center(
+                        child: TextoApoio('Nenhum aluno encontrado'),
+                      );
+                    }
+                    return SingleChildScrollView(
+                      child: CartaoLista(
+                        itens: [
+                          for (final a in filtrados)
+                            ItemLista(
+                              titulo: a.nome,
+                              subtitulo: _subtitulo(a),
+                            ),
+                        ],
                       ),
-                  ],
+                    );
+                  },
                 ),
+              ),
             ],
           ),
         ),
-      ),
-    );
+      );
   }
-}
-
-class _AlunoInativo {
-  const _AlunoInativo(this.nome, this.diasSemAcesso);
-
-  final String nome;
-  final int diasSemAcesso;
 }

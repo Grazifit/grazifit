@@ -35,6 +35,15 @@ class AulaLida {
   const AulaLida({required this.aula, required this.regras});
 }
 
+/// Aula travada para a chamada. [antesDoInicio] vem do Postgres, no mesmo
+/// fuso das demais regras de tempo.
+class AulaChamada {
+  final AulaData aula;
+  final bool antesDoInicio;
+
+  const AulaChamada({required this.aula, required this.antesDoInicio});
+}
+
 /// Situacao lida sob a trava da aula, numa so ida ao banco.
 class SituacaoReserva {
   /// Aula travada (FOR UPDATE).
@@ -292,6 +301,80 @@ class AgendamentoRepository {
             dataCancelamento: Value<PgDateTime?>(PgDateTime(agora)),
           ),
         );
+  }
+
+  /// Aula com `FOR UPDATE` e a regra de inicio, numa ida. Usar dentro de
+  /// [transacao]. `null` quando a aula nao existe.
+  Future<AulaChamada?> travarAulaParaChamada(int idAula) async {
+    final linha = await _db
+        .customSelect(
+          r'''
+      SELECT au.*,
+             (clock_timestamp() < ((au.data + au.hora_inicio)
+                AT TIME ZONE 'America/Sao_Paulo')) AS chamada_antes_inicio
+        FROM aula au
+       WHERE au.id_aula = $1
+         FOR UPDATE OF au
+    ''',
+          variables: [Variable.withInt(idAula)],
+          readsFrom: {_db.aula},
+        )
+        .getSingleOrNull();
+    if (linha == null) return null;
+    return AulaChamada(
+      aula: _db.aula.map(linha.data),
+      antesDoInicio: linha.read<bool>('chamada_antes_inicio'),
+    );
+  }
+
+  /// Todos os agendamentos da aula, qualquer status, com `FOR UPDATE`. Usar
+  /// dentro de [transacao].
+  Future<List<AgendamentoData>> travarAgendamentosDaAula(int idAula) async {
+    final linhas = await _db
+        .customSelect(
+          r'SELECT * FROM agendamento WHERE id_aula = $1 '
+          r'ORDER BY id_agendamento FOR UPDATE',
+          variables: [Variable.withInt(idAula)],
+          readsFrom: {_db.agendamento},
+        )
+        .get();
+    return [for (final linha in linhas) _db.agendamento.map(linha.data)];
+  }
+
+  /// Grava a presenca em lote: `presente` com [agora] em `data_presenca`;
+  /// `faltou` com `data_presenca` nula. Devolve as linhas alteradas. Nao
+  /// abre transacao: roda na de quem chama.
+  Future<List<AgendamentoData>> gravarPresenca({
+    required List<int> presentes,
+    required List<int> faltaram,
+    required DateTime agora,
+  }) async {
+    final gravadas = <AgendamentoData>[];
+    if (presentes.isNotEmpty) {
+      gravadas.addAll(
+        await (_db.update(
+          _db.agendamento,
+        )..where((t) => t.idAgendamento.isIn(presentes))).writeReturning(
+          AgendamentoCompanion(
+            status: const Value('presente'),
+            dataPresenca: Value<PgDateTime?>(PgDateTime(agora)),
+          ),
+        ),
+      );
+    }
+    if (faltaram.isNotEmpty) {
+      gravadas.addAll(
+        await (_db.update(
+          _db.agendamento,
+        )..where((t) => t.idAgendamento.isIn(faltaram))).writeReturning(
+          AgendamentoCompanion(
+            status: const Value('faltou'),
+            dataPresenca: const Value<PgDateTime?>(null),
+          ),
+        ),
+      );
+    }
+    return gravadas;
   }
 
   /// Ordem por id, com desempate estavel para paginacao.

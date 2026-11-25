@@ -10,6 +10,8 @@ import 'package:flutter/material.dart';
 import 'package:grazifit_app/features/inicio/screens/tela_inicio_admin.dart';
 import 'package:grazifit_app/features/agendamentos/screens/chamada_screen.dart';
 
+
+import '../features/pessoas/data/perfil_aluno.dart';
 //import '../features/inicio/screens/tela_inicio_admin.dart';
 
 import '../features/pessoas/screens/boas_vindas_alunos.dart';
@@ -23,6 +25,7 @@ import '../features/pessoas/screens/tela_usuarios_admin.dart';
 import '../features/treinos/screens/treinos_aluno_screen.dart';
 import '../features/treinos/screens/historico_treinos_screen.dart';
 import '../features/treinos/screens/montar_treino_screen.dart';
+import '../features/treinos/screens/montar_treino_livre_admin_screen.dart';
 import '../features/exercicios/screens/biblioteca_exercicios_admin_screen.dart';
 import '../features/treinos/screens/treinos_livres_admin_screen.dart';
 import '../features/aulas/screens/detalhe_aula_screen.dart';
@@ -42,6 +45,7 @@ import '../features/exercicios/screens/novo_exercicio_admin_screen.dart';
 import '../features/pessoas/screens/painel_inativos_admin_screen.dart';
 import '../features/vinculos/screens/vinculos_admin_screen.dart';
 import '../core/routing/admin_shell_screen.dart';
+import '../features/inicio/screens/paginas_admin.dart';
 
 class MenuDevScreen extends StatelessWidget {
   const MenuDevScreen({super.key});
@@ -62,7 +66,7 @@ class MenuDevScreen extends StatelessWidget {
     ]),
     _GrupoDev('Pessoas', [
       _TelaDev('Login', () => const LoginScreen()),
-      _TelaDev('Home admin', () => const TelaInicioAdmin()),
+      _TelaDev('Home admin', () => const PaginaInicioAdmin()),
       _TelaDev('Cadastro de aluno', () => const CriarCadastroAlunoScreen()),
       _TelaDev(
         'Boas-vindas do aluno',
@@ -72,36 +76,48 @@ class MenuDevScreen extends StatelessWidget {
         ),
       ),
       _TelaDev('Perfil do aluno', () => const TelaPerfilAluno()),
-      _TelaDev('Editar perfil do aluno', () => const EditarPerfilAlunoScreen()),
+      _TelaDev('Editar perfil do aluno', () => const EditarPerfilAlunoScreen(
+            perfil: PerfilAluno(
+              nome: 'Ana Beatriz Ramos',
+              desde: '12/03/2025',
+              email: 'ana.ramos@exemplo.com',
+              telefone: '(45) 90000-0000',
+              cpf: '000.000.000-00',
+              nascimento: '14/07/1996',
+            ),
+          )),
       _TelaDev('Cadastro de professor', () => const CadastroProfessorScreen()),
       _TelaDev('Perfil do professor', () => const PerfilProfessorScreen()),
-      _TelaDev(
-        'Editar perfil do professor',
-        () => const EditarPerfilProfessorScreen(),
-      ),
-      _TelaDev('Tela Usuarios admin', () => const TelaUsuariosAdmin()),
+      _TelaDev('Tela Usuarios admin', () => const PaginaUsuariosAdmin()),
     ]),
 
     _GrupoDev('Treinos', [
       _TelaDev(
         'Treinos do aluno',
-        () => const TreinosAlunoScreen(nomeAluno: 'Ana Beatriz Ramos'),
+        () => TreinosAlunoScreen(idAluno: 1),
       ),
       _TelaDev(
         'Histórico de treinos',
-        () => const HistoricoTreinosScreen(nomeAluno: 'Ana Beatriz Ramos'),
+        () => const HistoricoTreinosScreen(idAluno: 1),
       ),
       _TelaDev(
         'Registrar medida do aluno',
         () => const TelaRegistrarMedidaAluno(alturaM: 1.70),
       ),
       _TelaDev('Evolução do aluno', () => const TelaEvolucaoAluno()),
-      _TelaDev('Montar treino', () => const MontarTreinoScreen()),
+      _TelaDev('Montar treino', () => const MontarTreinoScreen(idAluno: 1)),
+      _TelaDev(
+        'Montar treino livre (Admin)',
+        () => const MontarTreinoLivreAdminScreen(),
+      ),
       _TelaDev('Novo exercício (Admin)', () => const NovoExercicioAdminScreen()),
-      _TelaDev('Biblioteca de exercícios (Admin)', () => const BibliotecaExerciciosAdminScreen(),),
+      _TelaDev(
+        'Biblioteca de exercícios (Admin)',
+        () => const BibliotecaExerciciosAdminScreen(),
+      ),
       _TelaDev('Treinos livres (Admin)', () => const TreinosLivresAdminScreen()),
-      _TelaDev('Chamada', () => const ChamadaScreen()),
-      _TelaDev('Detalhes da aula', () => const DetalheAulaScreen()),
+      _TelaDev('Chamada', () => const ChamadaScreen(idAula: 1)),
+      _TelaDev('Detalhes da aula', () => const DetalheAulaScreen(idAula: 1)),
       _TelaDev('Minha Agenda', () => const MinhaAgendaScreen()),
       _TelaDev('Avaliação física', () => const AvaliacaoFisicaScreen()),
     ]),
@@ -114,7 +130,7 @@ class MenuDevScreen extends StatelessWidget {
       _TelaDev('Meus alunos', () => const MeusAlunosScreen()),
       _TelaDev(
         'Detalhe do aluno',
-        () => const AlunoDetalheScreen(nome: 'Ana Beatriz Ramos'),
+        () => const AlunoDetalheScreen(idAluno: 1),
       ),
       _TelaDev('Alunos inativos', () => const AlunosInativosScreen()),
     ]),

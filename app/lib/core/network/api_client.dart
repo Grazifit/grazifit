@@ -34,6 +34,9 @@ class ApiClient {
   final Duration timeout;
   final String? Function()? token;
 
+  Future<Map<String, dynamic>> get(String path, {Map<String, String>? query}) =>
+      _enviar('GET', path, query: query);
+
   Future<Map<String, dynamic>> post(String path, Map<String, dynamic> body) =>
       postJson(path, body);
 
@@ -67,25 +70,45 @@ class ApiClient {
   Future<Map<String, dynamic>> postJson(
     String path,
     Map<String, Object?> body,
-  ) async {
+  ) => _enviar('POST', path, body: body);
+
+  Future<Map<String, dynamic>> patch(
+    String path,
+    Map<String, Object?> body,
+  ) => _enviar('PATCH', path, body: body);
+
+  Future<Map<String, dynamic>> delete(String path) => _enviar('DELETE', path);
+
+  /// Devolve o objeto JSON da resposta 2xx (`{}` para 204). Qualquer falha
+  /// sobe como [ApiException].
+  Future<Map<String, dynamic>> _enviar(
+    String method,
+    String path, {
+    Map<String, Object?>? body,
+    Map<String, String>? query,
+  }) async {
     if (baseUrl.trim().isEmpty) {
       throw const ApiException(codigo: 'CONFIGURACAO');
     }
 
     try {
-      final uri = Uri.parse('${baseUrl.replaceFirst(RegExp(r'/$'), '')}$path');
+      var uri = Uri.parse('${baseUrl.replaceFirst(RegExp(r'/$'), '')}$path');
+      if (query != null && query.isNotEmpty) {
+        uri = uri.replace(queryParameters: query);
+      }
       final token = path == '/auth/login' ? null : this.token?.call();
-      final response = await _client
-          .post(
-            uri,
-            headers: {
-              'Content-Type': 'application/json',
-              if (token != null && token.isNotEmpty)
-                'Authorization': 'Bearer $token',
-            },
-            body: jsonEncode(body),
-          )
-          .timeout(timeout);
+      final request = http.Request(method, uri)
+        ..headers.addAll({
+          'Accept': 'application/json',
+          if (body != null) 'Content-Type': 'application/json',
+          if (token != null && token.isNotEmpty)
+            'Authorization': 'Bearer $token',
+        });
+      if (body != null) request.body = jsonEncode(body);
+
+      final response = await http.Response.fromStream(
+        await _client.send(request).timeout(timeout),
+      );
 
       if (response.statusCode < 200 || response.statusCode >= 300) {
         final erro = _decodeObjectOrEmpty(response.body);
@@ -106,6 +129,7 @@ class ApiClient {
         );
       }
 
+      if (response.statusCode == 204 || response.body.isEmpty) return const {};
       return _decodeObject(response.body);
     } on ApiException {
       rethrow;
