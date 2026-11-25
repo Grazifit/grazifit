@@ -1,5 +1,9 @@
 import 'dart:convert';
 
+import 'package:grazifit_backend/features/cronogramas/cronograma_controller.dart';
+import 'package:grazifit_backend/features/cronogramas/cronograma_repository.dart';
+import 'package:grazifit_backend/features/cronogramas/cronograma_service.dart';
+
 import 'package:grazifit_backend/features/avaliacoes/avaliacao_controller.dart';
 import 'package:grazifit_backend/features/avaliacoes/avaliacao_service.dart';
 import 'package:grazifit_backend/features/avaliacoes/avaliacao_repository.dart';
@@ -72,6 +76,12 @@ void main() async {
   final aulaController = AulaController(aulaService);
 
   final rootRouter = Router()
+    ..mount(
+      '/',
+      CronogramaController(CronogramaService(CronogramaRepository(db)))
+          .router
+          .call,
+    )
     ..mount(
       '/',
       AvaliacaoController(AvaliacaoService(AvaliacaoRepository(db)))
