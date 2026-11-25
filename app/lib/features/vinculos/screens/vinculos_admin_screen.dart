@@ -4,7 +4,6 @@ import '../../../core/design_system/components/app_bar_interna.dart';
 import '../../../core/design_system/components/botao_primario.dart';
 import '../../../core/design_system/components/campo_busca.dart';
 import '../../../core/design_system/components/cartao_lista.dart';
-import '../../../core/design_system/components/fundo_tela.dart';
 import '../../../core/design_system/components/texto_apoio.dart';
 import '../data/vinculos_admin_data.dart';
 
@@ -47,9 +46,7 @@ class _VinculosAdminScreenState extends State<VinculosAdminScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return FundoTela(
-      child: Scaffold(
-        backgroundColor: Colors.transparent,
+    return Scaffold(
         appBar: appBarInterna(context, 'Vínculos'),
         body: SafeArea(
           child: Column(
@@ -101,8 +98,7 @@ class _VinculosAdminScreenState extends State<VinculosAdminScreen> {
           texto: 'Novo vínculo',
           onPressed: _abrirNovoVinculo,
         ),
-      ),
-    );
+      );
   }
 
   Widget _conteudo() {

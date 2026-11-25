@@ -17,6 +17,12 @@ import 'package:grazifit_backend/features/aulas/aula_controller.dart';
 import 'package:grazifit_backend/features/aulas/aula_repository.dart';
 import 'package:grazifit_backend/features/aulas/aula_service.dart';
 import 'package:grazifit_backend/features/auth/auth_controller.dart';
+import 'package:grazifit_backend/features/inicio/inicio_controller.dart';
+import 'package:grazifit_backend/features/inicio/inicio_repository.dart';
+import 'package:grazifit_backend/features/inicio/inicio_service.dart';
+import 'package:grazifit_backend/features/treinos/treino_controller.dart';
+import 'package:grazifit_backend/features/treinos/treino_repository.dart';
+import 'package:grazifit_backend/features/treinos/treino_service.dart';
 import 'package:grazifit_backend/features/auth/auth_repository.dart';
 import 'package:grazifit_backend/features/auth/auth_service.dart';
 import 'package:grazifit_backend/features/auth/criptografia.dart';
@@ -75,7 +81,11 @@ void main() async {
   // Mesmo `db` nos dois repositories: a cascata entra na transacao da aula.
   final aulaRepository = AulaRepository(db);
   final aulaService = AulaService(aulaRepository, agendamentoService);
-  final aulaController = AulaController(aulaService);
+  final aulaController = AulaController(aulaService, agendamentoService);
+
+  final inicioController = InicioController(InicioService(InicioRepository(db)));
+
+  final treinoController = TreinoController(TreinoService(TreinoRepository(db)));
 
   final rootRouter = Router()
     ..mount(
@@ -91,7 +101,9 @@ void main() async {
     ..mount('/', professorController.router.call)
     ..mount('/', exercicioController.router.call)
     ..mount('/', aulaController.router.call)
-    ..mount('/', agendamentoController.router.call);
+    ..mount('/', agendamentoController.router.call)
+    ..mount('/', inicioController.router.call)
+    ..mount('/', treinoController.router.call);
 
   final handler = const Pipeline()
       .addMiddleware(logRequests())

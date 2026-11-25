@@ -26,3 +26,16 @@ final class AgendamentoNotFoundException extends AgendamentoException {
   const AgendamentoNotFoundException(String mensagem)
     : super(CodigoErro.registroNaoEncontrado, mensagem: mensagem);
 }
+
+/// Falha da chamada com texto proprio. O controller de aulas a traduz para
+/// o envelope de erro.
+class ChamadaException implements Exception {
+  final CodigoErro codigo;
+  final String? campo;
+  final String mensagem;
+
+  const ChamadaException(this.codigo, {required this.mensagem, this.campo});
+
+  @override
+  String toString() => 'ChamadaException(${codigo.valor}, campo: $campo)';
+}

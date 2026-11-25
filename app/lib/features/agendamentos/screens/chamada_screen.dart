@@ -1,55 +1,68 @@
 // app/lib/features/agendamentos/screens/chamada_screen.dart
 //
-// PROTÓTIPO VISUAL — sem integração com backend. Dados fictícios do mockup.
-// Integração com o backend: ver docs/handoff-front-professor.md
+// Alunos de `detalheAulaProvider(idAula)`; encerrar depende do backend.
+// Integração: docs/integracao-frontend.md
 //
 // Chamada (professor). Cobre os dois quadros do mockup: marcando
 // Presente/Faltou por aluno e chamada encerrada (banner verde, botões
 // travados). A Chamada (F-11) pertence à feature agendamentos.
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/design_system/components/app_bar_interna.dart';
 import '../../../core/design_system/components/botao_primario.dart';
 import '../../../core/design_system/components/cartao_lista.dart';
-import '../../../core/design_system/components/fundo_tela.dart';
 import '../../../core/design_system/components/texto_apoio.dart';
 import '../../../core/design_system/tokens/cores_provisorias.dart';
+import '../../../core/network/api_exception.dart';
+import '../../../core/state/estado_async.dart';
+import '../../../core/utils/datas.dart';
+import '../../aulas/data/aulas_professor_repository.dart';
+import '../../aulas/state/aulas_providers.dart';
+import '../../../core/data/repositorios.dart';
 
-class ChamadaScreen extends StatefulWidget {
-  const ChamadaScreen({
-    super.key,
-    this.modalidade = 'Funcional',
-    this.horario = '07:00 - 08:00',
-    this.data = 'Segunda, 01 de setembro',
-    this.alunos = const ['Ana Beatriz Ramos', 'Carlos Menezes', 'Júlia Prado'],
-    this.marcacoesIniciais,
-    this.encerrada = false,
-  });
+class ChamadaScreen extends ConsumerWidget {
+  const ChamadaScreen({super.key, required this.idAula});
 
-  // Valores padrão = dados fictícios do mockup.
-  final String modalidade;
-  final String horario;
-  final String data;
-  final List<String> alunos;
-
-  /// Uma posição por aluno: true = Presente, false = Faltou, null = sem marcar.
-  /// Sem informar, todos começam sem marcar.
-  final List<bool?>? marcacoesIniciais;
-
-  /// Abre a tela já no estado "chamada encerrada".
-  final bool encerrada;
+  final int idAula;
 
   @override
-  State<ChamadaScreen> createState() => _ChamadaScreenState();
+  Widget build(BuildContext context, WidgetRef ref) {
+    final detalhe = ref.watch(detalheAulaProvider(idAula));
+    final d = detalhe.valueOrNull;
+    if (d != null) return _ChamadaConteudo(detalhe: d);
+
+    return Scaffold(
+        appBar: appBarInterna(context, 'Chamada'),
+        body: SafeArea(
+          child: EstadoAsync<AulaProfessorDetalhe>(
+            valor: detalhe,
+            aoTentarNovamente: () => ref.invalidate(detalheAulaProvider(idAula)),
+            vazio: (_) => false,
+            dados: (_) => const SizedBox.shrink(),
+          ),
+        ),
+      );
+  }
 }
 
-class _ChamadaScreenState extends State<ChamadaScreen> {
+class _ChamadaConteudo extends ConsumerStatefulWidget {
+  const _ChamadaConteudo({required this.detalhe});
+
+  final AulaProfessorDetalhe detalhe;
+
+  @override
+  ConsumerState<_ChamadaConteudo> createState() => _ChamadaConteudoState();
+}
+
+class _ChamadaConteudoState extends ConsumerState<_ChamadaConteudo> {
+  List<AlunoNaAula> get _alunos => widget.detalhe.alunos;
+
+  /// Uma posição por aluno: true = Presente, false = Faltou, null = sem marcar.
   late final List<bool?> _marcacoes =
-      List<bool?>.of(
-        widget.marcacoesIniciais ?? List<bool?>.filled(widget.alunos.length, null),
-      );
-  late bool _encerrada = widget.encerrada;
+      List<bool?>.filled(widget.detalhe.alunos.length, null);
+  bool _encerrada = false;
 
   int get _presentes => _marcacoes.where((m) => m == true).length;
   int get _faltas => _marcacoes.where((m) => m == false).length;
@@ -63,26 +76,37 @@ class _ChamadaScreenState extends State<ChamadaScreen> {
     setState(() => _marcacoes[indice] = presente);
   }
 
-  // TODO(backend): encerrar grava agendamento.status e data_presenca de cada
-  // aluno (F-11, feature agendamentos).
   // TODO(produto): o mockup não define o que acontece com quem ficou sem
   // marcação ao encerrar (bloquear? contar como falta?). Confirmar com o time.
-  void _encerrar() {
-    setState(() => _encerrada = true);
+  Future<void> _encerrar() async {
+    final mensagem = ScaffoldMessenger.of(context);
+    try {
+      await Repositorios.aulasProfessor.encerrarChamada(
+        widget.detalhe.aula.idAula,
+        {for (var i = 0; i < _alunos.length; i++) _alunos[i].idAluno: _marcacoes[i]},
+      );
+    } on ApiException {
+      // TODO(design): texto do erro ao encerrar não está no mockup.
+      mensagem.showSnackBar(
+        const SnackBar(
+          content: Text('Não foi possível encerrar. Tente novamente.'),
+        ),
+      );
+      return;
+    }
+    if (mounted) setState(() => _encerrada = true);
   }
 
   @override
   Widget build(BuildContext context) {
-    return FundoTela(
-      child: Scaffold(
-        backgroundColor: Colors.transparent,
+    return Scaffold(
         appBar: appBarInterna(context, 'Chamada'),
         body: SafeArea(
           child: ListView(
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
             children: [
               Text(
-                '${widget.modalidade} · ${widget.horario}',
+                '${widget.detalhe.aula.modalidade} · ${widget.detalhe.aula.horario}',
                 style: const TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w500,
@@ -90,7 +114,7 @@ class _ChamadaScreenState extends State<ChamadaScreen> {
                 ),
               ),
               const SizedBox(height: 4),
-              TextoApoio(widget.data),
+              TextoApoio(Datas.porExtenso(widget.detalhe.data) ?? widget.detalhe.data),
               const SizedBox(height: 12),
               if (_encerrada) ...[
                 _BannerEncerrada(
@@ -100,13 +124,13 @@ class _ChamadaScreenState extends State<ChamadaScreen> {
                 ),
                 const SizedBox(height: 12),
               ],
-              TextoApoio('$_marcados de ${widget.alunos.length} marcados'),
+              TextoApoio('$_marcados de ${_alunos.length} marcados'),
               const SizedBox(height: 8),
               CartaoLista(
                 itens: [
-                  for (var i = 0; i < widget.alunos.length; i++)
+                  for (var i = 0; i < _alunos.length; i++)
                     _LinhaAluno(
-                      nome: widget.alunos[i],
+                      nome: _alunos[i].nome,
                       marcacao: _marcacoes[i],
                       travada: _encerrada,
                       onMarcar: (presente) => _marcar(i, presente),
@@ -120,8 +144,7 @@ class _ChamadaScreenState extends State<ChamadaScreen> {
           texto: _encerrada ? 'Chamada encerrada' : 'Encerrar chamada',
           onPressed: _encerrada ? null : _encerrar,
         ),
-      ),
-    );
+      );
   }
 }
 

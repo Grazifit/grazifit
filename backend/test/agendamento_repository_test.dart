@@ -430,4 +430,175 @@ void main() {
       expect(depois?.status, 'agendado');
     });
   });
+
+  group('chamada: presenca gravada no Postgres', () {
+    Identidade professorDaAula() =>
+        Identidade(id: idProfessor, papel: Papel.professor);
+
+    Matcher erroChamada(CodigoErro c) => anyOf(
+      isA<ChamadaException>().having((e) => e.codigo, 'codigo', c),
+      isA<AgendamentoException>().having((e) => e.codigo, 'codigo', c),
+      isA<AulaException>().having((e) => e.codigo, 'codigo', c),
+    );
+
+    Future<AgendamentoData> linhaDe(int idAgendamento) async =>
+        (await repo.buscarSemTrava(idAgendamento))!;
+
+    test('primeiro envio: presente com data_presenca, faltou sem data', () async {
+      final idAula = await inserirAula(
+        db,
+        idProfessor: idProfessor,
+        dataIso: '2000-01-03',
+        horaInicio: '10:00',
+        horaFim: '11:00',
+        vagas: 10,
+      );
+      final a1 = await repo.inserir(idAluno: idAluno1, idAula: idAula, dataAgendamento: hoje);
+      final a2 = await repo.inserir(idAluno: idAluno2, idAula: idAula, dataAgendamento: hoje);
+      final a3 = await repo.inserir(idAluno: idAluno3, idAula: idAula, dataAgendamento: hoje);
+      final a4 = await repo.inserir(idAluno: idAluno4, idAula: idAula, dataAgendamento: hoje);
+      await repo.cancelar(a4.idAgendamento, agora: agora);
+
+      await service.registrarChamada(
+        identidade: professorDaAula(),
+        idAula: idAula,
+        itens: [
+          PresencaInformada(idAgendamento: a1.idAgendamento, presente: true),
+          PresencaInformada(idAgendamento: a2.idAgendamento, presente: false),
+          PresencaInformada(idAgendamento: a3.idAgendamento, presente: true),
+        ],
+      );
+
+      final l1 = await linhaDe(a1.idAgendamento);
+      final l2 = await linhaDe(a2.idAgendamento);
+      final l3 = await linhaDe(a3.idAgendamento);
+      final l4 = await linhaDe(a4.idAgendamento);
+      expect(l1.status, 'presente');
+      expect(l1.dataPresenca, isNotNull);
+      expect(l2.status, 'faltou');
+      expect(l2.dataPresenca, isNull);
+      expect(l3.status, 'presente');
+      expect(l3.dataPresenca, isNotNull);
+      expect(l4.status, 'cancelado');
+      expect(l4.dataPresenca, isNull);
+    });
+
+    test('correcao: faltou volta para presente e depois para faltou (data nula)', () async {
+      final idAula = await inserirAula(
+        db,
+        idProfessor: idProfessor,
+        dataIso: '2000-01-04',
+        horaInicio: '10:00',
+        horaFim: '11:00',
+        vagas: 10,
+      );
+      final a1 = await repo.inserir(idAluno: idAluno1, idAula: idAula, dataAgendamento: hoje);
+      final a2 = await repo.inserir(idAluno: idAluno2, idAula: idAula, dataAgendamento: hoje);
+      await service.registrarChamada(
+        identidade: professorDaAula(),
+        idAula: idAula,
+        itens: [
+          PresencaInformada(idAgendamento: a1.idAgendamento, presente: true),
+          PresencaInformada(idAgendamento: a2.idAgendamento, presente: false),
+        ],
+      );
+
+      await service.registrarChamada(
+        identidade: professorDaAula(),
+        idAula: idAula,
+        itens: [PresencaInformada(idAgendamento: a2.idAgendamento, presente: true)],
+      );
+      expect((await linhaDe(a2.idAgendamento)).status, 'presente');
+      expect((await linhaDe(a2.idAgendamento)).dataPresenca, isNotNull);
+
+      await service.registrarChamada(
+        identidade: professorDaAula(),
+        idAula: idAula,
+        itens: [PresencaInformada(idAgendamento: a2.idAgendamento, presente: false)],
+      );
+      final voltou = await linhaDe(a2.idAgendamento);
+      expect(voltou.status, 'faltou');
+      expect(voltou.dataPresenca, isNull);
+      expect((await linhaDe(a1.idAgendamento)).status, 'presente');
+    });
+
+    test('aula ainda nao iniciada (banco): 409 e nada grava', () async {
+      final idAula = await inserirAula(
+        db,
+        idProfessor: idProfessor,
+        dataIso: '2099-06-20',
+        horaInicio: '10:00',
+        horaFim: '11:00',
+      );
+      final a1 = await repo.inserir(idAluno: idAluno1, idAula: idAula, dataAgendamento: hoje);
+      await expectLater(
+        service.registrarChamada(
+          identidade: professorDaAula(),
+          idAula: idAula,
+          itens: [PresencaInformada(idAgendamento: a1.idAgendamento, presente: true)],
+        ),
+        throwsA(erroChamada(CodigoErro.agendamentoForaDaJanela)),
+      );
+      expect((await linhaDe(a1.idAgendamento)).status, 'agendado');
+    });
+
+    test('aula cancelada: 409 AULA_INATIVA e nada grava', () async {
+      final idAula = await inserirAula(
+        db,
+        idProfessor: idProfessor,
+        dataIso: '2000-01-05',
+        horaInicio: '10:00',
+        horaFim: '11:00',
+      );
+      final a1 = await repo.inserir(idAluno: idAluno1, idAula: idAula, dataAgendamento: hoje);
+      await db.customStatement(
+        'UPDATE aula SET status = FALSE WHERE id_aula = $idAula',
+      );
+      await expectLater(
+        service.registrarChamada(
+          identidade: professorDaAula(),
+          idAula: idAula,
+          itens: [PresencaInformada(idAgendamento: a1.idAgendamento, presente: true)],
+        ),
+        throwsA(erroChamada(CodigoErro.aulaInativa)),
+      );
+      expect((await linhaDe(a1.idAgendamento)).status, 'agendado');
+    });
+
+    test('tudo ou nada: gatilho de vagas (GF001) na correcao desfaz a lista inteira', () async {
+      final idAula = await inserirAula(
+        db,
+        idProfessor: idProfessor,
+        dataIso: '2000-01-06',
+        horaInicio: '10:00',
+        horaFim: '11:00',
+        vagas: 2,
+      );
+      final a = await repo.inserir(idAluno: idAluno1, idAula: idAula, dataAgendamento: hoje);
+      final b = await repo.inserir(idAluno: idAluno2, idAula: idAula, dataAgendamento: hoje);
+      await db.customStatement(
+        "UPDATE agendamento SET status = 'faltou' WHERE id_agendamento = ${b.idAgendamento}",
+      );
+      final c = await repo.inserir(idAluno: idAluno3, idAula: idAula, dataAgendamento: hoje);
+
+      await expectLater(
+        service.registrarChamada(
+          identidade: professorDaAula(),
+          idAula: idAula,
+          itens: [
+            PresencaInformada(idAgendamento: c.idAgendamento, presente: true),
+            PresencaInformada(idAgendamento: b.idAgendamento, presente: true),
+          ],
+        ),
+        throwsA(
+          isA<pg.ServerException>().having((e) => e.code, 'sqlstate', 'GF001'),
+        ),
+      );
+
+      expect((await linhaDe(b.idAgendamento)).status, 'faltou');
+      expect((await linhaDe(c.idAgendamento)).status, 'agendado');
+      expect((await linhaDe(c.idAgendamento)).dataPresenca, isNull);
+      expect((await linhaDe(a.idAgendamento)).status, 'agendado');
+    });
+  });
 }

@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import '../../../core/design_system/components/app_bar_interna.dart';
 import '../../../core/design_system/components/campo_busca.dart';
 import '../../../core/design_system/components/cartao_lista.dart';
-import '../../../core/design_system/components/fundo_tela.dart';
 import '../../../core/design_system/components/texto_apoio.dart';
 import '../data/inativos_admin_data.dart';
 
@@ -45,9 +44,7 @@ class _PainelInativosAdminScreenState extends State<PainelInativosAdminScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return FundoTela(
-      child: Scaffold(
-        backgroundColor: Colors.transparent,
+    return Scaffold(
         appBar: appBarInterna(context, 'Inativos'),
         body: SafeArea(
           child: widget.estado == EstadoPainelInativosAdmin.vazio
@@ -107,8 +104,7 @@ class _PainelInativosAdminScreenState extends State<PainelInativosAdminScreen> {
                   ],
                 ),
         ),
-      ),
-    );
+      );
   }
 
   Widget _conteudo() {
