@@ -30,14 +30,14 @@ void main() {
 
   test('create, read, update e delete persistem no PostgreSQL', () async {
     final criado = await repository.create(
-      cpf: '52998224725',
+      cpf: '39053344705',
       senhaHash: 'hash-integracao',
       nome: 'Professor Integracao',
       telefone: '11999998888',
       email: emailUm,
     );
     expect(criado.idProfessor, greaterThan(0));
-    expect(await repository.cpfEmUso('52998224725'), isTrue);
+    expect(await repository.cpfEmUso('39053344705'), isTrue);
     expect(await repository.emailEmUso(emailUm), isTrue);
 
     final encontrado = await repository.buscarPorId(criado.idProfessor);
