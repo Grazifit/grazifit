@@ -1,28 +1,30 @@
-// app/lib/features/avaliacoes/screens/avaliacao_fisica_screen.dart
-//
-// Dados do aluno vêm de `alunoDetalheProvider`; salvar depende do backend de
-// avaliações. Integração: ver docs/integracao-frontend.md
-//
-// Avaliação física do aluno, edição do dia (professor): peso, altura, IMC
-// calculado automaticamente e observação. Aberta pelo item "Avaliação física"
-// do Detalhe do aluno. Não é a mesma tela que "Registrar medida do aluno"
-// (essa é a do próprio aluno, com altura travada).
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../auth/state/auth_controller.dart';
+import '../data/avaliacao_repository.dart';
+
 import '../../../core/design_system/components/app_bar_interna.dart';
 import '../../../core/design_system/components/botao_primario.dart';
 import '../../../core/design_system/components/campo_texto.dart';
+import '../../../core/design_system/components/fundo_tela.dart';
 import '../../../core/design_system/tokens/cores_provisorias.dart';
-import '../../../core/state/estado_async.dart';
-import '../../vinculos/state/vinculos_providers.dart';
 
 class AvaliacaoFisicaScreen extends ConsumerStatefulWidget {
-  const AvaliacaoFisicaScreen({super.key, required this.idAluno});
+  const AvaliacaoFisicaScreen({
+    super.key,
+    this.nomeAluno = '',
+    this.dataRegistro = '',
+    this.peso = '',
+    this.altura = '',
+  });
 
-  final int idAluno;
+  // Valores opcionais de apresentação; o aluno é identificado pela sessão.
+  final String nomeAluno;
+  final String dataRegistro;
+  final String peso;
+  final String altura;
 
   @override
   ConsumerState<AvaliacaoFisicaScreen> createState() =>
@@ -30,47 +32,43 @@ class AvaliacaoFisicaScreen extends ConsumerStatefulWidget {
 }
 
 class _AvaliacaoFisicaScreenState extends ConsumerState<AvaliacaoFisicaScreen> {
-  static const double _pesoMax = 500;
+  bool _carregando = true;
+  bool _salvando = false;
 
   final _formKey = GlobalKey<FormState>();
-  final _pesoController = TextEditingController();
-  final _alturaController = TextEditingController();
+  late final _pesoController = TextEditingController(text: widget.peso);
+  late final _alturaController = TextEditingController(text: widget.altura);
   final _imcController = TextEditingController();
   final _observacaoController = TextEditingController();
 
   @override
   void initState() {
     super.initState();
-    _pesoController.addListener(_recalcularImc);
-    _alturaController.addListener(_recalcularImc);
-    _recalcularImc();
-    _preencherDaUltimaAvaliacao();
+    _carregar();
   }
 
-  /// Pré-preenche peso e altura com a última avaliação do aluno.
-  Future<void> _preencherDaUltimaAvaliacao() async {
+  Future<void> _carregar() async {
     try {
-      final aluno =
-          await ref.read(alunoDetalheProvider(widget.idAluno).future);
-      if (!mounted) return;
-      String fmt(double? v, int casas) =>
-          v == null ? '' : v.toStringAsFixed(casas).replaceAll('.', ',');
-      if (_pesoController.text.isEmpty) {
-        _pesoController.text = fmt(aluno.ultimoPeso, 1);
-      }
-      if (_alturaController.text.isEmpty) {
-        _alturaController.text = fmt(aluno.ultimaAltura, 2);
-      }
-    } catch (_) {
-      // Sem dado: os campos ficam em branco e o erro aparece na própria
-      // tela (cabeçalho), pelo mesmo provider.
+      final sessao = ref.read(authControllerProvider).sessao;
+      if (sessao == null || sessao.papel != 'aluno') return;
+      final atual = await ref
+          .read(avaliacaoRepositoryProvider)
+          .atual(sessao.id);
+      if (!mounted || atual == null) return;
+      _pesoController.text = atual.peso.toString().replaceAll('.', ',');
+      _alturaController.text = atual.altura.toString().replaceAll('.', ',');
+      _observacaoController.text = atual.observacao ?? '';
+      _imcController.text = atual.imc.toStringAsFixed(2).replaceAll('.', ',');
+    } catch (erro) {
+      if (mounted) _mensagem(mensagemAvaliacao(erro));
+    } finally {
+      if (mounted) setState(() => _carregando = false);
     }
   }
 
-  String get _hoje {
-    final d = DateTime.now();
-    return '${d.day.toString().padLeft(2, '0')}/${d.month.toString().padLeft(2, '0')}';
-  }
+  void _mensagem(String texto) =>
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(texto)));
 
   @override
   void dispose() {
@@ -84,47 +82,59 @@ class _AvaliacaoFisicaScreenState extends ConsumerState<AvaliacaoFisicaScreen> {
   double? _numero(String? texto) =>
       double.tryParse((texto ?? '').trim().replaceAll(',', '.'));
 
-  void _recalcularImc() {
-    final peso = _numero(_pesoController.text);
-    final altura = _numero(_alturaController.text);
-    if (peso == null || altura == null || peso <= 0 || altura <= 0) {
-      _imcController.text = '--';
-      return;
-    }
-    final imc = peso / (altura * altura);
-    _imcController.text = imc.toStringAsFixed(1).replaceAll('.', ',');
-  }
-
-  String? _validarPeso(String? valor) {
-    final peso = _numero(valor);
-    if (peso == null || peso <= 0 || peso > _pesoMax) {
-      return 'Informe um peso entre 0 e 500 kg.';
+  String? _validarMedida(String? texto, double limite) {
+    final valor = _numero(texto);
+    if (valor == null ||
+        !valor.isFinite ||
+        valor <= 0 ||
+        valor >= limite ||
+        (valor * 100 - (valor * 100).round()).abs() > 0.0000001) {
+      return 'Informe um valor maior que zero e menor que $limite, com até duas casas decimais.';
     }
     return null;
   }
 
-  // TODO(backend): "editando o registro de hoje" = atualizar a avaliação do
-  // dia (há uma por aluno por data: uq_avaliacao_aluno_data, erro
-  // AVALIACAO_JA_REGISTRADA, D6). Confirmar se é PATCH ou upsert.
-  // O IMC é calculado no banco; aqui é só exibição. Falta validar a altura
-  // (o mockup não define o intervalo).
-  void _atualizar() {
-    if (!(_formKey.currentState?.validate() ?? false)) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text(TextosEstado.pendente)),
-    );
+  Future<void> _atualizar() async {
+    if (_salvando || !_formKey.currentState!.validate()) return;
+    final sessao = ref.read(authControllerProvider).sessao;
+    if (sessao == null || sessao.papel != 'aluno') {
+      _mensagem('Entre como aluno para registrar sua avaliação.');
+      return;
+    }
+    setState(() => _salvando = true);
+    try {
+      final medida = await ref
+          .read(avaliacaoRepositoryProvider)
+          .salvar(
+            sessao.id,
+            peso: _numero(_pesoController.text)!,
+            altura: _numero(_alturaController.text)!,
+            observacao: _observacaoController.text,
+          );
+      if (!mounted) return;
+      _imcController.text = medida.imc.toStringAsFixed(2).replaceAll('.', ',');
+      ref.invalidate(historicoAvaliacoesProvider);
+      _mensagem('Avaliação registrada.');
+      Navigator.of(context).pop(true);
+    } catch (erro) {
+      if (mounted) _mensagem(mensagemAvaliacao(erro));
+    } finally {
+      if (mounted) setState(() => _salvando = false);
+    }
   }
 
   // TODO(specs): CampoTexto ainda não tem modo somente leitura. Mesma solução
   // provisória da tela Editar perfil do professor.
   Widget _bloqueado(Widget campo) => Opacity(
-        opacity: 0.6,
-        child: IgnorePointer(child: ExcludeFocus(child: campo)),
-      );
+    opacity: 0.6,
+    child: IgnorePointer(child: ExcludeFocus(child: campo)),
+  );
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return FundoTela(
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
         appBar: appBarInterna(context, 'Avaliação física'),
         body: SafeArea(
           child: Form(
@@ -133,8 +143,8 @@ class _AvaliacaoFisicaScreenState extends ConsumerState<AvaliacaoFisicaScreen> {
               padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
               children: [
                 Text(
-                  ref.watch(alunoDetalheProvider(widget.idAluno)).valueOrNull?.nome ??
-                      '—',
+                  ref.watch(authControllerProvider).sessao?.nome ??
+                      widget.nomeAluno,
                   style: const TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.w600,
@@ -143,7 +153,7 @@ class _AvaliacaoFisicaScreenState extends ConsumerState<AvaliacaoFisicaScreen> {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  'Editando o registro de hoje, $_hoje',
+                  'Registro de hoje',
                   style: const TextStyle(fontSize: 12, color: corAlerta),
                 ),
                 const SizedBox(height: 20),
@@ -151,20 +161,23 @@ class _AvaliacaoFisicaScreenState extends ConsumerState<AvaliacaoFisicaScreen> {
                   label: 'Peso (kg)',
                   controller: _pesoController,
                   helper: 'Entre 0 e 500',
-                  keyboardType:
-                      const TextInputType.numberWithOptions(decimal: true),
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                  ),
                   inputFormatters: [
                     FilteringTextInputFormatter.allow(RegExp(r'[0-9.,]')),
                   ],
-                  validator: _validarPeso,
+                  validator: (v) => _validarMedida(v, 500),
                 ),
                 const SizedBox(height: 20),
                 CampoTexto(
                   label: 'Altura (m)',
+                  validator: (v) => _validarMedida(v, 3),
                   controller: _alturaController,
                   helper: 'Preenchida da última avaliação',
-                  keyboardType:
-                      const TextInputType.numberWithOptions(decimal: true),
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                  ),
                   inputFormatters: [
                     FilteringTextInputFormatter.allow(RegExp(r'[0-9.,]')),
                   ],
@@ -174,12 +187,15 @@ class _AvaliacaoFisicaScreenState extends ConsumerState<AvaliacaoFisicaScreen> {
                   CampoTexto(
                     label: 'IMC',
                     controller: _imcController,
-                    helper: 'Calculado automaticamente a partir de peso e altura',
+                    helper: 'Calculado pelo banco ao salvar a avaliação',
                   ),
                 ),
                 const SizedBox(height: 20),
                 CampoTexto(
                   label: 'Observação',
+                  validator: (v) => (v?.length ?? 0) > 2000
+                      ? 'Use até 2000 caracteres.'
+                      : null,
                   controller: _observacaoController,
                   hint: 'Toque para escrever',
                   helper: 'Opcional',
@@ -194,8 +210,9 @@ class _AvaliacaoFisicaScreenState extends ConsumerState<AvaliacaoFisicaScreen> {
         ),
         bottomNavigationBar: BarraAcaoInferior(
           texto: 'Atualizar avaliação',
-          onPressed: _atualizar,
+          onPressed: _carregando || _salvando ? null : _atualizar,
         ),
-      );
+      ),
+    );
   }
 }

@@ -40,6 +40,33 @@ class ApiClient {
   Future<Map<String, dynamic>> post(String path, Map<String, dynamic> body) =>
       postJson(path, body);
 
+  Future<Map<String, dynamic>> getJson(String path) async {
+    if (baseUrl.trim().isEmpty) {
+      throw const ApiException(codigo: 'CONFIGURACAO');
+    }
+    try {
+      final bearer = token?.call();
+      final response = await _client
+          .get(
+            Uri.parse('${baseUrl.replaceFirst(RegExp(r'/$'), '')}$path'),
+            headers: {if (bearer != null) 'Authorization': 'Bearer $bearer'},
+          )
+          .timeout(timeout);
+      if (response.statusCode < 200 || response.statusCode >= 300) {
+        throw ApiException(statusCode: response.statusCode);
+      }
+      return response.statusCode == 204 ? {} : _decodeObject(response.body);
+    } on ApiException {
+      rethrow;
+    } on TimeoutException {
+      throw const ApiException(codigo: 'TIMEOUT');
+    } on http.ClientException {
+      throw const ApiException(codigo: 'REDE');
+    } on FormatException {
+      throw const ApiException(codigo: 'RESPOSTA_INVALIDA');
+    }
+  }
+
   Future<Map<String, dynamic>> postJson(
     String path,
     Map<String, Object?> body,

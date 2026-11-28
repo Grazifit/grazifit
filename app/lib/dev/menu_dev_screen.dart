@@ -119,7 +119,7 @@ class MenuDevScreen extends StatelessWidget {
       _TelaDev('Chamada', () => const ChamadaScreen(idAula: 1)),
       _TelaDev('Detalhes da aula', () => const DetalheAulaScreen(idAula: 1)),
       _TelaDev('Minha Agenda', () => const MinhaAgendaScreen()),
-      _TelaDev('Avaliação física', () => const AvaliacaoFisicaScreen(idAluno: 1)),
+      _TelaDev('Avaliação física', () => const AvaliacaoFisicaScreen()),
     ]),
 
     _GrupoDev('Cronogramas', [
