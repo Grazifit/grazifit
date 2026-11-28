@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/state/busca_com_debounce.dart';
+
 import '../data/usuarios_admin_data.dart';
 
 enum EstadoUsuariosAdmin { carregando, vazio, erro, semConexao, dados }
@@ -44,10 +46,9 @@ class TelaUsuariosAdmin extends StatefulWidget {
 }
 
 class _TelaUsuariosAdminState extends State<TelaUsuariosAdmin> {
-  final _buscaController = TextEditingController();
+  final _buscaController = BuscaComDebounce();
   CategoriaUsuariosAdmin _categoria = CategoriaUsuariosAdmin.alunos;
   FiltroUsuariosAdmin _filtro = FiltroUsuariosAdmin.ativos;
-  String _termo = '';
 
   @override
   void dispose() {
@@ -81,7 +82,10 @@ class _TelaUsuariosAdminState extends State<TelaUsuariosAdmin> {
                       ],
                     ),
                   ),
-                  _listaUsuarios(),
+                  ValueListenableBuilder<String>(
+                    valueListenable: _buscaController.termo,
+                    builder: (context, termo, child) => _listaUsuarios(termo),
+                  ),
                   SliverToBoxAdapter(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -127,8 +131,6 @@ class _TelaUsuariosAdminState extends State<TelaUsuariosAdmin> {
       height: 48,
       child: TextField(
         controller: _buscaController,
-        onChanged: (valor) =>
-            setState(() => _termo = valor.trim().toLowerCase()),
         textInputAction: TextInputAction.search,
         decoration: InputDecoration(
           hintText: 'Buscar $tipo',
@@ -182,8 +184,10 @@ class _TelaUsuariosAdminState extends State<TelaUsuariosAdmin> {
     );
   }
 
-  Widget _listaUsuarios() {
-    if (widget.estado == EstadoUsuariosAdmin.dados) return _listaComDados();
+  Widget _listaUsuarios(String termo) {
+    if (widget.estado == EstadoUsuariosAdmin.dados) {
+      return _listaComDados(termo);
+    }
     return SliverToBoxAdapter(
       child: switch (widget.estado) {
         EstadoUsuariosAdmin.dados => const SizedBox.shrink(),
@@ -210,14 +214,14 @@ class _TelaUsuariosAdminState extends State<TelaUsuariosAdmin> {
     );
   }
 
-  Widget _listaComDados() {
+  Widget _listaComDados(String termo) {
     final usuarios = _categoria == CategoriaUsuariosAdmin.alunos
         ? widget.dados.alunos
         : widget.dados.professores;
     final ativos = _filtro == FiltroUsuariosAdmin.ativos;
     final filtrados = usuarios
         .where((usuario) => usuario.ativo == ativos)
-        .where((usuario) => usuario.nome.toLowerCase().contains(_termo))
+        .where((usuario) => usuario.nome.toLowerCase().contains(termo))
         .toList(growable: false);
 
     if (filtrados.isEmpty) {
@@ -228,7 +232,7 @@ class _TelaUsuariosAdminState extends State<TelaUsuariosAdmin> {
       return SliverToBoxAdapter(
         child: _EstadoLista(
           icone: Icons.search,
-          mensagem: _termo.isEmpty
+          mensagem: termo.isEmpty
               ? 'Nenhum $categoria $situacao.'
               : 'Nenhum usuário encontrado.',
         ),
@@ -330,7 +334,6 @@ class _TelaUsuariosAdminState extends State<TelaUsuariosAdmin> {
     if (_categoria == categoria) return;
     setState(() {
       _categoria = categoria;
-      _termo = '';
       _buscaController.clear();
     });
   }

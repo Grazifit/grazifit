@@ -5,6 +5,9 @@
 // Integração: ver docs/integracao-frontend.md.
 
 import 'package:flutter/material.dart';
+
+import '../../../core/state/busca_com_debounce.dart';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/design_system/components/barra_navegacao.dart';
@@ -28,8 +31,7 @@ class MeusAlunosScreen extends ConsumerStatefulWidget {
 }
 
 class _MeusAlunosScreenState extends ConsumerState<MeusAlunosScreen> {
-  final _buscaController = TextEditingController();
-  String _busca = '';
+  final _buscaController = BuscaComDebounce();
 
   @override
   void dispose() {
@@ -47,7 +49,6 @@ class _MeusAlunosScreenState extends ConsumerState<MeusAlunosScreen> {
   @override
   Widget build(BuildContext context) {
     final alunos = ref.watch(alunosAtivosProvider);
-    final termo = _busca.trim().toLowerCase();
 
     return Scaffold(
       body: SafeArea(
@@ -73,11 +74,7 @@ class _MeusAlunosScreenState extends ConsumerState<MeusAlunosScreen> {
             if (alunos.hasValue)
               TextoApoio('${alunos.value!.length} alunos com vínculo ativo'),
             const SizedBox(height: 20),
-            CampoBusca(
-              controller: _buscaController,
-              hint: 'Buscar aluno',
-              onChanged: (v) => setState(() => _busca = v),
-            ),
+            CampoBusca(controller: _buscaController, hint: 'Buscar aluno'),
             const SizedBox(height: 12),
             Row(
               children: [
@@ -98,36 +95,42 @@ class _MeusAlunosScreenState extends ConsumerState<MeusAlunosScreen> {
             // servidor (GET /aluno tem limit/offset): ver o guia, L3.
             SizedBox(
               height: 320,
-              child: EstadoAsync<List<AlunoVinculado>>(
-                valor: alunos,
-                aoTentarNovamente: () => ref.invalidate(alunosAtivosProvider),
-                textoVazio: 'Nenhum aluno encontrado',
-                dados: (lista) {
-                  final filtrados = lista
-                      .where((a) => a.nome.toLowerCase().contains(termo))
-                      .toList();
-                  if (filtrados.isEmpty) {
-                    return const Center(
-                      child: TextoApoio('Nenhum aluno encontrado'),
-                    );
-                  }
-                  return CartaoListaVirtualizado(
-                    quantidade: filtrados.length,
-                    construirItem: (context, index) {
-                      final aluno = filtrados[index];
-                      return ItemLista(
-                        titulo: aluno.nome,
-                        subtitulo: _subtitulo(aluno),
-                        onTap: () => Navigator.of(context).push(
-                          MaterialPageRoute<void>(
-                            builder: (_) =>
-                                AlunoDetalheScreen(idAluno: aluno.idAluno),
-                          ),
-                        ),
-                      );
-                    },
-                  );
-                },
+              child: ValueListenableBuilder<String>(
+                valueListenable: _buscaController.termo,
+                builder: (context, termo, child) =>
+                    EstadoAsync<List<AlunoVinculado>>(
+                      valor: alunos,
+                      aoTentarNovamente: () =>
+                          ref.invalidate(alunosAtivosProvider),
+                      textoVazio: 'Nenhum aluno encontrado',
+                      dados: (lista) {
+                        final filtrados = lista
+                            .where((a) => a.nome.toLowerCase().contains(termo))
+                            .toList();
+                        if (filtrados.isEmpty) {
+                          return const Center(
+                            child: TextoApoio('Nenhum aluno encontrado'),
+                          );
+                        }
+                        return CartaoListaVirtualizado(
+                          quantidade: filtrados.length,
+                          construirItem: (context, index) {
+                            final aluno = filtrados[index];
+                            return ItemLista(
+                              titulo: aluno.nome,
+                              subtitulo: _subtitulo(aluno),
+                              onTap: () => Navigator.of(context).push(
+                                MaterialPageRoute<void>(
+                                  builder: (_) => AlunoDetalheScreen(
+                                    idAluno: aluno.idAluno,
+                                  ),
+                                ),
+                              ),
+                            );
+                          },
+                        );
+                      },
+                    ),
               ),
             ),
           ],

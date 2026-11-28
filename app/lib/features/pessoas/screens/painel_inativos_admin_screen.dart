@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/state/busca_com_debounce.dart';
+
 import '../../../core/design_system/components/app_bar_interna.dart';
 import '../../../core/design_system/components/campo_busca.dart';
 import '../../../core/design_system/components/cartao_lista.dart';
@@ -32,9 +34,8 @@ class PainelInativosAdminScreen extends StatefulWidget {
 }
 
 class _PainelInativosAdminScreenState extends State<PainelInativosAdminScreen> {
-  final _buscaController = TextEditingController();
+  final _buscaController = BuscaComDebounce();
   CategoriaInativosAdmin _categoria = CategoriaInativosAdmin.alunos;
-  String _busca = '';
 
   @override
   void dispose() {
@@ -45,69 +46,72 @@ class _PainelInativosAdminScreenState extends State<PainelInativosAdminScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-        appBar: appBarInterna(context, 'Inativos'),
-        body: SafeArea(
-          child: widget.estado == EstadoPainelInativosAdmin.vazio
-              ? Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Padding(
-                      padding: EdgeInsets.fromLTRB(16, 4, 16, 0),
-                      child: TextoApoio('Sem acesso há 30 dias ou mais'),
-                    ),
-                    const Expanded(child: _EstadoVazioInativos()),
-                  ],
-                )
-              : Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 4, 16, 0),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const TextoApoio('Sem acesso há 30 dias ou mais'),
-                          const SizedBox(height: 16),
-                          CampoBusca(
-                            controller: _buscaController,
-                            hint: 'Buscar pessoa',
-                            onChanged: (valor) =>
-                                setState(() => _busca = valor),
-                          ),
-                          const SizedBox(height: 12),
-                          Row(
-                            children: [
-                              _CategoriaChip(
-                                texto: 'Alunos',
-                                selecionado:
-                                    _categoria == CategoriaInativosAdmin.alunos,
-                                onTap: () =>
-                                    _selecionar(CategoriaInativosAdmin.alunos),
-                              ),
-                              const SizedBox(width: 8),
-                              _CategoriaChip(
-                                texto: 'Professores',
-                                selecionado:
-                                    _categoria ==
-                                    CategoriaInativosAdmin.professores,
-                                onTap: () => _selecionar(
+      appBar: appBarInterna(context, 'Inativos'),
+      body: SafeArea(
+        child: widget.estado == EstadoPainelInativosAdmin.vazio
+            ? Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Padding(
+                    padding: EdgeInsets.fromLTRB(16, 4, 16, 0),
+                    child: TextoApoio('Sem acesso há 30 dias ou mais'),
+                  ),
+                  const Expanded(child: _EstadoVazioInativos()),
+                ],
+              )
+            : Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 4, 16, 0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const TextoApoio('Sem acesso há 30 dias ou mais'),
+                        const SizedBox(height: 16),
+                        CampoBusca(
+                          controller: _buscaController,
+                          hint: 'Buscar pessoa',
+                        ),
+                        const SizedBox(height: 12),
+                        Row(
+                          children: [
+                            _CategoriaChip(
+                              texto: 'Alunos',
+                              selecionado:
+                                  _categoria == CategoriaInativosAdmin.alunos,
+                              onTap: () =>
+                                  _selecionar(CategoriaInativosAdmin.alunos),
+                            ),
+                            const SizedBox(width: 8),
+                            _CategoriaChip(
+                              texto: 'Professores',
+                              selecionado:
+                                  _categoria ==
                                   CategoriaInativosAdmin.professores,
-                                ),
+                              onTap: () => _selecionar(
+                                CategoriaInativosAdmin.professores,
                               ),
-                            ],
-                          ),
-                        ],
-                      ),
+                            ),
+                          ],
+                        ),
+                      ],
                     ),
-                    const SizedBox(height: 16),
-                    Expanded(child: _conteudo()),
-                  ],
-                ),
-        ),
-      );
+                  ),
+                  const SizedBox(height: 16),
+                  Expanded(
+                    child: ValueListenableBuilder<String>(
+                      valueListenable: _buscaController.termo,
+                      builder: (context, termo, child) => _conteudo(termo),
+                    ),
+                  ),
+                ],
+              ),
+      ),
+    );
   }
 
-  Widget _conteudo() {
+  Widget _conteudo(String termo) {
     return switch (widget.estado) {
       EstadoPainelInativosAdmin.carregando => const Center(
         child: CircularProgressIndicator(color: Color(0xFF005B50)),
@@ -121,15 +125,14 @@ class _PainelInativosAdminScreenState extends State<PainelInativosAdminScreen> {
         Icons.cloud_off,
         'Sem conexão. Confira sua internet e tente novamente.',
       ),
-      EstadoPainelInativosAdmin.dados => _listaDados(),
+      EstadoPainelInativosAdmin.dados => _listaDados(termo),
     };
   }
 
-  Widget _listaDados() {
+  Widget _listaDados(String termo) {
     final pessoas = _categoria == CategoriaInativosAdmin.alunos
         ? widget.dados.alunos
         : widget.dados.professores;
-    final termo = _busca.trim().toLowerCase();
     final filtradas = pessoas
         .where((pessoa) => pessoa.nome.toLowerCase().contains(termo))
         .toList(growable: false);
@@ -188,7 +191,6 @@ class _PainelInativosAdminScreenState extends State<PainelInativosAdminScreen> {
     if (_categoria == categoria) return;
     setState(() {
       _categoria = categoria;
-      _busca = '';
       _buscaController.clear();
     });
   }

@@ -4,6 +4,9 @@
 // (não recalcular aqui). Dados de `alunosInativosProvider`.
 
 import 'package:flutter/material.dart';
+
+import '../../../core/state/busca_com_debounce.dart';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/design_system/components/app_bar_interna.dart';
@@ -24,8 +27,7 @@ class AlunosInativosScreen extends ConsumerStatefulWidget {
 }
 
 class _AlunosInativosScreenState extends ConsumerState<AlunosInativosScreen> {
-  final _buscaController = TextEditingController();
-  String _busca = '';
+  final _buscaController = BuscaComDebounce();
 
   @override
   void dispose() {
@@ -40,7 +42,6 @@ class _AlunosInativosScreenState extends ConsumerState<AlunosInativosScreen> {
   @override
   Widget build(BuildContext context) {
     final inativos = ref.watch(alunosInativosProvider);
-    final termo = _busca.trim().toLowerCase();
 
     return Scaffold(
       appBar: appBarInterna(context, 'Inativos'),
@@ -50,11 +51,7 @@ class _AlunosInativosScreenState extends ConsumerState<AlunosInativosScreen> {
           children: [
             const TextoApoio('Alunos vinculados sem acesso há 30 dias'),
             const SizedBox(height: 16),
-            CampoBusca(
-              controller: _buscaController,
-              hint: 'Buscar aluno',
-              onChanged: (v) => setState(() => _busca = v),
-            ),
+            CampoBusca(controller: _buscaController, hint: 'Buscar aluno'),
             const SizedBox(height: 12),
             Row(
               children: [
@@ -67,30 +64,35 @@ class _AlunosInativosScreenState extends ConsumerState<AlunosInativosScreen> {
             const SizedBox(height: 20),
             SizedBox(
               height: 320,
-              child: EstadoAsync<List<AlunoInativo>>(
-                valor: inativos,
-                aoTentarNovamente: () => ref.invalidate(alunosInativosProvider),
-                textoVazio: 'Nenhum aluno encontrado',
-                dados: (lista) {
-                  final filtrados = lista
-                      .where((a) => a.nome.toLowerCase().contains(termo))
-                      .toList();
-                  if (filtrados.isEmpty) {
-                    return const Center(
-                      child: TextoApoio('Nenhum aluno encontrado'),
-                    );
-                  }
-                  return CartaoListaVirtualizado(
-                    quantidade: filtrados.length,
-                    construirItem: (context, index) {
-                      final a = filtrados[index];
-                      return ItemLista(
-                        titulo: a.nome,
-                        subtitulo: _subtitulo(a),
-                      );
-                    },
-                  );
-                },
+              child: ValueListenableBuilder<String>(
+                valueListenable: _buscaController.termo,
+                builder: (context, termo, child) =>
+                    EstadoAsync<List<AlunoInativo>>(
+                      valor: inativos,
+                      aoTentarNovamente: () =>
+                          ref.invalidate(alunosInativosProvider),
+                      textoVazio: 'Nenhum aluno encontrado',
+                      dados: (lista) {
+                        final filtrados = lista
+                            .where((a) => a.nome.toLowerCase().contains(termo))
+                            .toList();
+                        if (filtrados.isEmpty) {
+                          return const Center(
+                            child: TextoApoio('Nenhum aluno encontrado'),
+                          );
+                        }
+                        return CartaoListaVirtualizado(
+                          quantidade: filtrados.length,
+                          construirItem: (context, index) {
+                            final a = filtrados[index];
+                            return ItemLista(
+                              titulo: a.nome,
+                              subtitulo: _subtitulo(a),
+                            );
+                          },
+                        );
+                      },
+                    ),
               ),
             ),
           ],

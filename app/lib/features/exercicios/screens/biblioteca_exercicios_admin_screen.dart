@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/state/busca_com_debounce.dart';
+
 import '../../../core/design_system/tokens/cores_provisorias.dart';
 import '../state/biblioteca_exercicios_admin_state.dart';
 
@@ -30,7 +32,7 @@ class BibliotecaExerciciosAdminScreen extends StatefulWidget {
 
 class _BibliotecaExerciciosAdminScreenState
     extends State<BibliotecaExerciciosAdminScreen> {
-  final _buscaController = TextEditingController();
+  final _buscaController = BuscaComDebounce();
   final _dificuldadesSelecionadas = <String>{};
 
   @override
@@ -110,7 +112,11 @@ class _BibliotecaExerciciosAdminScreenState
                                 ],
                               ),
                             ),
-                            _conteudo(),
+                            ValueListenableBuilder<String>(
+                              valueListenable: _buscaController.termo,
+                              builder: (context, termo, child) =>
+                                  _conteudo(termo),
+                            ),
                           ],
                         ),
                       ),
@@ -127,43 +133,42 @@ class _BibliotecaExerciciosAdminScreenState
   }
 
   Widget _campoBusca() {
-    return TextField(
-      controller: _buscaController,
-      onChanged: (_) => setState(() {}),
-      decoration: InputDecoration(
-        hintText: 'Buscar exercício',
-        hintStyle: const TextStyle(color: Color(0xFF8A9492), fontSize: 14),
-        prefixIcon: const Icon(Icons.search, color: corInstitucional),
-        suffixIcon: _buscaController.text.isEmpty
-            ? null
-            : IconButton(
-                tooltip: 'Limpar busca',
-                icon: const Icon(Icons.close),
-                onPressed: () {
-                  _buscaController.clear();
-                  setState(() {});
-                },
-              ),
-        filled: true,
-        fillColor: Colors.white,
-        contentPadding: const EdgeInsets.symmetric(vertical: 12),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(5),
-          borderSide: const BorderSide(color: Color(0xFFBECBC8)),
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(5),
-          borderSide: const BorderSide(color: Color(0xFFBECBC8)),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(5),
-          borderSide: const BorderSide(color: corInstitucional),
+    return ValueListenableBuilder<TextEditingValue>(
+      valueListenable: _buscaController,
+      builder: (context, valor, child) => TextField(
+        controller: _buscaController,
+        decoration: InputDecoration(
+          hintText: 'Buscar exercício',
+          hintStyle: const TextStyle(color: Color(0xFF8A9492), fontSize: 14),
+          prefixIcon: const Icon(Icons.search, color: corInstitucional),
+          suffixIcon: valor.text.isEmpty
+              ? null
+              : IconButton(
+                  tooltip: 'Limpar busca',
+                  icon: const Icon(Icons.close),
+                  onPressed: _buscaController.clear,
+                ),
+          filled: true,
+          fillColor: Colors.white,
+          contentPadding: const EdgeInsets.symmetric(vertical: 12),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(5),
+            borderSide: const BorderSide(color: Color(0xFFBECBC8)),
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(5),
+            borderSide: const BorderSide(color: Color(0xFFBECBC8)),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(5),
+            borderSide: const BorderSide(color: corInstitucional),
+          ),
         ),
       ),
     );
   }
 
-  Widget _conteudo() {
+  Widget _conteudo(String consulta) {
     switch (widget.estado) {
       case EstadoBibliotecaExerciciosAdmin.carregando:
         return const SliverToBoxAdapter(
@@ -189,11 +194,10 @@ class _BibliotecaExerciciosAdminScreenState
         );
       case EstadoBibliotecaExerciciosAdmin.vazio:
       case EstadoBibliotecaExerciciosAdmin.dados:
-        final exercicios = _exerciciosFiltrados;
+        final exercicios = _exerciciosFiltrados(consulta);
         if (exercicios.isEmpty) {
           final temBusca =
-              _buscaController.text.trim().isNotEmpty ||
-              _dificuldadesSelecionadas.isNotEmpty;
+              consulta.isNotEmpty || _dificuldadesSelecionadas.isNotEmpty;
           return SliverToBoxAdapter(
             child: _ListaVazia(
               mensagem: temBusca
@@ -216,8 +220,7 @@ class _BibliotecaExerciciosAdminScreenState
     }
   }
 
-  List<ExercicioBibliotecaAdminItem> get _exerciciosFiltrados {
-    final consulta = _buscaController.text.trim().toLowerCase();
+  List<ExercicioBibliotecaAdminItem> _exerciciosFiltrados(String consulta) {
     return widget.exercicios.where((exercicio) {
       final correspondeBusca =
           consulta.isEmpty || exercicio.nome.toLowerCase().contains(consulta);

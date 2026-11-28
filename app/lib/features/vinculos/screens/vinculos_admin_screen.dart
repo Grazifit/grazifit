@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/state/busca_com_debounce.dart';
+
 import '../../../core/design_system/components/app_bar_interna.dart';
 import '../../../core/design_system/components/botao_primario.dart';
 import '../../../core/design_system/components/campo_busca.dart';
@@ -34,9 +36,8 @@ class VinculosAdminScreen extends StatefulWidget {
 }
 
 class _VinculosAdminScreenState extends State<VinculosAdminScreen> {
-  final _buscaController = TextEditingController();
+  final _buscaController = BuscaComDebounce();
   FiltroVinculosAdmin _filtro = FiltroVinculosAdmin.ativos;
-  String _busca = '';
 
   @override
   void dispose() {
@@ -60,7 +61,6 @@ class _VinculosAdminScreenState extends State<VinculosAdminScreen> {
                   CampoBusca(
                     controller: _buscaController,
                     hint: 'Buscar aluno',
-                    onChanged: (valor) => setState(() => _busca = valor),
                   ),
                   const SizedBox(height: 12),
                   Row(
@@ -83,7 +83,12 @@ class _VinculosAdminScreenState extends State<VinculosAdminScreen> {
               ),
             ),
             const SizedBox(height: 16),
-            Expanded(child: _conteudo()),
+            Expanded(
+              child: ValueListenableBuilder<String>(
+                valueListenable: _buscaController.termo,
+                builder: (context, termo, child) => _conteudo(termo),
+              ),
+            ),
             const Padding(
               padding: EdgeInsets.fromLTRB(16, 0, 16, 12),
               child: TextoApoio(
@@ -100,7 +105,7 @@ class _VinculosAdminScreenState extends State<VinculosAdminScreen> {
     );
   }
 
-  Widget _conteudo() {
+  Widget _conteudo(String termo) {
     return switch (widget.estado) {
       EstadoVinculosAdmin.carregando => const Center(
         child: CircularProgressIndicator(color: Color(0xFF005B50)),
@@ -116,15 +121,14 @@ class _VinculosAdminScreenState extends State<VinculosAdminScreen> {
         Icons.cloud_off,
         'Sem conexão. Confira sua internet e tente novamente.',
       ),
-      EstadoVinculosAdmin.dados => _lista(),
+      EstadoVinculosAdmin.dados => _lista(termo),
     };
   }
 
-  Widget _lista() {
+  Widget _lista(String termo) {
     final itens = _filtro == FiltroVinculosAdmin.ativos
         ? widget.dados.ativos
         : widget.dados.encerrados;
-    final termo = _busca.trim().toLowerCase();
     final filtrados = itens
         .where((vinculo) => vinculo.alunoNome.toLowerCase().contains(termo))
         .toList(growable: false);
@@ -234,7 +238,6 @@ class _VinculosAdminScreenState extends State<VinculosAdminScreen> {
     if (_filtro == filtro) return;
     setState(() {
       _filtro = filtro;
-      _busca = '';
       _buscaController.clear();
     });
   }
