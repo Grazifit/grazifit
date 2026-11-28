@@ -227,15 +227,15 @@ class _TelaAgendaAlunoState extends State<TelaAgendaAluno> {
     setState(() => _navSelecionado = index);
   }
 
-  /// Ícone de cada modalidade. É só apresentação: modalidades novas, que não
-  /// estejam aqui, usam o ícone padrão.
-  IconData _iconeDaModalidade(String nome) {
-    switch (nome) {
-      case 'Musculação':
+  /// Ícone pelo código da categoria. É só apresentação: códigos que não
+  /// estejam aqui usam o ícone padrão.
+  IconData _iconeDaModalidade(String codigo) {
+    switch (codigo) {
+      case 'musculacao':
         return Icons.sports_gymnastics;
-      case 'Pilates':
+      case 'pilates':
         return Icons.self_improvement;
-      case 'Funcional':
+      case 'funcional':
       default:
         return Icons.fitness_center;
     }
@@ -302,7 +302,7 @@ class _TelaAgendaAlunoState extends State<TelaAgendaAluno> {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Icon(
-                    _iconeDaModalidade(modalidade.nome),
+                    _iconeDaModalidade(modalidade.id),
                     size: 16,
                     color: selecionada ? Colors.white : Colors.black54,
                   ),
@@ -359,7 +359,7 @@ class _TelaAgendaAlunoState extends State<TelaAgendaAluno> {
           Row(
             children: [
               Icon(
-                _iconeDaModalidade(aula.modalidade),
+                _iconeDaModalidade(aula.categoria),
                 size: 14,
                 color: Colors.black54,
               ),
