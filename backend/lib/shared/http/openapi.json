@@ -1,0 +1,1192 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "API GraziFit",
+    "version": "0.1.0",
+    "description": "API do GraziFit. Para testar operações protegidas, faça login e informe o valor de access_token no botão Authorize."
+  },
+  "servers": [
+    {
+      "url": "/",
+      "description": "Servidor que fornece esta documentação"
+    }
+  ],
+  "security": [
+    {
+      "bearerAuth": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Infraestrutura"
+    },
+    {
+      "name": "Autenticação"
+    },
+    {
+      "name": "Administradores"
+    },
+    {
+      "name": "Professores"
+    },
+    {
+      "name": "Alunos"
+    },
+    {
+      "name": "Avaliações"
+    },
+    {
+      "name": "Exercícios"
+    },
+    {
+      "name": "Aulas"
+    },
+    {
+      "name": "Agendamentos"
+    },
+    {
+      "name": "Cronogramas"
+    },
+    {
+      "name": "Painel"
+    },
+    {
+      "name": "Treinos"
+    }
+  ],
+  "paths": {
+    "/health": {
+      "get": {
+        "tags": ["Infraestrutura"],
+        "summary": "Verificar a disponibilidade do banco",
+        "security": [],
+        "responses": {
+          "200": {"description":"Banco disponível.","content":{"application/json":{"schema":{"type":"object","required":["status"],"properties":{"status":{"type":"string","enum":["ok"]}}}}}},
+          "503": {"description":"Banco indisponível.","content":{"application/json":{"schema":{"type":"object","required":["status"],"properties":{"status":{"type":"string","enum":["indisponivel"]}}}}}}
+        }
+      }
+    },
+    "/swagger": {
+      "get": {
+        "tags": ["Infraestrutura"],
+        "summary": "Abrir a interface Swagger UI",
+        "security": [],
+        "responses": {
+          "200": {"description":"Interface interativa em HTML.","content":{"text/html":{"schema":{"type":"string"}}}}
+        }
+      }
+    },
+    "/swagger.json": {
+      "get": {
+        "tags": ["Infraestrutura"],
+        "summary": "Obter o contrato OpenAPI",
+        "security": [],
+        "responses": {
+          "200": {"description":"Documento OpenAPI 3.0.3.","content":{"application/json":{"schema":{"type":"object"}}}}
+        }
+      }
+    },
+    "/auth/login": {
+      "post": {
+        "tags": ["Autenticação"],
+        "summary": "Iniciar uma sessão",
+        "security": [],
+        "requestBody": {"required":true,"content":{"application/json":{"schema":{"$ref":"#/components/schemas/LoginEntrada"}}}},
+        "responses": {
+          "200": {"description":"Sessão iniciada.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/LoginResposta"}}}},
+          "400": {"description":"Parâmetros ou corpo da solicitação inválidos.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Erro"}}}},
+          "401": {"description":"E-mail ou senha inválidos.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Erro"}}}},
+          "413": {"description":"Corpo da solicitação acima do limite.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Erro"}}}},
+          "429": {"description":"Limite de tentativas atingido.","headers":{"Retry-After":{"description":"Tempo de espera em segundos, quando informado.","schema":{"type":"integer","minimum":0}}},"content":{"application/json":{"schema":{"$ref":"#/components/schemas/Erro"}}}},
+          "500": {"description":"Erro interno do servidor.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Erro"}}}}
+        }
+      }
+    },
+    "/auth/logout": {
+      "post": {
+        "tags": ["Autenticação"],
+        "summary": "Encerrar a sessão atual",
+        "responses": {
+          "204": {"description":"Sessão encerrada."},
+          "401": {"description":"Token ausente, inválido ou sessão inativa.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Erro"}}}},
+          "500": {"description":"Erro interno do servidor.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Erro"}}}}
+        }
+      }
+    },
+    "/admin": {
+      "post": {
+        "tags": ["Administradores"],
+        "summary": "Cadastrar administrador",
+        "description": "Perfil permitido: administrador.",
+        "requestBody": {"required":true,"content":{"application/json":{"schema":{"$ref":"#/components/schemas/AdminCriar"}}}},
+        "responses": {
+          "201": {"description":"Cadastro criado.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Admin"}}}},
+          "400": {"description":"Parâmetros ou corpo da solicitação inválidos.","content":{"application/json":{"schema":{"oneOf":[{"$ref":"#/components/schemas/Erro"},{"$ref":"#/components/schemas/ErroLegado"}]}}}},
+          "401": {"description":"Token ausente, inválido ou sessão inativa.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Erro"}}}},
+          "403": {"description":"O perfil não tem permissão para executar a operação.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Erro"}}}},
+          "409": {"description":"CPF ou e-mail já cadastrado.","content":{"application/json":{"schema":{"oneOf":[{"$ref":"#/components/schemas/Erro"},{"$ref":"#/components/schemas/ErroLegado"}]}}}},
+          "413": {"description":"Corpo da solicitação acima do limite.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Erro"}}}},
+          "500": {"description":"Erro interno do servidor.","content":{"application/json":{"schema":{"oneOf":[{"$ref":"#/components/schemas/Erro"},{"$ref":"#/components/schemas/ErroLegado"}]}}}}
+        }
+      }
+    },
+    "/admin/{id}": {
+      "get": {
+        "tags": ["Administradores"],
+        "summary": "Consultar administrador",
+        "description": "Perfil permitido: administrador.",
+        "parameters": [{"$ref":"#/components/parameters/Id"}],
+        "responses": {
+          "200": {"description":"Operação concluída.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Admin"}}}},
+          "400": {"description":"Parâmetros ou corpo da solicitação inválidos.","content":{"application/json":{"schema":{"oneOf":[{"$ref":"#/components/schemas/Erro"},{"$ref":"#/components/schemas/ErroLegado"}]}}}},
+          "401": {"description":"Token ausente, inválido ou sessão inativa.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Erro"}}}},
+          "403": {"description":"O perfil não tem permissão para executar a operação.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Erro"}}}},
+          "404": {"description":"Registro não encontrado.","content":{"application/json":{"schema":{"oneOf":[{"$ref":"#/components/schemas/Erro"},{"$ref":"#/components/schemas/ErroLegado"}]}}}},
+          "500": {"description":"Erro interno do servidor.","content":{"application/json":{"schema":{"oneOf":[{"$ref":"#/components/schemas/Erro"},{"$ref":"#/components/schemas/ErroLegado"}]}}}}
+        }
+      },
+      "patch": {
+        "tags": ["Administradores"],
+        "summary": "Atualizar administrador",
+        "description": "Perfil permitido: administrador.",
+        "parameters": [{"$ref":"#/components/parameters/Id"}],
+        "requestBody": {"required":true,"content":{"application/json":{"schema":{"$ref":"#/components/schemas/AdminAtualizar"}}}},
+        "responses": {
+          "200": {"description":"Operação concluída.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Admin"}}}},
+          "400": {"description":"Parâmetros ou corpo da solicitação inválidos.","content":{"application/json":{"schema":{"oneOf":[{"$ref":"#/components/schemas/Erro"},{"$ref":"#/components/schemas/ErroLegado"}]}}}},
+          "401": {"description":"Token ausente, inválido ou sessão inativa.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Erro"}}}},
+          "403": {"description":"O perfil não tem permissão para executar a operação.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Erro"}}}},
+          "404": {"description":"Registro não encontrado.","content":{"application/json":{"schema":{"oneOf":[{"$ref":"#/components/schemas/Erro"},{"$ref":"#/components/schemas/ErroLegado"}]}}}},
+          "409": {"description":"E-mail já cadastrado.","content":{"application/json":{"schema":{"oneOf":[{"$ref":"#/components/schemas/Erro"},{"$ref":"#/components/schemas/ErroLegado"}]}}}},
+          "413": {"description":"Corpo da solicitação acima do limite.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Erro"}}}},
+          "500": {"description":"Erro interno do servidor.","content":{"application/json":{"schema":{"oneOf":[{"$ref":"#/components/schemas/Erro"},{"$ref":"#/components/schemas/ErroLegado"}]}}}}
+        }
+      },
+      "delete": {
+        "tags": ["Administradores"],
+        "summary": "Remover administrador",
+        "description": "Perfil permitido: administrador.",
+        "parameters": [{"$ref":"#/components/parameters/Id"}],
+        "responses": {
+          "204": {"description":"Operação concluída sem corpo."},
+          "400": {"description":"Parâmetros ou corpo da solicitação inválidos.","content":{"application/json":{"schema":{"oneOf":[{"$ref":"#/components/schemas/Erro"},{"$ref":"#/components/schemas/ErroLegado"}]}}}},
+          "401": {"description":"Token ausente, inválido ou sessão inativa.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Erro"}}}},
+          "403": {"description":"O perfil não tem permissão para executar a operação.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Erro"}}}},
+          "404": {"description":"Registro não encontrado.","content":{"application/json":{"schema":{"oneOf":[{"$ref":"#/components/schemas/Erro"},{"$ref":"#/components/schemas/ErroLegado"}]}}}},
+          "500": {"description":"Erro interno do servidor.","content":{"application/json":{"schema":{"oneOf":[{"$ref":"#/components/schemas/Erro"},{"$ref":"#/components/schemas/ErroLegado"}]}}}}
+        }
+      }
+    },
+    "/professor": {
+      "post": {
+        "tags": ["Professores"],
+        "summary": "Cadastrar professor",
+        "description": "Perfil permitido: administrador.",
+        "requestBody": {"required":true,"content":{"application/json":{"schema":{"$ref":"#/components/schemas/ProfessorCriar"}}}},
+        "responses": {
+          "201": {"description":"Cadastro criado.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Professor"}}}},
+          "400": {"description":"Parâmetros ou corpo da solicitação inválidos.","content":{"application/json":{"schema":{"oneOf":[{"$ref":"#/components/schemas/Erro"},{"$ref":"#/components/schemas/ErroLegado"}]}}}},
+          "401": {"description":"Token ausente, inválido ou sessão inativa.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Erro"}}}},
+          "403": {"description":"O perfil não tem permissão para executar a operação.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Erro"}}}},
+          "409": {"description":"CPF ou e-mail já cadastrado.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Erro"}}}},
+          "413": {"description":"Corpo da solicitação acima do limite.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Erro"}}}},
+          "500": {"description":"Erro interno do servidor.","content":{"application/json":{"schema":{"oneOf":[{"$ref":"#/components/schemas/Erro"},{"$ref":"#/components/schemas/ErroLegado"}]}}}}
+        }
+      }
+    },
+    "/professor/{id}": {
+      "get": {
+        "tags": ["Professores"],
+        "summary": "Consultar professor",
+        "description": "Perfil permitido: administrador.",
+        "parameters": [{"$ref":"#/components/parameters/Id"}],
+        "responses": {
+          "200": {"description":"Operação concluída.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Professor"}}}},
+          "400": {"description":"Parâmetros ou corpo da solicitação inválidos.","content":{"application/json":{"schema":{"oneOf":[{"$ref":"#/components/schemas/Erro"},{"$ref":"#/components/schemas/ErroLegado"}]}}}},
+          "401": {"description":"Token ausente, inválido ou sessão inativa.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Erro"}}}},
+          "403": {"description":"O perfil não tem permissão para executar a operação.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Erro"}}}},
+          "404": {"description":"Registro não encontrado.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Erro"}}}},
+          "500": {"description":"Erro interno do servidor.","content":{"application/json":{"schema":{"oneOf":[{"$ref":"#/components/schemas/Erro"},{"$ref":"#/components/schemas/ErroLegado"}]}}}}
+        }
+      },
+      "patch": {
+        "tags": ["Professores"],
+        "summary": "Atualizar professor",
+        "description": "Perfil permitido: administrador.",
+        "parameters": [{"$ref":"#/components/parameters/Id"}],
+        "requestBody": {"required":true,"content":{"application/json":{"schema":{"$ref":"#/components/schemas/ProfessorAtualizar"}}}},
+        "responses": {
+          "200": {"description":"Operação concluída.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Professor"}}}},
+          "400": {"description":"Parâmetros ou corpo da solicitação inválidos.","content":{"application/json":{"schema":{"oneOf":[{"$ref":"#/components/schemas/Erro"},{"$ref":"#/components/schemas/ErroLegado"}]}}}},
+          "401": {"description":"Token ausente, inválido ou sessão inativa.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Erro"}}}},
+          "403": {"description":"O perfil não tem permissão para executar a operação.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Erro"}}}},
+          "404": {"description":"Registro não encontrado.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Erro"}}}},
+          "409": {"description":"E-mail já cadastrado.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Erro"}}}},
+          "413": {"description":"Corpo da solicitação acima do limite.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Erro"}}}},
+          "500": {"description":"Erro interno do servidor.","content":{"application/json":{"schema":{"oneOf":[{"$ref":"#/components/schemas/Erro"},{"$ref":"#/components/schemas/ErroLegado"}]}}}}
+        }
+      },
+      "delete": {
+        "tags": ["Professores"],
+        "summary": "Remover professor",
+        "description": "Perfil permitido: administrador.",
+        "parameters": [{"$ref":"#/components/parameters/Id"}],
+        "responses": {
+          "204": {"description":"Operação concluída sem corpo."},
+          "400": {"description":"Parâmetros ou corpo da solicitação inválidos.","content":{"application/json":{"schema":{"oneOf":[{"$ref":"#/components/schemas/Erro"},{"$ref":"#/components/schemas/ErroLegado"}]}}}},
+          "401": {"description":"Token ausente, inválido ou sessão inativa.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Erro"}}}},
+          "403": {"description":"O perfil não tem permissão para executar a operação.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Erro"}}}},
+          "404": {"description":"Registro não encontrado.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Erro"}}}},
+          "409": {"description":"O registro possui vínculos que impedem a remoção.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Erro"}}}},
+          "500": {"description":"Erro interno do servidor.","content":{"application/json":{"schema":{"oneOf":[{"$ref":"#/components/schemas/Erro"},{"$ref":"#/components/schemas/ErroLegado"}]}}}}
+        }
+      }
+    },
+    "/aluno": {
+      "post": {
+        "tags": ["Alunos"],
+        "summary": "Cadastrar aluno",
+        "description": "Perfil permitido: administrador.",
+        "requestBody": {"required":true,"content":{"application/json":{"schema":{"$ref":"#/components/schemas/AlunoCriar"}}}},
+        "responses": {
+          "201": {"description":"Cadastro criado.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Aluno"}}}},
+          "400": {"description":"Parâmetros ou corpo da solicitação inválidos.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Erro"}}}},
+          "401": {"description":"Token ausente, inválido ou sessão inativa.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Erro"}}}},
+          "403": {"description":"O perfil não tem permissão para executar a operação.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Erro"}}}},
+          "409": {"description":"CPF ou e-mail já cadastrado.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Erro"}}}},
+          "413": {"description":"Corpo da solicitação acima do limite.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Erro"}}}},
+          "500": {"description":"Erro interno do servidor.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Erro"}}}}
+        }
+      },
+      "get": {
+        "tags": ["Alunos"],
+        "summary": "Listar alunos",
+        "description": "Perfil permitido: administrador.",
+        "parameters": [{"$ref":"#/components/parameters/Limit"},{"$ref":"#/components/parameters/Offset"}],
+        "responses": {
+          "200": {"description":"Operação concluída.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/PaginaAluno"}}}},
+          "400": {"description":"Parâmetros ou corpo da solicitação inválidos.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Erro"}}}},
+          "401": {"description":"Token ausente, inválido ou sessão inativa.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Erro"}}}},
+          "403": {"description":"O perfil não tem permissão para executar a operação.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Erro"}}}},
+          "500": {"description":"Erro interno do servidor.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Erro"}}}}
+        }
+      }
+    },
+    "/aluno/{id}": {
+      "get": {
+        "tags": ["Alunos"],
+        "summary": "Consultar aluno",
+        "description": "Perfis permitidos: administrador ou o próprio aluno.",
+        "parameters": [{"$ref":"#/components/parameters/Id"}],
+        "responses": {
+          "200": {"description":"Operação concluída.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Aluno"}}}},
+          "400": {"description":"Parâmetros ou corpo da solicitação inválidos.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Erro"}}}},
+          "401": {"description":"Token ausente, inválido ou sessão inativa.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Erro"}}}},
+          "403": {"description":"O perfil não tem permissão para executar a operação.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Erro"}}}},
+          "404": {"description":"Registro não encontrado.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Erro"}}}},
+          "500": {"description":"Erro interno do servidor.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Erro"}}}}
+        }
+      },
+      "patch": {
+        "tags": ["Alunos"],
+        "summary": "Atualizar aluno",
+        "description": "Perfis permitidos: administrador ou o próprio aluno.",
+        "parameters": [{"$ref":"#/components/parameters/Id"}],
+        "requestBody": {"required":true,"content":{"application/json":{"schema":{"$ref":"#/components/schemas/AlunoAtualizar"}}}},
+        "responses": {
+          "200": {"description":"Operação concluída.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Aluno"}}}},
+          "400": {"description":"Parâmetros ou corpo da solicitação inválidos.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Erro"}}}},
+          "401": {"description":"Token ausente, inválido ou sessão inativa.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Erro"}}}},
+          "403": {"description":"O perfil não tem permissão para executar a operação.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Erro"}}}},
+          "404": {"description":"Registro não encontrado.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Erro"}}}},
+          "409": {"description":"E-mail já cadastrado.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Erro"}}}},
+          "413": {"description":"Corpo da solicitação acima do limite.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Erro"}}}},
+          "500": {"description":"Erro interno do servidor.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Erro"}}}}
+        }
+      },
+      "delete": {
+        "tags": ["Alunos"],
+        "summary": "Remover aluno",
+        "description": "Perfil permitido: administrador.",
+        "parameters": [{"$ref":"#/components/parameters/Id"}],
+        "responses": {
+          "204": {"description":"Operação concluída sem corpo."},
+          "400": {"description":"Parâmetros ou corpo da solicitação inválidos.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Erro"}}}},
+          "401": {"description":"Token ausente, inválido ou sessão inativa.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Erro"}}}},
+          "403": {"description":"O perfil não tem permissão para executar a operação.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Erro"}}}},
+          "404": {"description":"Registro não encontrado.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Erro"}}}},
+          "409": {"description":"O registro possui vínculos que impedem a remoção.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Erro"}}}},
+          "500": {"description":"Erro interno do servidor.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Erro"}}}}
+        }
+      }
+    },
+    "/aluno/{id}/status": {
+      "patch": {
+        "tags": ["Alunos"],
+        "summary": "Alterar o status do aluno",
+        "description": "Perfil permitido: administrador.",
+        "parameters": [{"$ref":"#/components/parameters/Id"}],
+        "requestBody": {"required":true,"content":{"application/json":{"schema":{"$ref":"#/components/schemas/AlterarStatus"}}}},
+        "responses": {
+          "204": {"description":"Status alterado."},
+          "400": {"description":"Parâmetros ou corpo da solicitação inválidos.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Erro"}}}},
+          "401": {"description":"Token ausente, inválido ou sessão inativa.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Erro"}}}},
+          "403": {"description":"O perfil não tem permissão para executar a operação.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Erro"}}}},
+          "404": {"description":"Registro não encontrado.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Erro"}}}},
+          "413": {"description":"Corpo da solicitação acima do limite.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Erro"}}}},
+          "500": {"description":"Erro interno do servidor.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Erro"}}}}
+        }
+      }
+    },
+    "/aluno/{id}/avaliacoes/hoje": {
+      "post": {
+        "tags": ["Avaliações"],
+        "summary": "Registrar ou atualizar a avaliação de hoje",
+        "description": "Perfis permitidos: administrador ou o próprio aluno.",
+        "parameters": [{"$ref":"#/components/parameters/Id"}],
+        "requestBody": {"required":true,"content":{"application/json":{"schema":{"$ref":"#/components/schemas/AvaliacaoEntrada"}}}},
+        "responses": {
+          "200": {"description":"Operação concluída.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Avaliacao"}}}},
+          "400": {"description":"Parâmetros ou corpo da solicitação inválidos.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Erro"}}}},
+          "401": {"description":"Token ausente, inválido ou sessão inativa.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Erro"}}}},
+          "403": {"description":"O perfil não tem permissão ou o aluno está inativo.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Erro"}}}},
+          "404": {"description":"Registro não encontrado.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Erro"}}}},
+          "413": {"description":"Corpo da solicitação acima do limite.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Erro"}}}},
+          "500": {"description":"Erro interno do servidor.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Erro"}}}}
+        }
+      }
+    },
+    "/aluno/{id}/avaliacoes/atual": {
+      "get": {
+        "tags": ["Avaliações"],
+        "summary": "Consultar a avaliação mais recente",
+        "description": "Perfis permitidos: administrador ou o próprio aluno.",
+        "parameters": [{"$ref":"#/components/parameters/Id"}],
+        "responses": {
+          "200": {"description":"Operação concluída.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Avaliacao"}}}},
+          "204": {"description":"O aluno ainda não tem avaliação."},
+          "400": {"description":"Parâmetros ou corpo da solicitação inválidos.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Erro"}}}},
+          "401": {"description":"Token ausente, inválido ou sessão inativa.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Erro"}}}},
+          "403": {"description":"O perfil não tem permissão para executar a operação.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Erro"}}}},
+          "404": {"description":"Registro não encontrado.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Erro"}}}},
+          "500": {"description":"Erro interno do servidor.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Erro"}}}}
+        }
+      }
+    },
+    "/aluno/{id}/avaliacoes": {
+      "get": {
+        "tags": ["Avaliações"],
+        "summary": "Listar o histórico de avaliações",
+        "description": "Perfis permitidos: administrador ou o próprio aluno.",
+        "parameters": [{"$ref":"#/components/parameters/Id"},{"$ref":"#/components/parameters/Limit"},{"$ref":"#/components/parameters/Offset"}],
+        "responses": {
+          "200": {"description":"Operação concluída.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/PaginaAvaliacao"}}}},
+          "400": {"description":"Parâmetros ou corpo da solicitação inválidos.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Erro"}}}},
+          "401": {"description":"Token ausente, inválido ou sessão inativa.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Erro"}}}},
+          "403": {"description":"O perfil não tem permissão para executar a operação.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Erro"}}}},
+          "404": {"description":"Registro não encontrado.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Erro"}}}},
+          "500": {"description":"Erro interno do servidor.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Erro"}}}}
+        }
+      }
+    },
+    "/exercicio": {
+      "post": {
+        "tags": ["Exercícios"],
+        "summary": "Cadastrar exercício",
+        "description": "Perfil permitido: administrador.",
+        "requestBody": {"required":true,"content":{"application/json":{"schema":{"$ref":"#/components/schemas/ExercicioCriar"}}}},
+        "responses": {
+          "201": {"description":"Operação concluída.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Exercicio"}}}},
+          "400": {"description":"Parâmetros ou corpo da solicitação inválidos.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Erro"}}}},
+          "401": {"description":"Token ausente, inválido ou sessão inativa.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Erro"}}}},
+          "403": {"description":"O perfil não tem permissão para executar a operação.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Erro"}}}},
+          "409": {"description":"Nome já cadastrado.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Erro"}}}},
+          "413": {"description":"Corpo da solicitação acima do limite.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Erro"}}}},
+          "500": {"description":"Erro interno do servidor.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Erro"}}}}
+        }
+      },
+      "get": {
+        "tags": ["Exercícios"],
+        "summary": "Listar o catálogo de exercícios",
+        "description": "Disponível para todos os perfis autenticados.",
+        "parameters": [{"$ref":"#/components/parameters/Limit"},{"$ref":"#/components/parameters/Offset"}],
+        "responses": {
+          "200": {"description":"Operação concluída.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/PaginaExercicio"}}}},
+          "400": {"description":"Parâmetros ou corpo da solicitação inválidos.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Erro"}}}},
+          "401": {"description":"Token ausente, inválido ou sessão inativa.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Erro"}}}},
+          "500": {"description":"Erro interno do servidor.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Erro"}}}}
+        }
+      }
+    },
+    "/exercicio/{id}": {
+      "get": {
+        "tags": ["Exercícios"],
+        "summary": "Consultar exercício",
+        "description": "Disponível para todos os perfis autenticados.",
+        "parameters": [{"$ref":"#/components/parameters/Id"}],
+        "responses": {
+          "200": {"description":"Operação concluída.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Exercicio"}}}},
+          "400": {"description":"Parâmetros ou corpo da solicitação inválidos.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Erro"}}}},
+          "401": {"description":"Token ausente, inválido ou sessão inativa.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Erro"}}}},
+          "404": {"description":"Registro não encontrado.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Erro"}}}},
+          "500": {"description":"Erro interno do servidor.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Erro"}}}}
+        }
+      },
+      "patch": {
+        "tags": ["Exercícios"],
+        "summary": "Atualizar exercício",
+        "description": "Perfil permitido: administrador.",
+        "parameters": [{"$ref":"#/components/parameters/Id"}],
+        "requestBody": {"required":true,"content":{"application/json":{"schema":{"$ref":"#/components/schemas/ExercicioAtualizar"}}}},
+        "responses": {
+          "200": {"description":"Operação concluída.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Exercicio"}}}},
+          "400": {"description":"Parâmetros ou corpo da solicitação inválidos.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Erro"}}}},
+          "401": {"description":"Token ausente, inválido ou sessão inativa.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Erro"}}}},
+          "403": {"description":"O perfil não tem permissão para executar a operação.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Erro"}}}},
+          "404": {"description":"Registro não encontrado.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Erro"}}}},
+          "409": {"description":"Nome já cadastrado.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Erro"}}}},
+          "413": {"description":"Corpo da solicitação acima do limite.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Erro"}}}},
+          "500": {"description":"Erro interno do servidor.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Erro"}}}}
+        }
+      },
+      "delete": {
+        "tags": ["Exercícios"],
+        "summary": "Remover exercício",
+        "description": "Perfil permitido: administrador.",
+        "parameters": [{"$ref":"#/components/parameters/Id"}],
+        "responses": {
+          "204": {"description":"Exercício removido."},
+          "400": {"description":"Parâmetros ou corpo da solicitação inválidos.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Erro"}}}},
+          "401": {"description":"Token ausente, inválido ou sessão inativa.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Erro"}}}},
+          "403": {"description":"O perfil não tem permissão para executar a operação.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Erro"}}}},
+          "404": {"description":"Registro não encontrado.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Erro"}}}},
+          "409": {"description":"Exercício em uso.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Erro"}}}},
+          "500": {"description":"Erro interno do servidor.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Erro"}}}}
+        }
+      }
+    },
+    "/aulas": {
+      "post": {
+        "tags": ["Aulas"],
+        "summary": "Cadastrar aula",
+        "description": "Perfil permitido: administrador.",
+        "requestBody": {"required":true,"content":{"application/json":{"schema":{"$ref":"#/components/schemas/AulaCriar"}}}},
+        "responses": {
+          "201": {"description":"Operação concluída.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Aula"}}}},
+          "400": {"description":"Parâmetros ou corpo da solicitação inválidos.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Erro"}}}},
+          "401": {"description":"Token ausente, inválido ou sessão inativa.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Erro"}}}},
+          "403": {"description":"O perfil não tem permissão para executar a operação.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Erro"}}}},
+          "404": {"description":"Professor não encontrado.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Erro"}}}},
+          "409": {"description":"Horário conflitante ou incompatível com o estado atual.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Erro"}}}},
+          "413": {"description":"Corpo da solicitação acima do limite.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Erro"}}}},
+          "500": {"description":"Erro interno do servidor.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Erro"}}}}
+        }
+      },
+      "get": {
+        "tags": ["Aulas"],
+        "summary": "Listar aulas",
+        "description": "Disponível para todos os perfis autenticados.",
+        "parameters": [{"$ref":"#/components/parameters/Limit"},{"$ref":"#/components/parameters/Offset"},{"name":"data","in":"query","description":"Data civil da aula.","schema":{"type":"string","format":"date"}},{"name":"idProfessor","in":"query","description":"Identificador do professor.","schema":{"type":"integer","minimum":1,"example":1}},{"name":"categoria","in":"query","description":"Categoria da aula.","schema":{"type":"string","enum":["musculacao","funcional","pilates","crossfit","danca","spinning"]}}],
+        "responses": {
+          "200": {"description":"Operação concluída.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/PaginaAula"}}}},
+          "400": {"description":"Parâmetros ou corpo da solicitação inválidos.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Erro"}}}},
+          "401": {"description":"Token ausente, inválido ou sessão inativa.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Erro"}}}},
+          "500": {"description":"Erro interno do servidor.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Erro"}}}}
+        }
+      }
+    },
+    "/aulas/{id}": {
+      "get": {
+        "tags": ["Aulas"],
+        "summary": "Consultar aula",
+        "description": "Disponível para todos os perfis autenticados.",
+        "parameters": [{"$ref":"#/components/parameters/Id"}],
+        "responses": {
+          "200": {"description":"Operação concluída.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Aula"}}}},
+          "400": {"description":"Parâmetros ou corpo da solicitação inválidos.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Erro"}}}},
+          "401": {"description":"Token ausente, inválido ou sessão inativa.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Erro"}}}},
+          "404": {"description":"Registro não encontrado.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Erro"}}}},
+          "500": {"description":"Erro interno do servidor.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Erro"}}}}
+        }
+      },
+      "patch": {
+        "tags": ["Aulas"],
+        "summary": "Atualizar aula",
+        "description": "Perfis permitidos: administrador ou professor responsável pela aula.",
+        "parameters": [{"$ref":"#/components/parameters/Id"}],
+        "requestBody": {"required":true,"content":{"application/json":{"schema":{"$ref":"#/components/schemas/AulaAtualizar"}}}},
+        "responses": {
+          "200": {"description":"Operação concluída.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Aula"}}}},
+          "400": {"description":"Parâmetros ou corpo da solicitação inválidos.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Erro"}}}},
+          "401": {"description":"Token ausente, inválido ou sessão inativa.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Erro"}}}},
+          "403": {"description":"O perfil não tem permissão para executar a operação.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Erro"}}}},
+          "404": {"description":"Registro não encontrado.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Erro"}}}},
+          "409": {"description":"Aula inativa, horário conflitante ou alteração incompatível com agendamentos.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Erro"}}}},
+          "413": {"description":"Corpo da solicitação acima do limite.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Erro"}}}},
+          "500": {"description":"Erro interno do servidor.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Erro"}}}}
+        }
+      }
+    },
+    "/aulas/{id}/cancelar": {
+      "post": {
+        "tags": ["Aulas"],
+        "summary": "Cancelar aula e suas reservas",
+        "description": "Perfis permitidos: administrador ou professor responsável pela aula.",
+        "parameters": [{"$ref":"#/components/parameters/Id"}],
+        "responses": {
+          "200": {"description":"Operação concluída.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Aula"}}}},
+          "400": {"description":"Parâmetros ou corpo da solicitação inválidos.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Erro"}}}},
+          "401": {"description":"Token ausente, inválido ou sessão inativa.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Erro"}}}},
+          "403": {"description":"O perfil não tem permissão para executar a operação.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Erro"}}}},
+          "404": {"description":"Registro não encontrado.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Erro"}}}},
+          "409": {"description":"Conflito com o estado atual do recurso.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Erro"}}}},
+          "500": {"description":"Erro interno do servidor.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Erro"}}}}
+        }
+      }
+    },
+    "/aulas/{id}/agendamentos": {
+      "get": {
+        "tags": ["Aulas"],
+        "summary": "Listar os alunos agendados na aula",
+        "description": "Perfis permitidos: administrador ou professor responsável pela aula.",
+        "parameters": [{"$ref":"#/components/parameters/Id"},{"$ref":"#/components/parameters/Limit"},{"$ref":"#/components/parameters/Offset"}],
+        "responses": {
+          "200": {"description":"Operação concluída.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/PaginaAgendadoDaAula"}}}},
+          "400": {"description":"Parâmetros ou corpo da solicitação inválidos.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Erro"}}}},
+          "401": {"description":"Token ausente, inválido ou sessão inativa.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Erro"}}}},
+          "403": {"description":"O perfil não tem permissão para executar a operação.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Erro"}}}},
+          "404": {"description":"Registro não encontrado.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Erro"}}}},
+          "500": {"description":"Erro interno do servidor.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Erro"}}}}
+        }
+      }
+    },
+    "/aulas/{id}/chamada": {
+      "patch": {
+        "tags": ["Aulas"],
+        "summary": "Registrar presença ou falta",
+        "description": "Perfis permitidos: administrador ou professor responsável pela aula.",
+        "parameters": [{"$ref":"#/components/parameters/Id"}],
+        "requestBody": {"required":true,"content":{"application/json":{"schema":{"$ref":"#/components/schemas/ChamadaEntrada"}}}},
+        "responses": {
+          "200": {"description":"Operação concluída.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/ChamadaResposta"}}}},
+          "400": {"description":"Parâmetros ou corpo da solicitação inválidos.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Erro"}}}},
+          "401": {"description":"Token ausente, inválido ou sessão inativa.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Erro"}}}},
+          "403": {"description":"O perfil não tem permissão para executar a operação.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Erro"}}}},
+          "404": {"description":"Registro não encontrado.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Erro"}}}},
+          "409": {"description":"O estado da aula ou dos agendamentos impede a chamada.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Erro"}}}},
+          "413": {"description":"Corpo da solicitação acima do limite.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Erro"}}}},
+          "500": {"description":"Erro interno do servidor.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Erro"}}}}
+        }
+      }
+    },
+    "/agendamentos": {
+      "post": {
+        "tags": ["Agendamentos"],
+        "summary": "Reservar vaga em aula",
+        "description": "Perfil permitido: aluno. A operação usa a identidade autenticada.",
+        "requestBody": {"required":true,"content":{"application/json":{"schema":{"$ref":"#/components/schemas/ReservarAula"}}}},
+        "responses": {
+          "201": {"description":"Operação concluída.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Agendamento"}}}},
+          "400": {"description":"Parâmetros ou corpo da solicitação inválidos.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Erro"}}}},
+          "401": {"description":"Token ausente, inválido ou sessão inativa.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Erro"}}}},
+          "403": {"description":"O perfil não tem permissão para executar a operação.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Erro"}}}},
+          "404": {"description":"Registro não encontrado.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Erro"}}}},
+          "409": {"description":"Aula indisponível, sem vagas, fora da janela ou já reservada.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Erro"}}}},
+          "413": {"description":"Corpo da solicitação acima do limite.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Erro"}}}},
+          "429": {"description":"Limite de tentativas atingido.","headers":{"Retry-After":{"description":"Tempo de espera em segundos, quando informado.","schema":{"type":"integer","minimum":0}}},"content":{"application/json":{"schema":{"$ref":"#/components/schemas/Erro"}}}},
+          "500": {"description":"Erro interno do servidor.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Erro"}}}}
+        }
+      },
+      "get": {
+        "tags": ["Agendamentos"],
+        "summary": "Listar os agendamentos do aluno autenticado",
+        "description": "Perfil permitido: aluno. A operação usa a identidade autenticada.",
+        "parameters": [{"$ref":"#/components/parameters/Limit"},{"$ref":"#/components/parameters/Offset"}],
+        "responses": {
+          "200": {"description":"Operação concluída.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/PaginaAgendamento"}}}},
+          "400": {"description":"Parâmetros ou corpo da solicitação inválidos.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Erro"}}}},
+          "401": {"description":"Token ausente, inválido ou sessão inativa.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Erro"}}}},
+          "403": {"description":"O perfil não tem permissão para executar a operação.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Erro"}}}},
+          "500": {"description":"Erro interno do servidor.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Erro"}}}}
+        }
+      }
+    },
+    "/agendamentos/{id}": {
+      "patch": {
+        "tags": ["Agendamentos"],
+        "summary": "Cancelar o próprio agendamento",
+        "description": "Perfil permitido: aluno. A operação usa a identidade autenticada.",
+        "parameters": [{"$ref":"#/components/parameters/Id"}],
+        "requestBody": {"required":true,"content":{"application/json":{"schema":{"$ref":"#/components/schemas/CancelarAgendamento"}}}},
+        "responses": {
+          "200": {"description":"Operação concluída.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Agendamento"}}}},
+          "400": {"description":"Parâmetros ou corpo da solicitação inválidos.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Erro"}}}},
+          "401": {"description":"Token ausente, inválido ou sessão inativa.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Erro"}}}},
+          "403": {"description":"O perfil não tem permissão para executar a operação.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Erro"}}}},
+          "404": {"description":"Registro não encontrado.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Erro"}}}},
+          "409": {"description":"O estado do agendamento ou o horário impede o cancelamento.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Erro"}}}},
+          "413": {"description":"Corpo da solicitação acima do limite.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Erro"}}}},
+          "429": {"description":"Limite de tentativas atingido.","headers":{"Retry-After":{"description":"Tempo de espera em segundos, quando informado.","schema":{"type":"integer","minimum":0}}},"content":{"application/json":{"schema":{"$ref":"#/components/schemas/Erro"}}}},
+          "500": {"description":"Erro interno do servidor.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Erro"}}}}
+        }
+      }
+    },
+    "/cronogramas": {
+      "post": {
+        "tags": ["Cronogramas"],
+        "summary": "Cadastrar cronograma recorrente",
+        "description": "Perfil permitido: administrador.",
+        "requestBody": {"required":true,"content":{"application/json":{"schema":{"$ref":"#/components/schemas/CronogramaCriar"}}}},
+        "responses": {
+          "201": {"description":"Operação concluída.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Cronograma"}}}},
+          "400": {"description":"Parâmetros ou corpo da solicitação inválidos.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Erro"}}}},
+          "401": {"description":"Token ausente, inválido ou sessão inativa.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Erro"}}}},
+          "403": {"description":"O perfil não tem permissão para executar a operação.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Erro"}}}},
+          "404": {"description":"Professor não encontrado.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Erro"}}}},
+          "409": {"description":"Conflito com o estado atual do recurso.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Erro"}}}},
+          "413": {"description":"Corpo da solicitação acima do limite.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Erro"}}}},
+          "500": {"description":"Erro interno do servidor.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Erro"}}}}
+        }
+      },
+      "get": {
+        "tags": ["Cronogramas"],
+        "summary": "Listar cronogramas",
+        "description": "Perfil permitido: administrador.",
+        "parameters": [{"$ref":"#/components/parameters/Limit"},{"$ref":"#/components/parameters/Offset"},{"name":"status","in":"query","description":"Filtra cronogramas ativos ou inativos.","schema":{"type":"boolean"}}],
+        "responses": {
+          "200": {"description":"Operação concluída.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/PaginaCronograma"}}}},
+          "400": {"description":"Parâmetros ou corpo da solicitação inválidos.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Erro"}}}},
+          "401": {"description":"Token ausente, inválido ou sessão inativa.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Erro"}}}},
+          "403": {"description":"O perfil não tem permissão para executar a operação.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Erro"}}}},
+          "500": {"description":"Erro interno do servidor.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Erro"}}}}
+        }
+      }
+    },
+    "/cronogramas/{id}": {
+      "get": {
+        "tags": ["Cronogramas"],
+        "summary": "Consultar cronograma",
+        "description": "Perfil permitido: administrador.",
+        "parameters": [{"$ref":"#/components/parameters/Id"}],
+        "responses": {
+          "200": {"description":"Operação concluída.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Cronograma"}}}},
+          "400": {"description":"Parâmetros ou corpo da solicitação inválidos.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Erro"}}}},
+          "401": {"description":"Token ausente, inválido ou sessão inativa.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Erro"}}}},
+          "403": {"description":"O perfil não tem permissão para executar a operação.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Erro"}}}},
+          "404": {"description":"Registro não encontrado.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Erro"}}}},
+          "500": {"description":"Erro interno do servidor.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Erro"}}}}
+        }
+      },
+      "patch": {
+        "tags": ["Cronogramas"],
+        "summary": "Atualizar cronograma",
+        "description": "Perfil permitido: administrador.",
+        "parameters": [{"$ref":"#/components/parameters/Id"}],
+        "requestBody": {"required":true,"content":{"application/json":{"schema":{"$ref":"#/components/schemas/CronogramaAtualizar"}}}},
+        "responses": {
+          "200": {"description":"Operação concluída.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Cronograma"}}}},
+          "400": {"description":"Parâmetros ou corpo da solicitação inválidos.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Erro"}}}},
+          "401": {"description":"Token ausente, inválido ou sessão inativa.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Erro"}}}},
+          "403": {"description":"O perfil não tem permissão para executar a operação.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Erro"}}}},
+          "404": {"description":"Registro não encontrado.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Erro"}}}},
+          "409": {"description":"Alteração incompatível com o uso atual do cronograma.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Erro"}}}},
+          "413": {"description":"Corpo da solicitação acima do limite.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Erro"}}}},
+          "500": {"description":"Erro interno do servidor.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Erro"}}}}
+        }
+      },
+      "delete": {
+        "tags": ["Cronogramas"],
+        "summary": "Remover cronograma",
+        "description": "Perfil permitido: administrador.",
+        "parameters": [{"$ref":"#/components/parameters/Id"}],
+        "responses": {
+          "204": {"description":"Cronograma removido."},
+          "400": {"description":"Parâmetros ou corpo da solicitação inválidos.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Erro"}}}},
+          "401": {"description":"Token ausente, inválido ou sessão inativa.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Erro"}}}},
+          "403": {"description":"O perfil não tem permissão para executar a operação.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Erro"}}}},
+          "404": {"description":"Registro não encontrado.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Erro"}}}},
+          "409": {"description":"O cronograma está em uso.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Erro"}}}},
+          "500": {"description":"Erro interno do servidor.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Erro"}}}}
+        }
+      }
+    },
+    "/inicio": {
+      "get": {
+        "tags": ["Painel"],
+        "summary": "Consultar o painel administrativo",
+        "description": "Perfil permitido: administrador.",
+        "responses": {
+          "200": {"description":"Operação concluída.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Painel"}}}},
+          "401": {"description":"Token ausente, inválido ou sessão inativa.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Erro"}}}},
+          "403": {"description":"O perfil não tem permissão para executar a operação.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Erro"}}}},
+          "500": {"description":"Erro interno do servidor.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Erro"}}}}
+        }
+      }
+    },
+    "/treinos/livres": {
+      "get": {
+        "tags": ["Treinos"],
+        "summary": "Listar treinos livres",
+        "description": "Disponível para todos os perfis autenticados.",
+        "parameters": [{"name":"limit","in":"query","description":"Quantidade máxima de itens.","schema":{"type":"integer","minimum":1,"maximum":100,"default":100}},{"$ref":"#/components/parameters/Offset"}],
+        "responses": {
+          "200": {"description":"Operação concluída.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/PaginaTreinoLivre"}}}},
+          "400": {"description":"Parâmetros ou corpo da solicitação inválidos.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Erro"}}}},
+          "401": {"description":"Token ausente, inválido ou sessão inativa.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Erro"}}}},
+          "500": {"description":"Erro interno do servidor.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Erro"}}}}
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {"type":"http","scheme":"bearer","description":"Cole o access_token retornado por POST /auth/login, sem o prefixo Bearer."}
+    },
+    "parameters": {
+      "Id": {"name":"id","in":"path","required":true,"description":"Identificador do recurso indicado na rota.","schema":{"type":"integer","minimum":1,"example":1}},
+      "Limit": {"name":"limit","in":"query","description":"Quantidade máxima de itens.","schema":{"type":"integer","minimum":1,"maximum":100,"default":20}},
+      "Offset": {"name":"offset","in":"query","description":"Quantidade de itens a pular.","schema":{"type":"integer","minimum":0,"default":0}}
+    },
+    "schemas": {
+      "Erro": {
+        "type": "object",
+        "required": ["codigo","mensagem"],
+        "properties": {
+          "codigo": {"type":"string","example":"CAMPO_INVALIDO"},
+          "mensagem": {"type":"string"},
+          "campo": {"type":"string"}
+        }
+      },
+      "ErroLegado": {
+        "type": "object",
+        "required": ["erro"],
+        "properties": {
+          "erro": {"type":"string"}
+        }
+      },
+      "LoginEntrada": {
+        "type": "object",
+        "required": ["email","senha"],
+        "properties": {
+          "email": {"type":"string","format":"email","example":"pessoa@example.com"},
+          "senha": {"type":"string","format":"password","writeOnly":true,"example":"Exemplo123!"}
+        }
+      },
+      "LoginResposta": {
+        "type": "object",
+        "required": ["access_token","token_type","expires_in","usuario"],
+        "properties": {
+          "access_token": {"type":"string","example":"token-de-exemplo"},
+          "token_type": {"type":"string","enum":["Bearer"]},
+          "expires_in": {"type":"integer","description":"Validade em segundos."},
+          "usuario": {"type":"object","required":["id","papel","nome"],"properties":{"id":{"type":"integer","minimum":1,"example":1},"papel":{"type":"string","enum":["admin","professor","aluno"]},"nome":{"type":"string"}}}
+        }
+      },
+      "AdminCriar": {
+        "type": "object",
+        "required": ["cpf","nome","email","senha"],
+        "properties": {
+          "cpf": {"type":"string","example":"52998224725"},
+          "nome": {"type":"string"},
+          "email": {"type":"string","format":"email","example":"pessoa@example.com"},
+          "telefone": {"type":"string","example":"11900000000"},
+          "senha": {"type":"string","format":"password","writeOnly":true,"minLength":8,"example":"Exemplo123!"}
+        }
+      },
+      "AdminAtualizar": {
+        "type": "object",
+        "example": {"nome":"Maria da Silva"},
+        "properties": {
+          "nome": {"type":"string"},
+          "email": {"type":"string","format":"email","example":"pessoa@example.com"},
+          "telefone": {"type":"string","example":"11900000000"},
+          "senha": {"type":"string","format":"password","writeOnly":true,"minLength":8,"example":"Exemplo123!"}
+        }
+      },
+      "Admin": {
+        "type": "object",
+        "required": ["id_admin","nome","email","telefone"],
+        "properties": {
+          "id_admin": {"type":"integer","minimum":1,"example":1},
+          "nome": {"type":"string"},
+          "email": {"type":"string","format":"email","example":"pessoa@example.com"},
+          "telefone": {"type":"string","nullable":true}
+        }
+      },
+      "ProfessorCriar": {
+        "type": "object",
+        "required": ["cpf","nome","email","telefone","senha"],
+        "properties": {
+          "cpf": {"type":"string","example":"52998224725"},
+          "nome": {"type":"string"},
+          "email": {"type":"string","format":"email","example":"pessoa@example.com"},
+          "telefone": {"type":"string","example":"11900000000"},
+          "senha": {"type":"string","format":"password","writeOnly":true,"minLength":8,"maxLength":12,"example":"Exemplo123!"}
+        }
+      },
+      "ProfessorAtualizar": {
+        "type": "object",
+        "example": {"nome":"Maria da Silva"},
+        "minProperties": 1,
+        "properties": {
+          "nome": {"type":"string"},
+          "email": {"type":"string","format":"email","example":"pessoa@example.com"},
+          "telefone": {"type":"string","example":"11900000000"},
+          "senha": {"type":"string","format":"password","writeOnly":true,"minLength":8,"maxLength":12,"example":"Exemplo123!"},
+          "status": {"type":"boolean"}
+        }
+      },
+      "Professor": {
+        "type": "object",
+        "required": ["id_professor","nome","email","telefone","status"],
+        "properties": {
+          "id_professor": {"type":"integer","minimum":1,"example":1},
+          "nome": {"type":"string"},
+          "email": {"type":"string","format":"email","example":"pessoa@example.com"},
+          "telefone": {"type":"string"},
+          "status": {"type":"boolean"}
+        }
+      },
+      "AlunoCriar": {
+        "type": "object",
+        "required": ["cpf","nome","email","telefone","senha","data_nascimento"],
+        "properties": {
+          "cpf": {"type":"string","example":"52998224725"},
+          "nome": {"type":"string"},
+          "email": {"type":"string","format":"email","example":"pessoa@example.com"},
+          "telefone": {"type":"string","example":"11900000000"},
+          "senha": {"type":"string","format":"password","writeOnly":true,"minLength":8,"maxLength":12,"example":"Exemplo123!"},
+          "data_nascimento": {"type":"string","format":"date","example":"2000-05-15"},
+          "id_endereco": {"type":"integer","minimum":1,"example":1},
+          "restricao_medica": {"type":"string"},
+          "observacao_saude": {"type":"string"}
+        }
+      },
+      "AlunoAtualizar": {
+        "type": "object",
+        "example": {"nome":"Maria da Silva"},
+        "minProperties": 1,
+        "properties": {
+          "nome": {"type":"string"},
+          "email": {"type":"string","format":"email","example":"pessoa@example.com"},
+          "telefone": {"type":"string","example":"11900000000"}
+        }
+      },
+      "Aluno": {
+        "type": "object",
+        "required": ["id_aluno","nome","email","telefone","status"],
+        "properties": {
+          "id_aluno": {"type":"integer","minimum":1,"example":1},
+          "nome": {"type":"string"},
+          "email": {"type":"string","format":"email","example":"pessoa@example.com"},
+          "telefone": {"type":"string"},
+          "status": {"type":"boolean"}
+        }
+      },
+      "AlterarStatus": {
+        "type": "object",
+        "required": ["status"],
+        "properties": {
+          "status": {"type":"boolean","example":true}
+        }
+      },
+      "AvaliacaoEntrada": {
+        "type": "object",
+        "required": ["peso","altura"],
+        "properties": {
+          "peso": {"type":"number","description":"Peso em kg, maior que 0 e menor que 500, com até duas casas decimais.","example":70.5},
+          "altura": {"type":"number","description":"Altura em metros, maior que 0 e menor que 3, com até duas casas decimais.","example":1.7},
+          "observacao": {"type":"string","nullable":true,"maxLength":2000}
+        }
+      },
+      "Avaliacao": {
+        "type": "object",
+        "required": ["id_avaliacao","id_aluno","data_avaliacao","peso","altura","imc","observacao"],
+        "properties": {
+          "id_avaliacao": {"type":"integer","minimum":1,"example":1},
+          "id_aluno": {"type":"integer","minimum":1,"example":1},
+          "data_avaliacao": {"type":"string","format":"date"},
+          "peso": {"type":"number"},
+          "altura": {"type":"number"},
+          "imc": {"type":"number"},
+          "observacao": {"type":"string","nullable":true}
+        }
+      },
+      "ExercicioCriar": {
+        "type": "object",
+        "required": ["nome","instrucoes"],
+        "example": {"nome":"Agachamento","instrucoes":"Flexione os joelhos de forma controlada."},
+        "properties": {
+          "nome": {"type":"string"},
+          "instrucoes": {"type":"string"},
+          "descricao": {"type":"string","nullable":true},
+          "dificuldade": {"type":"string","enum":["iniciante","intermediario","avancado"],"default":"iniciante"}
+        }
+      },
+      "ExercicioAtualizar": {
+        "type": "object",
+        "example": {"dificuldade":"intermediario"},
+        "minProperties": 1,
+        "properties": {
+          "nome": {"type":"string"},
+          "instrucoes": {"type":"string"},
+          "descricao": {"type":"string","nullable":true},
+          "dificuldade": {"type":"string","enum":["iniciante","intermediario","avancado"]}
+        }
+      },
+      "Exercicio": {
+        "type": "object",
+        "required": ["id_exercicio","nome","instrucoes","descricao","dificuldade"],
+        "properties": {
+          "id_exercicio": {"type":"integer","minimum":1,"example":1},
+          "nome": {"type":"string"},
+          "instrucoes": {"type":"string"},
+          "descricao": {"type":"string","nullable":true},
+          "dificuldade": {"type":"string","enum":["iniciante","intermediario","avancado"]}
+        }
+      },
+      "AulaCriar": {
+        "type": "object",
+        "required": ["id_professor","data","hora_inicio","hora_fim","tipo","categoria","vagas_maxima"],
+        "example": {"id_professor":1,"data":"2026-12-15","hora_inicio":"08:00","hora_fim":"09:00","tipo":"coletiva","categoria":"pilates","vagas_maxima":10},
+        "properties": {
+          "id_professor": {"type":"integer","minimum":1,"example":1},
+          "data": {"type":"string","format":"date"},
+          "hora_inicio": {"type":"string","pattern":"^([01][0-9]|2[0-3]):[0-5][0-9]$","example":"08:00"},
+          "hora_fim": {"type":"string","pattern":"^([01][0-9]|2[0-3]):[0-5][0-9]$","example":"09:00"},
+          "tipo": {"type":"string","enum":["coletiva","individual","experimental"]},
+          "categoria": {"type":"string","enum":["musculacao","funcional","pilates","crossfit","danca","spinning"]},
+          "vagas_maxima": {"type":"integer","minimum":1,"example":1}
+        }
+      },
+      "AulaAtualizar": {
+        "type": "object",
+        "example": {"categoria":"funcional"},
+        "minProperties": 1,
+        "properties": {
+          "id_professor": {"type":"integer","minimum":1,"example":1},
+          "data": {"type":"string","format":"date"},
+          "hora_inicio": {"type":"string","pattern":"^([01][0-9]|2[0-3]):[0-5][0-9]$","example":"08:00"},
+          "hora_fim": {"type":"string","pattern":"^([01][0-9]|2[0-3]):[0-5][0-9]$","example":"09:00"},
+          "tipo": {"type":"string","enum":["coletiva","individual","experimental"]},
+          "categoria": {"type":"string","enum":["musculacao","funcional","pilates","crossfit","danca","spinning"]},
+          "vagas_maxima": {"type":"integer","minimum":1,"example":1}
+        }
+      },
+      "Aula": {
+        "type": "object",
+        "required": ["id_aula","id_professor","data","hora_inicio","hora_fim","tipo","categoria","vagas_maxima","id_cronograma","vagas_ocupadas","vagas_livres","status","data_cancelamento","cancelado_por"],
+        "properties": {
+          "id_aula": {"type":"integer","minimum":1,"example":1},
+          "id_professor": {"type":"integer","minimum":1,"example":1},
+          "data": {"type":"string","format":"date"},
+          "hora_inicio": {"type":"string","pattern":"^([01][0-9]|2[0-3]):[0-5][0-9]$","example":"08:00"},
+          "hora_fim": {"type":"string","pattern":"^([01][0-9]|2[0-3]):[0-5][0-9]$","example":"09:00"},
+          "tipo": {"type":"string","enum":["coletiva","individual","experimental"]},
+          "categoria": {"type":"string","enum":["musculacao","funcional","pilates","crossfit","danca","spinning"]},
+          "vagas_maxima": {"type":"integer","minimum":1,"example":1},
+          "id_cronograma": {"type":"integer","minimum":1,"example":1,"nullable":true},
+          "vagas_ocupadas": {"type":"integer","minimum":0},
+          "vagas_livres": {"type":"integer","minimum":0},
+          "status": {"type":"boolean"},
+          "data_cancelamento": {"type":"string","format":"date-time","nullable":true},
+          "cancelado_por": {"type":"string","enum":["admin","professor",null],"nullable":true}
+        }
+      },
+      "Agendamento": {
+        "type": "object",
+        "required": ["id_agendamento","id_aluno","id_aula","data_agendamento","status","data_presenca","data_cancelamento"],
+        "properties": {
+          "id_agendamento": {"type":"integer","minimum":1,"example":1},
+          "id_aluno": {"type":"integer","minimum":1,"example":1},
+          "id_aula": {"type":"integer","minimum":1,"example":1},
+          "data_agendamento": {"type":"string","format":"date"},
+          "status": {"type":"string","enum":["agendado","presente","faltou","cancelado"]},
+          "data_presenca": {"type":"string","format":"date-time","nullable":true},
+          "data_cancelamento": {"type":"string","format":"date-time","nullable":true}
+        }
+      },
+      "AgendadoDaAula": {
+        "type": "object",
+        "required": ["id_agendamento","id_aluno","nome_aluno","status"],
+        "properties": {
+          "id_agendamento": {"type":"integer","minimum":1,"example":1},
+          "id_aluno": {"type":"integer","minimum":1,"example":1},
+          "nome_aluno": {"type":"string"},
+          "status": {"type":"string","enum":["agendado","presente","faltou","cancelado"]}
+        }
+      },
+      "ChamadaEntrada": {"type":"array","items":{"type":"object","required":["id","status"],"properties":{"id":{"type":"integer","minimum":1,"example":1,"description":"ID do agendamento."},"status":{"type":"string","enum":["presente","faltou"]}}},"minItems":1,"example":[{"id":1,"status":"presente"}]},
+      "ChamadaResposta": {
+        "type": "object",
+        "required": ["itens"],
+        "properties": {
+          "itens": {"type":"array","items":{"$ref":"#/components/schemas/Agendamento"}}
+        }
+      },
+      "ReservarAula": {
+        "type": "object",
+        "required": ["id_aula"],
+        "properties": {
+          "id_aula": {"type":"integer","minimum":1,"example":1}
+        }
+      },
+      "CancelarAgendamento": {
+        "type": "object",
+        "required": ["status"],
+        "properties": {
+          "status": {"type":"string","enum":["cancelado"]}
+        }
+      },
+      "CronogramaCriar": {
+        "type": "object",
+        "required": ["id_professor","categoria","hora_inicio","hora_fim","data_inicio","vagas_maxima","dias_semana"],
+        "example": {"id_professor":1,"categoria":"pilates","hora_inicio":"08:00","hora_fim":"09:00","data_inicio":"2026-12-15","data_fim":null,"vagas_maxima":10,"dias_semana":[1,3,5]},
+        "properties": {
+          "id_professor": {"type":"integer","minimum":1,"example":1},
+          "categoria": {"type":"string","enum":["musculacao","funcional","pilates","crossfit","danca","spinning"]},
+          "hora_inicio": {"type":"string","pattern":"^([01][0-9]|2[0-3]):[0-5][0-9]$","example":"08:00"},
+          "hora_fim": {"type":"string","pattern":"^([01][0-9]|2[0-3]):[0-5][0-9]$","example":"09:00"},
+          "data_inicio": {"type":"string","format":"date"},
+          "data_fim": {"type":"string","format":"date","nullable":true},
+          "vagas_maxima": {"type":"integer","minimum":1,"example":1},
+          "dias_semana": {"type":"array","items":{"type":"integer","minimum":0,"maximum":6},"minItems":1,"maxItems":7,"uniqueItems":true,"description":"0 = domingo, 6 = sábado.","example":[1,3,5]},
+          "status": {"type":"boolean","default":true}
+        }
+      },
+      "CronogramaAtualizar": {
+        "type": "object",
+        "example": {"dias_semana":[2,4],"hora_inicio":"09:00","hora_fim":"10:00"},
+        "minProperties": 1,
+        "properties": {
+          "id_professor": {"type":"integer","minimum":1,"example":1},
+          "categoria": {"type":"string","enum":["musculacao","funcional","pilates","crossfit","danca","spinning"]},
+          "hora_inicio": {"type":"string","pattern":"^([01][0-9]|2[0-3]):[0-5][0-9]$","example":"08:00"},
+          "hora_fim": {"type":"string","pattern":"^([01][0-9]|2[0-3]):[0-5][0-9]$","example":"09:00"},
+          "data_inicio": {"type":"string","format":"date"},
+          "data_fim": {"type":"string","format":"date","nullable":true},
+          "vagas_maxima": {"type":"integer","minimum":1,"example":1},
+          "dias_semana": {"type":"array","items":{"type":"integer","minimum":0,"maximum":6},"minItems":1,"maxItems":7,"uniqueItems":true,"description":"0 = domingo, 6 = sábado.","example":[1,3,5]},
+          "status": {"type":"boolean"}
+        }
+      },
+      "Cronograma": {
+        "type": "object",
+        "required": ["id_cronograma","id_admin_criador","id_professor","categoria","hora_inicio","hora_fim","data_inicio","data_fim","vagas_maxima","dias_semana","status"],
+        "properties": {
+          "id_cronograma": {"type":"integer","minimum":1,"example":1},
+          "id_admin_criador": {"type":"integer","minimum":1,"example":1},
+          "id_professor": {"type":"integer","minimum":1,"example":1},
+          "categoria": {"type":"string","enum":["musculacao","funcional","pilates","crossfit","danca","spinning"]},
+          "hora_inicio": {"type":"string","pattern":"^([01][0-9]|2[0-3]):[0-5][0-9]$","example":"08:00"},
+          "hora_fim": {"type":"string","pattern":"^([01][0-9]|2[0-3]):[0-5][0-9]$","example":"09:00"},
+          "data_inicio": {"type":"string","format":"date"},
+          "data_fim": {"type":"string","format":"date","nullable":true},
+          "vagas_maxima": {"type":"integer","minimum":1,"example":1},
+          "dias_semana": {"type":"array","items":{"type":"integer","minimum":0,"maximum":6},"minItems":1,"maxItems":7,"uniqueItems":true,"description":"0 = domingo, 6 = sábado.","example":[1,3,5]},
+          "status": {"type":"boolean"}
+        }
+      },
+      "Painel": {
+        "type": "object",
+        "required": ["data","aulas_hoje","ocupacao_percentual","pessoas_inativas","aulas"],
+        "properties": {
+          "data": {"type":"string","format":"date"},
+          "aulas_hoje": {"type":"integer","minimum":0},
+          "ocupacao_percentual": {"type":"integer","minimum":0,"maximum":100},
+          "pessoas_inativas": {"type":"integer","minimum":0},
+          "aulas": {"type":"array","items":{"type":"object","required":["id_aula","hora_inicio","hora_fim","categoria","tipo","professor","vagas_ocupadas","vagas_maximas"],"properties":{"id_aula":{"type":"integer","minimum":1,"example":1},"hora_inicio":{"type":"string","pattern":"^([01][0-9]|2[0-3]):[0-5][0-9]$","example":"08:00"},"hora_fim":{"type":"string","pattern":"^([01][0-9]|2[0-3]):[0-5][0-9]$","example":"08:00"},"categoria":{"type":"string","enum":["musculacao","funcional","pilates","crossfit","danca","spinning"]},"tipo":{"type":"string","enum":["coletiva","individual","experimental"]},"professor":{"type":"string"},"vagas_ocupadas":{"type":"integer","minimum":0},"vagas_maximas":{"type":"integer","minimum":1,"example":1}}}}
+        }
+      },
+      "TreinoLivre": {
+        "type": "object",
+        "required": ["id_treino","nome","tipo"],
+        "properties": {
+          "id_treino": {"type":"integer","minimum":1,"example":1},
+          "nome": {"type":"string"},
+          "tipo": {"type":"string","enum":["forca","hipertrofia","resistencia","cardio","mobilidade"]}
+        }
+      },
+      "PaginaAluno": {
+        "type": "object",
+        "required": ["itens","limit","offset","total"],
+        "properties": {
+          "itens": {"type":"array","items":{"$ref":"#/components/schemas/Aluno"}},
+          "limit": {"type":"integer","minimum":1,"example":1},
+          "offset": {"type":"integer","minimum":0},
+          "total": {"type":"integer","minimum":0}
+        }
+      },
+      "PaginaAvaliacao": {
+        "type": "object",
+        "required": ["itens","limit","offset","total"],
+        "properties": {
+          "itens": {"type":"array","items":{"$ref":"#/components/schemas/Avaliacao"}},
+          "limit": {"type":"integer","minimum":1,"example":1},
+          "offset": {"type":"integer","minimum":0},
+          "total": {"type":"integer","minimum":0}
+        }
+      },
+      "PaginaExercicio": {
+        "type": "object",
+        "required": ["itens","limit","offset","total"],
+        "properties": {
+          "itens": {"type":"array","items":{"$ref":"#/components/schemas/Exercicio"}},
+          "limit": {"type":"integer","minimum":1,"example":1},
+          "offset": {"type":"integer","minimum":0},
+          "total": {"type":"integer","minimum":0}
+        }
+      },
+      "PaginaAula": {
+        "type": "object",
+        "required": ["itens","limit","offset","total"],
+        "properties": {
+          "itens": {"type":"array","items":{"$ref":"#/components/schemas/Aula"}},
+          "limit": {"type":"integer","minimum":1,"example":1},
+          "offset": {"type":"integer","minimum":0},
+          "total": {"type":"integer","minimum":0}
+        }
+      },
+      "PaginaAgendadoDaAula": {
+        "type": "object",
+        "required": ["itens","limit","offset","total"],
+        "properties": {
+          "itens": {"type":"array","items":{"$ref":"#/components/schemas/AgendadoDaAula"}},
+          "limit": {"type":"integer","minimum":1,"example":1},
+          "offset": {"type":"integer","minimum":0},
+          "total": {"type":"integer","minimum":0}
+        }
+      },
+      "PaginaAgendamento": {
+        "type": "object",
+        "required": ["itens","limit","offset","total"],
+        "properties": {
+          "itens": {"type":"array","items":{"$ref":"#/components/schemas/Agendamento"}},
+          "limit": {"type":"integer","minimum":1,"example":1},
+          "offset": {"type":"integer","minimum":0},
+          "total": {"type":"integer","minimum":0}
+        }
+      },
+      "PaginaCronograma": {
+        "type": "object",
+        "required": ["itens","limit","offset","total"],
+        "properties": {
+          "itens": {"type":"array","items":{"$ref":"#/components/schemas/Cronograma"}},
+          "limit": {"type":"integer","minimum":1,"example":1},
+          "offset": {"type":"integer","minimum":0},
+          "total": {"type":"integer","minimum":0}
+        }
+      },
+      "PaginaTreinoLivre": {
+        "type": "object",
+        "required": ["itens","limit","offset","total"],
+        "properties": {
+          "itens": {"type":"array","items":{"$ref":"#/components/schemas/TreinoLivre"}},
+          "limit": {"type":"integer","minimum":1,"example":1},
+          "offset": {"type":"integer","minimum":0},
+          "total": {"type":"integer","minimum":0}
+        }
+      }
+    }
+  }
+}

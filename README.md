@@ -227,6 +227,17 @@ Convenções do contrato:
 - **Datas:** `AAAA-MM-DD`, estrito. **Horas:** `HH:MM`, estrito.
 - **Listas:** paginadas por `?limit=&offset=` (padrão `20` e `0`; `limit` de 1 a 100) e respondem `{ itens, limit, offset, total }`.
 - **Login:** limitado por IP e por e-mail, com bloqueio progressivo (`429` + `Retry-After`).
+
+### Swagger / OpenAPI
+
+Com o backend em execução, abra [Swagger UI](http://localhost:8080/swagger). Se a porta publicada for diferente, use o valor de `BACKEND_PUBLIC_PORT`. A interface carrega seus arquivos do jsDelivr e precisa de acesso à internet para funcionar.
+
+1. Abra `POST /auth/login`, clique em **Try it out** e envie o e-mail e a senha de uma conta do seu ambiente.
+2. Copie o valor de `access_token`, clique em **Authorize** e cole o token sem o prefixo `Bearer`.
+3. Use **Try it out** nas operações permitidas para o perfil da conta.
+
+A interface e o [JSON OpenAPI](http://localhost:8080/swagger.json) são públicos. O contrato está em [`backend/lib/shared/http/openapi.json`](backend/lib/shared/http/openapi.json). Atualize esse arquivo junto com alterações de rotas, parâmetros ou respostas.
+
 A coleção do Insomnia está em [`docs/api/grazifit.insomnia.json`](docs/api/grazifit.insomnia.json).
  
 ## Arquitetura em resumo

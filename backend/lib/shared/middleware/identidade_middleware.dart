@@ -6,6 +6,7 @@ import 'package:shelf/shelf.dart';
 import '../../features/auth/auth_repository.dart';
 import '../../features/auth/token_service.dart';
 import '../autorizacao/identidade.dart';
+import '../http/swagger.dart';
 
 const chaveIdentidadeContexto = 'grazifit.identidade';
 const chaveTokenContexto = 'grazifit.token';
@@ -21,7 +22,12 @@ Middleware identidadeMiddleware(TokenService tokens, AuthRepository contas) =>
     (innerHandler) => (request) async {
       final rotaPublica =
           (request.method == 'POST' && request.url.path == 'auth/login') ||
-          (request.method == 'GET' && request.url.path == 'health');
+          (request.method == 'GET' &&
+              const {
+                '/health',
+                swaggerPath,
+                swaggerJsonPath,
+              }.contains('/${request.url.path}'));
       if (rotaPublica) {
         return innerHandler(request);
       }

@@ -48,6 +48,7 @@ import 'package:grazifit_backend/features/pessoas/professor/professor_controller
 import 'package:grazifit_backend/features/pessoas/professor/professor_repository.dart';
 import 'package:grazifit_backend/features/pessoas/professor/professor_service.dart';
 import 'package:grazifit_backend/shared/middleware/cors_middleware.dart';
+import 'package:grazifit_backend/shared/http/swagger.dart';
 
 void main() async {
   final config = Config.doAmbiente();
@@ -91,7 +92,9 @@ void main() async {
 
   final treinoController = TreinoController(TreinoService(TreinoRepository(db)));
 
+  final swagger = await carregarSwagger();
   final rootRouter = Router()
+    ..mount('/', swagger.call)
     ..mount(
       '/',
       CronogramaController(CronogramaService(CronogramaRepository(db)))
