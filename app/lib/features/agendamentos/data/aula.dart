@@ -7,6 +7,7 @@
 enum StatusAula { normal, ultimasVagas, lotada }
 
 class Modalidade {
+  /// Código da categoria (ex.: `musculacao`), não o rótulo.
   final String id;
   final String nome;
 
@@ -28,6 +29,9 @@ class Aula {
   /// Nome da modalidade. É comparado com [Modalidade.nome] no filtro da tela.
   final String modalidade;
 
+  /// Código da categoria (ex.: `pilates`). Usado para o ícone.
+  final String categoria;
+
   /// Ex.: "Em grupo".
   final String tipo;
   final String professor;
@@ -42,6 +46,7 @@ class Aula {
     required this.horarioInicio,
     required this.horarioFim,
     required this.modalidade,
+    required this.categoria,
     required this.tipo,
     required this.professor,
     required this.vagasOcupadas,
@@ -67,6 +72,7 @@ class Aula {
       horarioInicio: json['horarioInicio'] as String,
       horarioFim: json['horarioFim'] as String,
       modalidade: json['modalidade'] as String,
+      categoria: (json['categoria'] as String?) ?? '',
       tipo: (json['tipo'] as String?) ?? 'Em grupo',
       professor: json['professor'] as String,
       vagasOcupadas: (json['vagasOcupadas'] as num).toInt(),

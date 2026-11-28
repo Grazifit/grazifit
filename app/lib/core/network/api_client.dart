@@ -37,9 +37,13 @@ class ApiClient {
   Future<Map<String, dynamic>> get(String path, {Map<String, String>? query}) =>
       _enviar('GET', path, query: query);
 
-  Future<Map<String, dynamic>> post(String path, Map<String, dynamic> body) =>
+  /// [body] é um `Map` ou uma `List`, enviado como JSON na raiz.
+  Future<Map<String, dynamic>> post(String path, Object body) =>
       postJson(path, body);
 
+  /// [body] é um `Map` ou uma `List`, enviado como JSON na raiz.
+  Future<Map<String, dynamic>> postJson(String path, Object body) =>
+      _enviar('POST', path, body: body);
   Future<Map<String, dynamic>> getJson(String path) async {
     if (baseUrl.trim().isEmpty) {
       throw const ApiException(codigo: 'CONFIGURACAO');
@@ -72,10 +76,9 @@ class ApiClient {
     Map<String, Object?> body,
   ) => _enviar('POST', path, body: body);
 
-  Future<Map<String, dynamic>> patch(
-    String path,
-    Map<String, Object?> body,
-  ) => _enviar('PATCH', path, body: body);
+  /// [body] é um `Map` ou uma `List`, enviado como JSON na raiz.
+  Future<Map<String, dynamic>> patch(String path, Object body) =>
+      _enviar('PATCH', path, body: body);
 
   Future<Map<String, dynamic>> delete(String path) => _enviar('DELETE', path);
 
@@ -84,9 +87,12 @@ class ApiClient {
   Future<Map<String, dynamic>> _enviar(
     String method,
     String path, {
-    Map<String, Object?>? body,
+    Object? body,
     Map<String, String>? query,
   }) async {
+    if (body != null && body is! Map && body is! List) {
+      throw ArgumentError.value(body, 'body', 'deve ser Map ou List');
+    }
     if (baseUrl.trim().isEmpty) {
       throw const ApiException(codigo: 'CONFIGURACAO');
     }

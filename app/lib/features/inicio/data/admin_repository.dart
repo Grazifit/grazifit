@@ -1,3 +1,5 @@
+import 'package:shared/dtos/aula_rotulos.dart';
+
 import '../../../core/network/api_client.dart';
 import '../../../core/utils/datas.dart';
 import '../../aulas/data/aulas_admin_data.dart';
@@ -43,8 +45,8 @@ class AdminRepositoryHttp implements AdminRepository {
       return AulaAdminData(
         horarioInicio: a['hora_inicio'] as String,
         horarioFim: a['hora_fim'] as String,
-        modalidade: _rotuloCategoria(a['categoria'] as String),
-        formato: _rotuloTipo(a['tipo'] as String),
+        modalidade: rotuloCategoriaAula(a['categoria'] as String),
+        formato: rotuloTipoAula(a['tipo'] as String),
         professor: a['professor'] as String,
         vagasOcupadas: ocupadas,
         vagasTotais: maximas,
@@ -76,8 +78,8 @@ class AdminRepositoryHttp implements AdminRepository {
               id: a['id_aula'] as int,
               horarioInicio: a['hora_inicio'] as String,
               horarioFim: a['hora_fim'] as String,
-              modalidade: _rotuloCategoria(a['categoria'] as String),
-              formato: _rotuloTipo(a['tipo'] as String),
+              modalidade: rotuloCategoriaAula(a['categoria'] as String),
+              formato: rotuloTipoAula(a['tipo'] as String),
               vagasOcupadas: a['vagas_ocupadas'] as int,
               vagasTotais: a['vagas_maxima'] as int,
               cancelada: !(a['status'] as bool),
@@ -102,23 +104,6 @@ class AdminRepositoryHttp implements AdminRepository {
             ))
         .toList();
   }
-
-  static String _rotuloCategoria(String codigo) => switch (codigo) {
-        'musculacao' => 'Musculação',
-        'funcional' => 'Funcional',
-        'pilates' => 'Pilates',
-        'crossfit' => 'Crossfit',
-        'danca' => 'Dança',
-        'spinning' => 'Spinning',
-        _ => codigo,
-      };
-
-  static String _rotuloTipo(String codigo) => switch (codigo) {
-        'coletiva' => 'Coletiva',
-        'individual' => 'Individual',
-        'experimental' => 'Experimental',
-        _ => codigo,
-      };
 
   @override
   Future<UsuariosAdminData> buscarUsuarios() async {
