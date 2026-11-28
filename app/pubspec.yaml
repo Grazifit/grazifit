@@ -67,6 +67,7 @@ flutter:
   # carrega assets novos).
   assets:
     - assets/images/marca.png
+    - assets/images/granulacao_login.png
     - lib/features/agendamentos/widgets/logo.png
     - lib/features/pessoas/widgets/logo_perfil.png
 

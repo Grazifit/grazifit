@@ -92,7 +92,17 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               fit: StackFit.expand,
               children: [
                 const _FundoLogin(),
-                IgnorePointer(child: CustomPaint(painter: _GranulacaoPainter())),
+                const IgnorePointer(
+                  child: Image(
+                    image: ExactAssetImage(
+                      'assets/images/granulacao_login.png',
+                      scale: 2,
+                    ),
+                    repeat: ImageRepeat.repeat,
+                    alignment: Alignment.topLeft,
+                    fit: BoxFit.none,
+                  ),
+                ),
               ],
             ),
           ),
@@ -301,41 +311,81 @@ class _FundoLogin extends StatelessWidget {
   const _FundoLogin();
 
   static const _esquerda = [
-    Color(0xFF47437A), Color(0xFF4B4579), Color(0xFF5A4875),
-    Color(0xFF7A516B), Color(0xFFA15D5F), Color(0xFFC06757),
-    Color(0xFFCF6A53), Color(0xFFD46C51), Color(0xFFD66D51),
-    Color(0xFFD76F4E), Color(0xFFD7704A), Color(0xFFD17246),
-    Color(0xFFC17344), Color(0xFFA57447), Color(0xFF7F734A),
-    Color(0xFF5C714E), Color(0xFF437052), Color(0xFF377054),
-    Color(0xFF357054), Color(0xFF3B7053), Color(0xFF477051),
+    Color(0xFF47437A),
+    Color(0xFF4B4579),
+    Color(0xFF5A4875),
+    Color(0xFF7A516B),
+    Color(0xFFA15D5F),
+    Color(0xFFC06757),
+    Color(0xFFCF6A53),
+    Color(0xFFD46C51),
+    Color(0xFFD66D51),
+    Color(0xFFD76F4E),
+    Color(0xFFD7704A),
+    Color(0xFFD17246),
+    Color(0xFFC17344),
+    Color(0xFFA57447),
+    Color(0xFF7F734A),
+    Color(0xFF5C714E),
+    Color(0xFF437052),
+    Color(0xFF377054),
+    Color(0xFF357054),
+    Color(0xFF3B7053),
+    Color(0xFF477051),
   ];
 
   static const _centro = [
-    Color(0xFFCA9C6A), Color(0xFFC7986A), Color(0xFFBD8967),
-    Color(0xFFB27C64), Color(0xFFC27A5A), Color(0xFFCF7752),
-    Color(0xFFD6764F), Color(0xFFD97A4F), Color(0xFFDB7E51),
-    Color(0xFFDD8250), Color(0xFFDD834E), Color(0xFFDA844C),
-    Color(0xFFD0824A), Color(0xFFB97E4A), Color(0xFF95784B),
-    Color(0xFF6E714F), Color(0xFF506D54), Color(0xFF416C57),
-    Color(0xFF3B6B58), Color(0xFF2F6B58), Color(0xFF346C57),
+    Color(0xFFCA9C6A),
+    Color(0xFFC7986A),
+    Color(0xFFBD8967),
+    Color(0xFFB27C64),
+    Color(0xFFC27A5A),
+    Color(0xFFCF7752),
+    Color(0xFFD6764F),
+    Color(0xFFD97A4F),
+    Color(0xFFDB7E51),
+    Color(0xFFDD8250),
+    Color(0xFFDD834E),
+    Color(0xFFDA844C),
+    Color(0xFFD0824A),
+    Color(0xFFB97E4A),
+    Color(0xFF95784B),
+    Color(0xFF6E714F),
+    Color(0xFF506D54),
+    Color(0xFF416C57),
+    Color(0xFF3B6B58),
+    Color(0xFF2F6B58),
+    Color(0xFF346C57),
   ];
 
   static const _direita = [
-    Color(0xFFF0B664), Color(0xFFF0B664), Color(0xFFEEB161),
-    Color(0xFFEAA75D), Color(0xFFE39756), Color(0xFFDE884E),
-    Color(0xFFDD824C), Color(0xFFDF884E), Color(0xFFE18F51),
-    Color(0xFFE49553), Color(0xFFE49653), Color(0xFFE49653),
-    Color(0xFFDF9250), Color(0xFFCD894E), Color(0xFFAB7D4D),
-    Color(0xFF817150), Color(0xFF5D6B56), Color(0xFF4B695A),
-    Color(0xFF42675C), Color(0xFF43675C), Color(0xFF46675A),
+    Color(0xFFF0B664),
+    Color(0xFFF0B664),
+    Color(0xFFEEB161),
+    Color(0xFFEAA75D),
+    Color(0xFFE39756),
+    Color(0xFFDE884E),
+    Color(0xFFDD824C),
+    Color(0xFFDF884E),
+    Color(0xFFE18F51),
+    Color(0xFFE49553),
+    Color(0xFFE49653),
+    Color(0xFFE49653),
+    Color(0xFFDF9250),
+    Color(0xFFCD894E),
+    Color(0xFFAB7D4D),
+    Color(0xFF817150),
+    Color(0xFF5D6B56),
+    Color(0xFF4B695A),
+    Color(0xFF42675C),
+    Color(0xFF43675C),
+    Color(0xFF46675A),
   ];
 
   @override
   Widget build(BuildContext context) {
     return const SizedBox.expand(
-      child: CustomPaint(
-        painter: _MalhaPainter(_esquerda, _centro, _direita),
-      ),
+      child: CustomPaint(painter: _MalhaPainter(_esquerda, _centro, _direita)),
     );
   }
 }
@@ -382,34 +432,4 @@ class _MalhaPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _MalhaPainter oldDelegate) => false;
-}
-
-class _GranulacaoPainter extends CustomPainter {
-  _GranulacaoPainter() : _aleatorio = math.Random(42);
-
-  final math.Random _aleatorio;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final tinta = Paint();
-    final quantidade = (size.width * size.height / 40).round();
-
-    for (var i = 0; i < quantidade; i++) {
-      final claro = _aleatorio.nextBool();
-      tinta.color = claro
-          ? Colors.white.withValues(alpha: 0.025)
-          : Colors.black.withValues(alpha: 0.02);
-      canvas.drawCircle(
-        Offset(
-          _aleatorio.nextDouble() * size.width,
-          _aleatorio.nextDouble() * size.height,
-        ),
-        _aleatorio.nextDouble() * 0.65,
-        tinta,
-      );
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant _GranulacaoPainter oldDelegate) => false;
 }
