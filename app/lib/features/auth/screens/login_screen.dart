@@ -87,10 +87,13 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       body: Stack(
         fit: StackFit.expand,
         children: [
-          const _FundoLogin(),
-          Positioned.fill(
-            child: IgnorePointer(
-              child: CustomPaint(painter: _GranulacaoPainter()),
+          RepaintBoundary(
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                const _FundoLogin(),
+                IgnorePointer(child: CustomPaint(painter: _GranulacaoPainter())),
+              ],
             ),
           ),
           SafeArea(

@@ -9,7 +9,7 @@
       "_type": "workspace",
       "parentId": null,
       "name": "GraziFit API",
-      "description": "API do backend GraziFit — export do Insomnia (formato v4). Uma requisição por rota montada no servidor (30).\n\n## Como usar\n1. No **Base Environment**, preencha `loginEmail` e `loginSenha` (vazias de propósito) e os dados de criação em branco: `adminCpf`/`adminEmail`/`adminSenha`, `professorCpf`/`professorEmail`/`professorSenha`, `alunoCpf`/`alunoEmail`/`alunoSenha`. Não versione esses valores. Ajuste `baseUrl` se preciso.\n2. Rode **Auth › Login**. A variável `token` lê `access_token` da última resposta do login; todas as rotas usam `Authorization: Bearer {{ _.token }}` herdado da coleção, exceto Login e Health (sem autenticação).\n3. Os ids são lidos da resposta da requisição de criação correspondente (tag de resposta do Insomnia): `idAdmin` ← *Criar admin*, `idProfessor` ← *Criar professor*, `idAluno` ← *Criar aluno*, `idAula` ← *Criar aula*, `idAgendamento` ← *Reservar vaga*. Se a tag não atualizar no seu Insomnia, copie o campo `id_*` da resposta e cole na variável.\n\n## Papéis e troca de token\nHá um único `token`. Admin cria professor, aluno e aula. Reservar vaga, listar e cancelar agendamento exigem token de **aluno**; para avaliações use o aluno dono (ou admin). Troque `loginEmail`/`loginSenha` e rode o Login de novo ao mudar de papel. Registrar chamada exige token do professor da aula ou de admin e aula já iniciada.\n\n## Ordem sugerida\nInfra › Auth (admin) › Professor › Aluno (deixe *Excluir* por último) › Aulas (criar, ler, editar) › login do aluno › Agendamentos (*Reservar vaga*) › Avaliações › login do professor/admin › Aulas (*Listar agendados*, *Registrar chamada*, *Cancelar aula*) › *Cancelar agendamento* › exclusões.\n\n## Convenções\n- `data` em `AAAA-MM-DD`; horas em `HH:MM`; instantes em UTC ISO-8601. Aulas só no ano corrente ou no seguinte (`aulaData`).\n- Envelope de erro: `{ \"codigo\": \"...\", \"mensagem\": \"...\", \"campo\"?: \"...\" }`. Em `/admin` e em parte de `/professor` os erros de forma vêm como `{ \"erro\": \"...\" }`.\n- Cada requisição descreve o que faz, por que existe, quem pode executar, corpo/parâmetros, sucesso e a tabela de erros.",
+      "description": "API do backend GraziFit — export do Insomnia (formato v4). Inclui as rotas de cronogramas do administrador.\n\n## Como usar\n1. No **Base Environment**, preencha `loginEmail` e `loginSenha` (vazias de propósito) e os dados de criação em branco: `adminCpf`/`adminEmail`/`adminSenha`, `professorCpf`/`professorEmail`/`professorSenha`, `alunoCpf`/`alunoEmail`/`alunoSenha`. Não versione esses valores. Ajuste `baseUrl` se preciso.\n2. Rode **Auth › Login**. A variável `token` lê `access_token` da última resposta do login; todas as rotas usam `Authorization: Bearer {{ _.token }}` herdado da coleção, exceto Login e Health (sem autenticação).\n3. Os ids são lidos da resposta da requisição de criação correspondente (tag de resposta do Insomnia): `idAdmin` ← *Criar admin*, `idProfessor` ← *Criar professor*, `idAluno` ← *Criar aluno*, `idAula` ← *Criar aula*, `idAgendamento` ← *Reservar vaga*. Se a tag não atualizar no seu Insomnia, copie o campo `id_*` da resposta e cole na variável.\n\n## Papéis e troca de token\nHá um único `token`. Admin cria professor, aluno e aula. Reservar vaga, listar e cancelar agendamento exigem token de **aluno**; para avaliações use o aluno dono (ou admin). Troque `loginEmail`/`loginSenha` e rode o Login de novo ao mudar de papel. Registrar chamada exige token do professor da aula ou de admin e aula já iniciada.\n\n## Ordem sugerida\nInfra › Auth (admin) › Professor › Aluno (deixe *Excluir* por último) › Aulas (criar, ler, editar) › login do aluno › Agendamentos (*Reservar vaga*) › Avaliações › login do professor/admin › Aulas (*Listar agendados*, *Registrar chamada*, *Cancelar aula*) › *Cancelar agendamento* › exclusões.\n\n## Convenções\n- `data` em `AAAA-MM-DD`; horas em `HH:MM`; instantes em UTC ISO-8601. Aulas só no ano corrente ou no seguinte (`aulaData`).\n- Envelope de erro: `{ \"codigo\": \"...\", \"mensagem\": \"...\", \"campo\"?: \"...\" }`. Em `/admin` e em parte de `/professor` os erros de forma vêm como `{ \"erro\": \"...\" }`.\n- Cada requisição descreve o que faz, por que existe, quem pode executar, corpo/parâmetros, sucesso e a tabela de erros.",
       "scope": "collection",
       "authentication": {
         "type": "bearer",
@@ -57,7 +57,8 @@
         "aulaHoraFim": "08:00",
         "aulaTipo": "coletiva",
         "aulaCategoria": "pilates",
-        "aulaVagasMaxima": "10"
+        "aulaVagasMaxima": "10",
+        "idCronograma": "{% response 'body', 'req_cronogramas_criar', 'b64::JC5pZF9jcm9ub2dyYW1h::46b', 'never', 60 %}"
       },
       "dataPropertyOrder": {
         "&": [
@@ -94,7 +95,8 @@
           "aulaHoraFim",
           "aulaTipo",
           "aulaCategoria",
-          "aulaVagasMaxima"
+          "aulaVagasMaxima",
+          "idCronograma"
         ]
       },
       "color": null,
@@ -939,6 +941,161 @@
       "settingEncodeUrl": true,
       "modified": 1794168000000,
       "created": 1794168000000
+    },
+    {
+      "_id": "fld_cronogramas",
+      "_type": "request_group",
+      "parentId": "wrk_grazifit_api",
+      "name": "Cronogramas",
+      "description": "CRUD exclusivo do administrador. Execute Auth > Login como admin e crie ou selecione um professor ativo. A criacao preenche idCronograma pela resposta. Inativar nao cancela aulas existentes; geracao de aulas ainda nao implementada.",
+      "environment": {},
+      "metaSortKey": 6500,
+      "modified": 1794960000000,
+      "created": 1794960000000
+    },
+    {
+      "_id": "req_cronogramas_criar",
+      "_type": "request",
+      "parentId": "fld_cronogramas",
+      "name": "Criar cronograma",
+      "description": "Somente admin autenticado. Erros: 401 TOKEN_INVALIDO; 403 ACESSO_NEGADO; 400 CAMPO_INVALIDO (campo informado no envelope). Retorna 201 com id_cronograma, id_admin_criador, id_professor, categoria, hora_inicio, hora_fim, data_inicio, data_fim, vagas_maxima, status e dias_semana. O criador vem da sessao; nao enviar id_admin_criador. Professor deve existir e estar ativo. Categorias: musculacao, funcional, pilates, crossfit, danca, spinning. Horarios HH:MM, fim posterior ao inicio. Datas AAAA-MM-DD validas; data_fim opcional, nunca anterior a data_inicio. Vagas inteiras positivas. Dias de 0 (domingo) a 6 (sabado), sem repeticao e ao menos um. Status opcional, padrao true. Campos ausentes: 400 CAMPO_OBRIGATORIO; JSON invalido: 400 JSON_INVALIDO.",
+      "method": "POST",
+      "url": "{{ _.baseUrl }}/cronogramas",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"id_professor\": {{ _.idProfessor }},\n  \"categoria\": \"pilates\",\n  \"hora_inicio\": \"08:00\",\n  \"hora_fim\": \"09:00\",\n  \"data_inicio\": \"2026-11-18\",\n  \"data_fim\": null,\n  \"vagas_maxima\": 10,\n  \"dias_semana\": [1, 3, 5]\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token }}"
+      },
+      "metaSortKey": 1000,
+      "settingEncodeUrl": true,
+      "modified": 1794960000000,
+      "created": 1794960000000
+    },
+    {
+      "_id": "req_cronogramas_listar",
+      "_type": "request",
+      "parentId": "fld_cronogramas",
+      "name": "Listar cronogramas",
+      "description": "Somente admin autenticado. Erros: 401 TOKEN_INVALIDO; 403 ACESSO_NEGADO; 400 CAMPO_INVALIDO (campo informado no envelope). Retorna 200 com {itens,total,limit,offset}. Ordem: data_inicio decrescente e id decrescente. limit entre 1 e 100; offset >= 0. Adicione &status=true ou &status=false para filtrar. Sem filtro, inclui ativos e inativos.",
+      "method": "GET",
+      "url": "{{ _.baseUrl }}/cronogramas?limit=20&offset=0",
+      "body": {},
+      "parameters": [],
+      "headers": [],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token }}"
+      },
+      "metaSortKey": 2000,
+      "settingEncodeUrl": true,
+      "modified": 1794960000000,
+      "created": 1794960000000
+    },
+    {
+      "_id": "req_cronogramas_buscar",
+      "_type": "request",
+      "parentId": "fld_cronogramas",
+      "name": "Buscar cronograma por ID",
+      "description": "Somente admin autenticado. Erros: 401 TOKEN_INVALIDO; 403 ACESSO_NEGADO; 400 CAMPO_INVALIDO (campo informado no envelope). Retorna 200 com o cronograma e dias_semana ordenados. Inexistente: 404 REGISTRO_NAO_ENCONTRADO.",
+      "method": "GET",
+      "url": "{{ _.baseUrl }}/cronogramas/{{ _.idCronograma }}",
+      "body": {},
+      "parameters": [],
+      "headers": [],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token }}"
+      },
+      "metaSortKey": 3000,
+      "settingEncodeUrl": true,
+      "modified": 1794960000000,
+      "created": 1794960000000
+    },
+    {
+      "_id": "req_cronogramas_atualizar",
+      "_type": "request",
+      "parentId": "fld_cronogramas",
+      "name": "Atualizar cronograma",
+      "description": "Somente admin autenticado. Erros: 401 TOKEN_INVALIDO; 403 ACESSO_NEGADO; 400 CAMPO_INVALIDO (campo informado no envelope). Retorna 200. Atualiza apenas campos enviados; mesmos campos e validacoes da criacao. Corpo vazio e campos desconhecidos sao rejeitados. data_fim:null remove o fim da vigencia. Com aulas vinculadas, somente alteracao de status e permitida; demais alteracoes retornam 409 REGISTRO_EM_USO. Inexistente: 404 REGISTRO_NAO_ENCONTRADO.",
+      "method": "PATCH",
+      "url": "{{ _.baseUrl }}/cronogramas/{{ _.idCronograma }}",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"dias_semana\": [\n    2,\n    4\n  ],\n  \"hora_inicio\": \"09:00\",\n  \"hora_fim\": \"10:00\"\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token }}"
+      },
+      "metaSortKey": 4000,
+      "settingEncodeUrl": true,
+      "modified": 1794960000000,
+      "created": 1794960000000
+    },
+    {
+      "_id": "req_cronogramas_inativar",
+      "_type": "request",
+      "parentId": "fld_cronogramas",
+      "name": "Inativar cronograma",
+      "description": "Somente admin autenticado. Erros: 401 TOKEN_INVALIDO; 403 ACESSO_NEGADO; 400 CAMPO_INVALIDO (campo informado no envelope). Retorna 200. Permitido mesmo com aulas vinculadas; nao cancela nem altera as aulas ja criadas. Para reativar, envie status:true; requer professor ativo. Inexistente: 404 REGISTRO_NAO_ENCONTRADO.",
+      "method": "PATCH",
+      "url": "{{ _.baseUrl }}/cronogramas/{{ _.idCronograma }}",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"status\": false\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token }}"
+      },
+      "metaSortKey": 5000,
+      "settingEncodeUrl": true,
+      "modified": 1794960000000,
+      "created": 1794960000000
+    },
+    {
+      "_id": "req_cronogramas_excluir",
+      "_type": "request",
+      "parentId": "fld_cronogramas",
+      "name": "Excluir cronograma",
+      "description": "Somente admin autenticado. Erros: 401 TOKEN_INVALIDO; 403 ACESSO_NEGADO; 400 CAMPO_INVALIDO (campo informado no envelope). Retorna 204 sem corpo e remove os dias associados. Havendo qualquer aula vinculada, inclusive cancelada, retorna 409 REGISTRO_EM_USO. Inexistente: 404 REGISTRO_NAO_ENCONTRADO.",
+      "method": "DELETE",
+      "url": "{{ _.baseUrl }}/cronogramas/{{ _.idCronograma }}",
+      "body": {},
+      "parameters": [],
+      "headers": [],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token }}"
+      },
+      "metaSortKey": 6000,
+      "settingEncodeUrl": true,
+      "modified": 1794960000000,
+      "created": 1794960000000
     }
   ]
 }

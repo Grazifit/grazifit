@@ -30,6 +30,7 @@ enum CodigoErro {
   avaliacaoJaRegistrada('AVALIACAO_JA_REGISTRADA'),
   cpfEmUso('CPF_EM_USO'),
   emailEmUso('EMAIL_EM_USO'),
+  nomeEmUso('NOME_EM_USO'),
 
   cpfInvalido('CPF_INVALIDO'),
   emailInvalido('EMAIL_INVALIDO'),

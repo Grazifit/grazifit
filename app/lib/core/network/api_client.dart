@@ -44,6 +44,37 @@ class ApiClient {
   /// [body] é um `Map` ou uma `List`, enviado como JSON na raiz.
   Future<Map<String, dynamic>> postJson(String path, Object body) =>
       _enviar('POST', path, body: body);
+  Future<Map<String, dynamic>> getJson(String path) async {
+    if (baseUrl.trim().isEmpty) {
+      throw const ApiException(codigo: 'CONFIGURACAO');
+    }
+    try {
+      final bearer = token?.call();
+      final response = await _client
+          .get(
+            Uri.parse('${baseUrl.replaceFirst(RegExp(r'/$'), '')}$path'),
+            headers: {if (bearer != null) 'Authorization': 'Bearer $bearer'},
+          )
+          .timeout(timeout);
+      if (response.statusCode < 200 || response.statusCode >= 300) {
+        throw ApiException(statusCode: response.statusCode);
+      }
+      return response.statusCode == 204 ? {} : _decodeObject(response.body);
+    } on ApiException {
+      rethrow;
+    } on TimeoutException {
+      throw const ApiException(codigo: 'TIMEOUT');
+    } on http.ClientException {
+      throw const ApiException(codigo: 'REDE');
+    } on FormatException {
+      throw const ApiException(codigo: 'RESPOSTA_INVALIDA');
+    }
+  }
+
+  Future<Map<String, dynamic>> postJson(
+    String path,
+    Map<String, Object?> body,
+  ) => _enviar('POST', path, body: body);
 
   /// [body] é um `Map` ou uma `List`, enviado como JSON na raiz.
   Future<Map<String, dynamic>> patch(String path, Object body) =>

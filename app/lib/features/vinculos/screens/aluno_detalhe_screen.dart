@@ -14,7 +14,7 @@ import '../../../core/state/estado_async.dart';
 import '../../../core/utils/datas.dart';
 import '../data/vinculos_repository.dart';
 import '../state/vinculos_providers.dart';
-import '../../avaliacoes/screens/avaliacao_fisica_screen.dart';
+import '../../avaliacoes/screens/avaliacao_fisica_professor_screen.dart';
 import '../../treinos/screens/historico_treinos_screen.dart';
 import '../../treinos/screens/treinos_aluno_screen.dart';
 
@@ -124,7 +124,7 @@ class _AlunoDetalheScreenState extends ConsumerState<AlunoDetalheScreen> {
             ItemLista(
               titulo: 'Avaliação física',
               subtitulo: _subtituloAvaliacao(a),
-              onTap: () => Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => AvaliacaoFisicaScreen(idAluno: a.idAluno))),
+              onTap: () => Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => AvaliacaoFisicaProfessorScreen(idAluno: a.idAluno))),
             ),
             ItemLista(
               titulo: 'Histórico de treinos',

@@ -1,79 +1,38 @@
 import 'dart:ui' show PathMetric;
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../data/avaliacao_repository.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../core/design_system/components/botao_sair.dart';
 import '../../treinos/screens/tela_treino_aluno.dart';
 import '../../pessoas/screens/tela_perfil_aluno.dart';
-import '../data/avaliacoes_repository.dart';
-import '../data/evolucao_aluno.dart';
-import '../../../core/data/repositorios.dart';
-import 'tela_registrar_medida_aluno.dart';
-import '../../../core/design_system/components/botao_sair.dart';
+import 'avaliacao_fisica_screen.dart';
 
 /// Tela de evolução do aluno: peso e IMC atuais, gráfico mensal
 /// e botão para registrar uma nova medida.
-///
-/// Os dados vêm de um [AvaliacoesRepository]. Se nenhum for informado, usa o
-/// definido em `core/data/repositorios.dart`.
-class TelaEvolucaoAluno extends StatefulWidget {
-  final AvaliacoesRepository? repository;
-
-  const TelaEvolucaoAluno({super.key, this.repository});
+class TelaEvolucaoAluno extends ConsumerStatefulWidget {
+  const TelaEvolucaoAluno({super.key});
 
   @override
-  State<TelaEvolucaoAluno> createState() => _TelaEvolucaoAlunoState();
+  ConsumerState<TelaEvolucaoAluno> createState() => _TelaEvolucaoAlunoState();
 }
 
-class _TelaEvolucaoAlunoState extends State<TelaEvolucaoAluno> {
+class _TelaEvolucaoAlunoState extends ConsumerState<TelaEvolucaoAluno> {
   static const Color kGreen = AppColors.verde;
   static const Color kBackground = AppColors.fundo;
   static const Color kImc = Color(0xFF2E3A8C);
 
-  static const List<String> _mesesAbrev = [
-    'jan', 'fev', 'mar', 'abr', 'mai', 'jun',
-    'jul', 'ago', 'set', 'out', 'nov', 'dez',
-  ];
-
   int _navSelecionado = 2;
-
-  late final AvaliacoesRepository _repo;
-  late Future<EvolucaoAluno> _future;
-
-  @override
-  void initState() {
-    super.initState();
-    _repo = widget.repository ?? Repositorios.avaliacoes;
-    _future = _repo.buscarEvolucao();
-  }
-
-  void _recarregar() {
-    setState(() {
-      _future = _repo.buscarEvolucao();
-    });
-  }
-
-  double _imc(double alturaM, double peso) => peso / (alturaM * alturaM);
-
   String _fmt(double v) => v.toStringAsFixed(1).replaceAll('.', ',');
 
-  Future<void> _registrarMedida(double alturaM) async {
-    // A tela de registro envia a medida pelo repositório e devolve `true`
-    // quando deu certo.
-    final registrou = await Navigator.of(context).push<bool>(
-      MaterialPageRoute(
-        builder: (_) => TelaRegistrarMedidaAluno(
-          alturaM: alturaM,
-          repository: _repo,
-        ),
-      ),
+  Future<void> _registrarMedida() async {
+    await Navigator.of(context).push<bool>(
+      MaterialPageRoute(builder: (_) => const AvaliacaoFisicaScreen()),
     );
-    if (registrou != true || !mounted) return;
-
-    _recarregar();
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Medida registrada.')),
-    );
+    if (mounted) ref.invalidate(historicoAvaliacoesProvider);
   }
 
   void _selecionarNav(int index) {
@@ -97,166 +56,119 @@ class _TelaEvolucaoAlunoState extends State<TelaEvolucaoAluno> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: kBackground,
-      body: Stack(
-        children: [
-          SafeArea(
-        bottom: false,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Padding(
-              padding: EdgeInsets.fromLTRB(16, 16, 16, 0),
-              child: Text(
-                'Evolução',
-                style: TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.black87,
-                ),
-              ),
-            ),
-            Expanded(
-              child: FutureBuilder<EvolucaoAluno>(
-                future: _future,
-                builder: (context, snapshot) {
-                  if (snapshot.connectionState != ConnectionState.done) {
-                    return const Center(
-                      child: CircularProgressIndicator(color: kGreen),
-                    );
-                  }
-                  if (snapshot.hasError || snapshot.data == null) {
-                    return _buildErro();
-                  }
-                  return _buildConteudo(snapshot.data!);
-                },
-              ),
-            ),
-          ],
-        ),
-      ),
-          const Positioned(
-            top: 0,
-            right: 4,
-            child: SafeArea(child: BotaoSair()),
-          ),
-        ],
-      ),
-      bottomNavigationBar: _buildNavInferior(),
-    );
-  }
-
-  Widget _buildErro() {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(Icons.error_outline, size: 40, color: Colors.black45),
-            const SizedBox(height: 12),
-            const Text(
-              'Não foi possível carregar sua evolução.',
-              textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 14, color: Colors.black87),
-            ),
-            const SizedBox(height: 16),
-            OutlinedButton(
-              onPressed: _recarregar,
-              style: OutlinedButton.styleFrom(
-                foregroundColor: kGreen,
-                side: const BorderSide(color: kGreen),
-              ),
-              child: const Text('Tentar novamente'),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildConteudo(EvolucaoAluno evolucao) {
-    final medidas = [...evolucao.medidas]
-      ..sort((a, b) => a.data.compareTo(b.data));
+    final historico = ref.watch(historicoAvaliacoesProvider);
+    final medidas = historico.asData?.value ?? <MedidaAvaliacao>[];
     final pesos = medidas.map((m) => m.peso).toList();
-    final imcs = pesos.map((p) => _imc(evolucao.alturaM, p)).toList();
-    final meses = medidas.map((m) => _mesesAbrev[m.data.month - 1]).toList();
+    final imcs = medidas.map((m) => m.imc).toList();
+    final meses = medidas.map((m) => m.rotulo).toList();
     final pesoAtual = pesos.isEmpty ? null : pesos.last;
     final imcAtual = imcs.isEmpty ? null : imcs.last;
 
-    return ListView(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
-      children: [
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
+    return Scaffold(
+      backgroundColor: kBackground,
+      body: SafeArea(
+        bottom: false,
+        child: ListView(
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
           children: [
-            Expanded(
-              child: _buildIndicador(
-                'Peso',
-                pesoAtual == null ? '--' : '${_fmt(pesoAtual)} kg',
-                kGreen,
-              ),
-            ),
-            Expanded(
-              child: _buildIndicador(
-                'IMC',
-                imcAtual == null ? '--' : _fmt(imcAtual),
-                kImc,
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 28),
-        SizedBox(
-          height: 200,
-          child: medidas.length < 2
-              ? const Center(
+            const Row(
+              children: [
+                Expanded(
                   child: Text(
-                    'Registre ao menos duas medidas para ver o gráfico.',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(fontSize: 13, color: Colors.black54),
-                  ),
-                )
-              : CustomPaint(
-                  size: Size.infinite,
-                  painter: _GraficoEvolucaoPainter(
-                    meses: meses,
-                    pesos: pesos,
-                    imcs: imcs,
-                    corPeso: kGreen,
-                    corImc: kImc,
+                    'Evolução',
+                    style: TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black87,
+                    ),
                   ),
                 ),
-        ),
-        const SizedBox(height: 12),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            _buildLegenda('Peso (kg)', kGreen, tracejado: false),
-            const SizedBox(width: 24),
-            _buildLegenda('IMC', kImc, tracejado: true),
-          ],
-        ),
-        const SizedBox(height: 20),
-        SizedBox(
-          height: 46,
-          child: OutlinedButton(
-            onPressed: () => _registrarMedida(evolucao.alturaM),
-            style: OutlinedButton.styleFrom(
-              foregroundColor: kGreen,
-              side: const BorderSide(color: kGreen),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10),
+                BotaoSair(),
+              ],
+            ),
+            const SizedBox(height: 16),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: _buildIndicador(
+                    'Peso',
+                    pesoAtual == null ? '--' : '${_fmt(pesoAtual)} kg',
+                    kGreen,
+                  ),
+                ),
+                Expanded(
+                  child: _buildIndicador(
+                    'IMC',
+                    imcAtual == null ? '--' : _fmt(imcAtual),
+                    kImc,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 28),
+            SizedBox(
+              height: 200,
+              child: historico.isLoading
+                  ? const Center(child: CircularProgressIndicator())
+                  : historico.hasError
+                  ? Center(
+                      child: TextButton(
+                        onPressed: () =>
+                            ref.invalidate(historicoAvaliacoesProvider),
+                        child: Text(mensagemAvaliacao(historico.error!)),
+                      ),
+                    )
+                  : medidas.length < 2
+                  ? const Center(
+                      child: Text(
+                        'Registre ao menos duas medidas para ver o gráfico.',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(fontSize: 13, color: Colors.black54),
+                      ),
+                    )
+                  : CustomPaint(
+                      size: Size.infinite,
+                      painter: _GraficoEvolucaoPainter(
+                        meses: meses,
+                        pesos: pesos,
+                        imcs: imcs,
+                        corPeso: kGreen,
+                        corImc: kImc,
+                      ),
+                    ),
+            ),
+            const SizedBox(height: 12),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                _buildLegenda('Peso (kg)', kGreen, tracejado: false),
+                const SizedBox(width: 24),
+                _buildLegenda('IMC', kImc, tracejado: true),
+              ],
+            ),
+            const SizedBox(height: 20),
+            SizedBox(
+              height: 46,
+              child: OutlinedButton(
+                onPressed: _registrarMedida,
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: kGreen,
+                  side: const BorderSide(color: kGreen),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
+                child: const Text(
+                  'Registrar medida',
+                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+                ),
               ),
             ),
-            child: const Text(
-              'Registrar medida',
-              style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
-            ),
-          ),
+          ],
         ),
-      ],
+      ),
+      bottomNavigationBar: _buildNavInferior(),
     );
   }
 
@@ -415,6 +327,8 @@ class _GraficoEvolucaoPainter extends CustomPainter {
     }
 
     for (int i = 0; i < n; i++) {
+      final intervalo = (n / 5).ceil();
+      if (i != n - 1 && i % intervalo != 0) continue;
       final tp = TextPainter(
         text: TextSpan(
           text: meses[i],
