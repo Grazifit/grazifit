@@ -31,6 +31,9 @@ import 'package:grazifit_backend/features/auth/auth_repository.dart';
 import 'package:grazifit_backend/features/auth/auth_service.dart';
 import 'package:grazifit_backend/features/auth/criptografia.dart';
 import 'package:grazifit_backend/features/auth/token_service.dart';
+import 'package:grazifit_backend/features/exercicios/exercicio_controller.dart';
+import 'package:grazifit_backend/features/exercicios/exercicio_repository.dart';
+import 'package:grazifit_backend/features/exercicios/exercicio_service.dart';
 import 'package:grazifit_backend/features/pessoas/admin/admin_controller.dart';
 import 'package:grazifit_backend/features/pessoas/admin/admin_repository.dart';
 import 'package:grazifit_backend/features/pessoas/admin/admin_service.dart';
@@ -72,6 +75,9 @@ void main() async {
   final professorService = ProfessorService(professorRepository, senhaHasher);
   final professorController = ProfessorController(professorService);
 
+  final exercicioRepository = ExercicioRepository(db);
+  final exercicioService = ExercicioService(exercicioRepository);
+  final exercicioController = ExercicioController(exercicioService);
   final agendamentoRepository = AgendamentoRepository(db);
   final agendamentoService = AgendamentoService(agendamentoRepository);
   final agendamentoController = AgendamentoController(agendamentoService);
@@ -103,6 +109,7 @@ void main() async {
     ..mount('/', adminController.router.call)
     ..mount('/', alunoController.router.call)
     ..mount('/', professorController.router.call)
+    ..mount('/', exercicioController.router.call)
     ..mount('/', aulaController.router.call)
     ..mount('/', agendamentoController.router.call)
     ..mount('/', inicioController.router.call)
