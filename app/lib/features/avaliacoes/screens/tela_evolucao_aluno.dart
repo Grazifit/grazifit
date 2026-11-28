@@ -26,6 +26,24 @@ class _TelaEvolucaoAlunoState extends ConsumerState<TelaEvolucaoAluno> {
   static const Color kImc = Color(0xFF2E3A8C);
 
   int _navSelecionado = 2;
+  List<MedidaAvaliacao> _medidasDoGrafico = const [];
+  var _seriesDoGrafico = (
+    pesos: const <double>[],
+    imcs: const <double>[],
+    meses: const <String>[],
+  );
+
+  void _atualizarSeries(List<MedidaAvaliacao> medidas) {
+    if (identical(_medidasDoGrafico, medidas)) return;
+
+    _seriesDoGrafico = (
+      pesos: medidas.map((m) => m.peso).toList(growable: false),
+      imcs: medidas.map((m) => m.imc).toList(growable: false),
+      meses: medidas.map((m) => m.rotulo).toList(growable: false),
+    );
+    _medidasDoGrafico = medidas;
+  }
+
   String _fmt(double v) => v.toStringAsFixed(1).replaceAll('.', ',');
 
   Future<void> _registrarMedida() async {
@@ -57,10 +75,9 @@ class _TelaEvolucaoAlunoState extends ConsumerState<TelaEvolucaoAluno> {
   @override
   Widget build(BuildContext context) {
     final historico = ref.watch(historicoAvaliacoesProvider);
-    final medidas = historico.asData?.value ?? <MedidaAvaliacao>[];
-    final pesos = medidas.map((m) => m.peso).toList();
-    final imcs = medidas.map((m) => m.imc).toList();
-    final meses = medidas.map((m) => m.rotulo).toList();
+    final medidas = historico.asData?.value ?? const <MedidaAvaliacao>[];
+    _atualizarSeries(medidas);
+    final (:pesos, :imcs, :meses) = _seriesDoGrafico;
     final pesoAtual = pesos.isEmpty ? null : pesos.last;
     final imcAtual = imcs.isEmpty ? null : imcs.last;
 
