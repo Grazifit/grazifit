@@ -39,7 +39,9 @@ class _MeusAlunosScreenState extends ConsumerState<MeusAlunosScreen> {
 
   String _subtitulo(AlunoVinculado a) {
     final dia = Datas.diaMes(a.ultimaAvaliacao);
-    return dia == null ? 'Sem avaliação registrada' : 'Última avaliação em $dia';
+    return dia == null
+        ? 'Sem avaliação registrada'
+        : 'Última avaliação em $dia';
   }
 
   @override
@@ -48,83 +50,90 @@ class _MeusAlunosScreenState extends ConsumerState<MeusAlunosScreen> {
     final termo = _busca.trim().toLowerCase();
 
     return Scaffold(
-        body: SafeArea(
-          child: ListView(
-            padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
-            children: [
-              const Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      'Meus alunos',
-                      style: TextStyle(
-                        fontSize: 28,
-                        fontWeight: FontWeight.w700,
-                        color: Colors.black87,
-                      ),
+      body: SafeArea(
+        child: ListView(
+          padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+          children: [
+            const Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    'Meus alunos',
+                    style: TextStyle(
+                      fontSize: 28,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.black87,
                     ),
                   ),
-                  BotaoSair(),
-                ],
-              ),
-              const SizedBox(height: 8),
-              if (alunos.hasValue)
-                TextoApoio('${alunos.value!.length} alunos com vínculo ativo'),
-              const SizedBox(height: 20),
-              CampoBusca(
-                controller: _buscaController,
-                hint: 'Buscar aluno',
-                onChanged: (v) => setState(() => _busca = v),
-              ),
-              const SizedBox(height: 12),
-              Row(
-                children: [
-                  const ChipFiltro(rotulo: 'Ativos'),
-                  const SizedBox(width: 12),
-                  ChipFiltro(
-                    rotulo: 'Inativos',
-                    onTap: () => Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => const AlunosInativosScreen())),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 20),
-              // A busca filtra a lista já carregada. Decidir se vai para o
-              // servidor (GET /aluno tem limit/offset): ver o guia, L3.
-              SizedBox(
-                height: 320,
-                child: EstadoAsync<List<AlunoVinculado>>(
-                  valor: alunos,
-                  aoTentarNovamente: () => ref.invalidate(alunosAtivosProvider),
-                  textoVazio: 'Nenhum aluno encontrado',
-                  dados: (lista) {
-                    final filtrados = lista
-                        .where((a) => a.nome.toLowerCase().contains(termo))
-                        .toList();
-                    if (filtrados.isEmpty) {
-                      return const Center(
-                        child: TextoApoio('Nenhum aluno encontrado'),
-                      );
-                    }
-                    return SingleChildScrollView(
-                      child: CartaoLista(
-                        itens: [
-                          for (final aluno in filtrados)
-                            ItemLista(
-                              titulo: aluno.nome,
-                              subtitulo: _subtitulo(aluno),
-                              onTap: () =>
-                                  Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => AlunoDetalheScreen(idAluno: aluno.idAluno))),
-                            ),
-                        ],
-                      ),
-                    );
-                  },
                 ),
+                BotaoSair(),
+              ],
+            ),
+            const SizedBox(height: 8),
+            if (alunos.hasValue)
+              TextoApoio('${alunos.value!.length} alunos com vínculo ativo'),
+            const SizedBox(height: 20),
+            CampoBusca(
+              controller: _buscaController,
+              hint: 'Buscar aluno',
+              onChanged: (v) => setState(() => _busca = v),
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                const ChipFiltro(rotulo: 'Ativos'),
+                const SizedBox(width: 12),
+                ChipFiltro(
+                  rotulo: 'Inativos',
+                  onTap: () => Navigator.of(context).push(
+                    MaterialPageRoute<void>(
+                      builder: (_) => const AlunosInativosScreen(),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 20),
+            // A busca filtra a lista já carregada. Decidir se vai para o
+            // servidor (GET /aluno tem limit/offset): ver o guia, L3.
+            SizedBox(
+              height: 320,
+              child: EstadoAsync<List<AlunoVinculado>>(
+                valor: alunos,
+                aoTentarNovamente: () => ref.invalidate(alunosAtivosProvider),
+                textoVazio: 'Nenhum aluno encontrado',
+                dados: (lista) {
+                  final filtrados = lista
+                      .where((a) => a.nome.toLowerCase().contains(termo))
+                      .toList();
+                  if (filtrados.isEmpty) {
+                    return const Center(
+                      child: TextoApoio('Nenhum aluno encontrado'),
+                    );
+                  }
+                  return CartaoListaVirtualizado(
+                    quantidade: filtrados.length,
+                    construirItem: (context, index) {
+                      final aluno = filtrados[index];
+                      return ItemLista(
+                        titulo: aluno.nome,
+                        subtitulo: _subtitulo(aluno),
+                        onTap: () => Navigator.of(context).push(
+                          MaterialPageRoute<void>(
+                            builder: (_) =>
+                                AlunoDetalheScreen(idAluno: aluno.idAluno),
+                          ),
+                        ),
+                      );
+                    },
+                  );
+                },
               ),
-            ],
-          ),
+            ),
+          ],
         ),
-        bottomNavigationBar: const BarraNavegacao(indiceAtual: 1),
-      );
+      ),
+      bottomNavigationBar: const BarraNavegacao(indiceAtual: 1),
+    );
   }
 }

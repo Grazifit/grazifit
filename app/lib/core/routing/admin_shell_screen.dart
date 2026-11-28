@@ -17,6 +17,8 @@ class AdminShellScreen extends StatefulWidget {
 
 class _AdminShellScreenState extends State<AdminShellScreen> {
   _DestinoAdmin _destino = _DestinoAdmin.inicio;
+  // Abas visitadas permanecem montadas para preservar estado e dados.
+  final _abasVisitadas = <_DestinoAdmin>{_DestinoAdmin.inicio};
 
   @override
   Widget build(BuildContext context) {
@@ -24,20 +26,15 @@ class _AdminShellScreenState extends State<AdminShellScreen> {
       body: Stack(
         children: [
           IndexedStack(
-        index: _destino.index,
-        children: [
-          PaginaInicioAdmin(
-            mostrarNavegacaoInferior: false,
-            onNavegar: (destino) => _selecionar(_DestinoAdmin.values[destino.index]),
+            index: _destino.index,
+            children: [
+              for (final aba in _DestinoAdmin.values)
+                if (_abasVisitadas.contains(aba))
+                  _pagina(aba)
+                else
+                  const SizedBox.shrink(),
+            ],
           ),
-          PaginaUsuariosAdmin(
-            mostrarNavegacaoInferior: false,
-            onNavegar: (destino) => _selecionar(_DestinoAdmin.values[destino.index]),
-          ),
-          const PaginaAulasAdmin(),
-          const PaginaTreinosLivresAdmin(),
-        ],
-      ),
           const Positioned(
             top: 0,
             right: 4,
@@ -114,7 +111,24 @@ class _AdminShellScreenState extends State<AdminShellScreen> {
     );
   }
 
+  Widget _pagina(_DestinoAdmin aba) => switch (aba) {
+    _DestinoAdmin.inicio => PaginaInicioAdmin(
+      mostrarNavegacaoInferior: false,
+      onNavegar: (destino) => _selecionar(_DestinoAdmin.values[destino.index]),
+    ),
+    _DestinoAdmin.pessoas => PaginaUsuariosAdmin(
+      mostrarNavegacaoInferior: false,
+      onNavegar: (destino) => _selecionar(_DestinoAdmin.values[destino.index]),
+    ),
+    _DestinoAdmin.aulas => const PaginaAulasAdmin(),
+    _DestinoAdmin.treinos => const PaginaTreinosLivresAdmin(),
+  };
+
   void _selecionar(_DestinoAdmin destino) {
-    setState(() => _destino = destino);
+    if (_destino == destino) return;
+    setState(() {
+      _abasVisitadas.add(destino);
+      _destino = destino;
+    });
   }
 }

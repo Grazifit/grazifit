@@ -58,29 +58,46 @@ class _TelaUsuariosAdminState extends State<TelaUsuariosAdmin> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-        body: SafeArea(
-          bottom: false,
-          child: ListView(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 20),
-            children: [
-              const _TituloUsuarios(),
-              const SizedBox(height: 17),
-              _abasCategoria(),
-              const SizedBox(height: 16),
-              _campoBusca(),
-              const SizedBox(height: 12),
-              _filtrosStatus(),
-              const SizedBox(height: 16),
-              _listaUsuarios(),
-              const SizedBox(height: 16),
-              _cartaoVinculos(),
-            ],
-          ),
+      body: SafeArea(
+        bottom: false,
+        child: CustomScrollView(
+          slivers: [
+            SliverPadding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 20),
+              sliver: SliverMainAxisGroup(
+                slivers: [
+                  SliverToBoxAdapter(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        const _TituloUsuarios(),
+                        const SizedBox(height: 17),
+                        _abasCategoria(),
+                        const SizedBox(height: 16),
+                        _campoBusca(),
+                        const SizedBox(height: 12),
+                        _filtrosStatus(),
+                        const SizedBox(height: 16),
+                      ],
+                    ),
+                  ),
+                  _listaUsuarios(),
+                  SliverToBoxAdapter(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [const SizedBox(height: 16), _cartaoVinculos()],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ),
-        bottomNavigationBar: widget.mostrarNavegacaoInferior
-            ? _navegacaoInferior(context)
-            : null,
-      );
+      ),
+      bottomNavigationBar: widget.mostrarNavegacaoInferior
+          ? _navegacaoInferior(context)
+          : null,
+    );
   }
 
   Widget _abasCategoria() {
@@ -110,9 +127,8 @@ class _TelaUsuariosAdminState extends State<TelaUsuariosAdmin> {
       height: 48,
       child: TextField(
         controller: _buscaController,
-        onChanged: (valor) => setState(
-          () => _termo = valor.trim().toLowerCase(),
-        ),
+        onChanged: (valor) =>
+            setState(() => _termo = valor.trim().toLowerCase()),
         textInputAction: TextInputAction.search,
         decoration: InputDecoration(
           hintText: 'Buscar $tipo',
@@ -167,28 +183,31 @@ class _TelaUsuariosAdminState extends State<TelaUsuariosAdmin> {
   }
 
   Widget _listaUsuarios() {
-    return switch (widget.estado) {
-      EstadoUsuariosAdmin.dados => _listaComDados(),
-      EstadoUsuariosAdmin.carregando => const _EstadoLista(
+    if (widget.estado == EstadoUsuariosAdmin.dados) return _listaComDados();
+    return SliverToBoxAdapter(
+      child: switch (widget.estado) {
+        EstadoUsuariosAdmin.dados => const SizedBox.shrink(),
+        EstadoUsuariosAdmin.carregando => const _EstadoLista(
           icone: null,
           mensagem: 'Carregando usuários',
           carregando: true,
         ),
-      EstadoUsuariosAdmin.vazio => _EstadoLista(
+        EstadoUsuariosAdmin.vazio => _EstadoLista(
           icone: Icons.search,
           mensagem: 'Não há usuários para exibir.',
         ),
-      EstadoUsuariosAdmin.erro => _EstadoLista(
+        EstadoUsuariosAdmin.erro => _EstadoLista(
           icone: Icons.error_outline,
           mensagem: 'Não foi possível carregar os usuários.',
           onTentarNovamente: widget.onTentarNovamente,
         ),
-      EstadoUsuariosAdmin.semConexao => _EstadoLista(
+        EstadoUsuariosAdmin.semConexao => _EstadoLista(
           icone: Icons.cloud_off,
           mensagem: 'Sem conexão. Confira sua internet e tente novamente.',
           onTentarNovamente: widget.onTentarNovamente,
         ),
-    };
+      },
+    );
   }
 
   Widget _listaComDados() {
@@ -206,19 +225,22 @@ class _TelaUsuariosAdminState extends State<TelaUsuariosAdmin> {
           ? 'aluno'
           : 'professor';
       final situacao = ativos ? 'ativo' : 'inativo';
-      return _EstadoLista(
-        icone: Icons.search,
-        mensagem: _termo.isEmpty
-            ? 'Nenhum $categoria $situacao.'
-            : 'Nenhum usuário encontrado.',
+      return SliverToBoxAdapter(
+        child: _EstadoLista(
+          icone: Icons.search,
+          mensagem: _termo.isEmpty
+              ? 'Nenhum $categoria $situacao.'
+              : 'Nenhum usuário encontrado.',
+        ),
       );
     }
 
-    return Material(
-      color: Colors.white,
-      child: Column(
-        children: [
-          for (var indice = 0; indice < filtrados.length; indice++) ...[
+    return SliverList.builder(
+      itemCount: filtrados.length,
+      itemBuilder: (context, indice) => Material(
+        color: Colors.white,
+        child: Column(
+          children: [
             _LinhaUsuario(
               usuario: filtrados[indice],
               onTap: () => _abrirUsuario(filtrados[indice]),
@@ -226,7 +248,7 @@ class _TelaUsuariosAdminState extends State<TelaUsuariosAdmin> {
             if (indice < filtrados.length - 1)
               const Divider(height: 1, color: Color(0xFFD4DEDB)),
           ],
-        ],
+        ),
       ),
     );
   }
@@ -470,10 +492,7 @@ class _FiltroStatus extends StatelessWidget {
 }
 
 class _LinhaUsuario extends StatelessWidget {
-  const _LinhaUsuario({
-    required this.usuario,
-    required this.onTap,
-  });
+  const _LinhaUsuario({required this.usuario, required this.onTap});
 
   final UsuarioAdminData usuario;
   final VoidCallback onTap;
@@ -635,10 +654,7 @@ class _ItemNavegacao extends StatelessWidget {
 }
 
 class _DetalheUsuario extends StatelessWidget {
-  const _DetalheUsuario({
-    required this.usuario,
-    required this.mostrarVinculo,
-  });
+  const _DetalheUsuario({required this.usuario, required this.mostrarVinculo});
 
   final UsuarioAdminData usuario;
   final bool mostrarVinculo;
@@ -663,10 +679,7 @@ class _DetalheUsuario extends StatelessWidget {
             const SizedBox(height: 16),
             _LinhaDetalhe(rotulo: 'Situação', valor: usuario.status),
             if (mostrarVinculo && usuario.complemento != null)
-              _LinhaDetalhe(
-                rotulo: 'Vínculo',
-                valor: usuario.complemento!,
-              ),
+              _LinhaDetalhe(rotulo: 'Vínculo', valor: usuario.complemento!),
             const SizedBox(height: 14),
             SizedBox(
               width: double.infinity,

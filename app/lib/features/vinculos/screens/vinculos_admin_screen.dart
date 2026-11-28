@@ -47,58 +47,57 @@ class _VinculosAdminScreenState extends State<VinculosAdminScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-        appBar: appBarInterna(context, 'Vínculos'),
-        body: SafeArea(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 4, 16, 0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    CampoBusca(
-                      controller: _buscaController,
-                      hint: 'Buscar aluno',
-                      onChanged: (valor) => setState(() => _busca = valor),
-                    ),
-                    const SizedBox(height: 12),
-                    Row(
-                      children: [
-                        _FiltroChip(
-                          texto: 'Ativos',
-                          selecionado: _filtro == FiltroVinculosAdmin.ativos,
-                          onTap: () => _selecionar(FiltroVinculosAdmin.ativos),
-                        ),
-                        const SizedBox(width: 8),
-                        _FiltroChip(
-                          texto: 'Encerrados',
-                          selecionado:
-                              _filtro == FiltroVinculosAdmin.encerrados,
-                          onTap: () =>
-                              _selecionar(FiltroVinculosAdmin.encerrados),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
+      appBar: appBarInterna(context, 'Vínculos'),
+      body: SafeArea(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 4, 16, 0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  CampoBusca(
+                    controller: _buscaController,
+                    hint: 'Buscar aluno',
+                    onChanged: (valor) => setState(() => _busca = valor),
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      _FiltroChip(
+                        texto: 'Ativos',
+                        selecionado: _filtro == FiltroVinculosAdmin.ativos,
+                        onTap: () => _selecionar(FiltroVinculosAdmin.ativos),
+                      ),
+                      const SizedBox(width: 8),
+                      _FiltroChip(
+                        texto: 'Encerrados',
+                        selecionado: _filtro == FiltroVinculosAdmin.encerrados,
+                        onTap: () =>
+                            _selecionar(FiltroVinculosAdmin.encerrados),
+                      ),
+                    ],
+                  ),
+                ],
               ),
-              const SizedBox(height: 16),
-              Expanded(child: _conteudo()),
-              const Padding(
-                padding: EdgeInsets.fromLTRB(16, 0, 16, 12),
-                child: TextoApoio(
-                  'Cada aluno pode ter no máximo um professor ativo.',
-                ),
+            ),
+            const SizedBox(height: 16),
+            Expanded(child: _conteudo()),
+            const Padding(
+              padding: EdgeInsets.fromLTRB(16, 0, 16, 12),
+              child: TextoApoio(
+                'Cada aluno pode ter no máximo um professor ativo.',
               ),
-            ],
-          ),
+            ),
+          ],
         ),
-        bottomNavigationBar: BarraAcaoInferior(
-          texto: 'Novo vínculo',
-          onPressed: _abrirNovoVinculo,
-        ),
-      );
+      ),
+      bottomNavigationBar: BarraAcaoInferior(
+        texto: 'Novo vínculo',
+        onPressed: _abrirNovoVinculo,
+      ),
+    );
   }
 
   Widget _conteudo() {
@@ -139,25 +138,24 @@ class _VinculosAdminScreenState extends State<VinculosAdminScreen> {
       return _EstadoListaVinculos(mensagem: mensagem);
     }
 
-    return SingleChildScrollView(
+    return CartaoListaVirtualizado(
       padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: CartaoLista(
-        itens: [
-          for (final vinculo in filtrados)
-            ItemLista(
-              titulo: vinculo.alunoNome,
-              trailing: _filtro == FiltroVinculosAdmin.ativos
-                  ? TextButton(
-                      onPressed: () => _confirmarEncerramento(vinculo),
-                      style: TextButton.styleFrom(
-                        foregroundColor: const Color(0xFF005B50),
-                      ),
-                      child: const Text('Encerrar'),
-                    )
-                  : null,
-            ),
-        ],
-      ),
+      quantidade: filtrados.length,
+      construirItem: (context, index) {
+        final vinculo = filtrados[index];
+        return ItemLista(
+          titulo: vinculo.alunoNome,
+          trailing: _filtro == FiltroVinculosAdmin.ativos
+              ? TextButton(
+                  onPressed: () => _confirmarEncerramento(vinculo),
+                  style: TextButton.styleFrom(
+                    foregroundColor: const Color(0xFF005B50),
+                  ),
+                  child: const Text('Encerrar'),
+                )
+              : null,
+        );
+      },
     );
   }
 

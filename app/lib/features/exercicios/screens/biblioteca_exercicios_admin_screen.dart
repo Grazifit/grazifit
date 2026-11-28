@@ -42,75 +42,88 @@ class _BibliotecaExerciciosAdminScreenState
   @override
   Widget build(BuildContext context) {
     return Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 430),
-          child: Scaffold(
-            body: SafeArea(
-              bottom: false,
-              child: Column(
-                children: [
-                  Expanded(
-                    child: ListView(
-                      padding: const EdgeInsets.fromLTRB(16, 16, 16, 20),
-                      children: [
-                        const Text(
-                          'Treinos',
-                          style: TextStyle(
-                            fontSize: 24,
-                            fontWeight: FontWeight.w700,
-                            color: Color(0xFF26312F),
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                        Row(
-                          children: [
-                            _AbaBiblioteca(
-                              rotulo: 'Treinos livres',
-                              selecionada: false,
-                              onTap: _abrirTreinosLivres,
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 430),
+        child: Scaffold(
+          body: SafeArea(
+            bottom: false,
+            child: Column(
+              children: [
+                Expanded(
+                  child: CustomScrollView(
+                    slivers: [
+                      SliverPadding(
+                        padding: const EdgeInsets.fromLTRB(16, 16, 16, 20),
+                        sliver: SliverMainAxisGroup(
+                          slivers: [
+                            SliverToBoxAdapter(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
+                                children: [
+                                  const Text(
+                                    'Treinos',
+                                    style: TextStyle(
+                                      fontSize: 24,
+                                      fontWeight: FontWeight.w700,
+                                      color: Color(0xFF26312F),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 16),
+                                  Row(
+                                    children: [
+                                      _AbaBiblioteca(
+                                        rotulo: 'Treinos livres',
+                                        selecionada: false,
+                                        onTap: _abrirTreinosLivres,
+                                      ),
+                                      const SizedBox(width: 8),
+                                      const _AbaBiblioteca(
+                                        rotulo: 'Exercícios',
+                                        selecionada: true,
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 16),
+                                  _campoBusca(),
+                                  const SizedBox(height: 12),
+                                  Wrap(
+                                    spacing: 8,
+                                    runSpacing: 8,
+                                    children: [
+                                      _FiltroDificuldade(
+                                        rotulo: 'Iniciante',
+                                        selecionado: _dificuldadesSelecionadas
+                                            .contains('iniciante'),
+                                        onTap: () =>
+                                            _alternarDificuldade('iniciante'),
+                                      ),
+                                      _FiltroDificuldade(
+                                        rotulo: 'Avançado',
+                                        selecionado: _dificuldadesSelecionadas
+                                            .contains('avancado'),
+                                        onTap: () =>
+                                            _alternarDificuldade('avancado'),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 16),
+                                ],
+                              ),
                             ),
-                            const SizedBox(width: 8),
-                            const _AbaBiblioteca(
-                              rotulo: 'Exercícios',
-                              selecionada: true,
-                            ),
+                            _conteudo(),
                           ],
                         ),
-                        const SizedBox(height: 16),
-                        _campoBusca(),
-                        const SizedBox(height: 12),
-                        Wrap(
-                          spacing: 8,
-                          runSpacing: 8,
-                          children: [
-                            _FiltroDificuldade(
-                              rotulo: 'Iniciante',
-                              selecionado: _dificuldadesSelecionadas
-                                  .contains('iniciante'),
-                              onTap: () => _alternarDificuldade('iniciante'),
-                            ),
-                            _FiltroDificuldade(
-                              rotulo: 'Avançado',
-                              selecionado: _dificuldadesSelecionadas
-                                  .contains('avancado'),
-                              onTap: () => _alternarDificuldade('avancado'),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 16),
-                        _conteudo(),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
-                ],
-              ),
-            ),
-            bottomNavigationBar: _NavegacaoAdmin(
-              onSelecionar: _navegar,
+                ),
+              ],
             ),
           ),
+          bottomNavigationBar: _NavegacaoAdmin(onSelecionar: _navegar),
         ),
-      );
+      ),
+    );
   }
 
   Widget _campoBusca() {
@@ -153,31 +166,40 @@ class _BibliotecaExerciciosAdminScreenState
   Widget _conteudo() {
     switch (widget.estado) {
       case EstadoBibliotecaExerciciosAdmin.carregando:
-        return const Padding(
-          padding: EdgeInsets.all(32),
-          child: Center(child: CircularProgressIndicator(color: corInstitucional)),
+        return const SliverToBoxAdapter(
+          child: Padding(
+            padding: EdgeInsets.all(32),
+            child: Center(
+              child: CircularProgressIndicator(color: corInstitucional),
+            ),
+          ),
         );
       case EstadoBibliotecaExerciciosAdmin.erro:
       case EstadoBibliotecaExerciciosAdmin.semConexao:
         final semConexao =
             widget.estado == EstadoBibliotecaExerciciosAdmin.semConexao;
-        return _EstadoBiblioteca(
-          icone: semConexao ? Icons.cloud_off_outlined : Icons.error_outline,
-          mensagem: semConexao
-              ? 'Sem conexão. Confira sua internet e tente novamente.'
-              : 'Não foi possível carregar os exercícios.',
-          onTentarNovamente: widget.onTentarNovamente,
+        return SliverToBoxAdapter(
+          child: _EstadoBiblioteca(
+            icone: semConexao ? Icons.cloud_off_outlined : Icons.error_outline,
+            mensagem: semConexao
+                ? 'Sem conexão. Confira sua internet e tente novamente.'
+                : 'Não foi possível carregar os exercícios.',
+            onTentarNovamente: widget.onTentarNovamente,
+          ),
         );
       case EstadoBibliotecaExerciciosAdmin.vazio:
       case EstadoBibliotecaExerciciosAdmin.dados:
         final exercicios = _exerciciosFiltrados;
         if (exercicios.isEmpty) {
-          final temBusca = _buscaController.text.trim().isNotEmpty ||
+          final temBusca =
+              _buscaController.text.trim().isNotEmpty ||
               _dificuldadesSelecionadas.isNotEmpty;
-          return _ListaVazia(
-            mensagem: temBusca
-                ? 'Nenhum exercício encontrado para os filtros selecionados.'
-                : 'Nenhum exercício disponível no momento.',
+          return SliverToBoxAdapter(
+            child: _ListaVazia(
+              mensagem: temBusca
+                  ? 'Nenhum exercício encontrado para os filtros selecionados.'
+                  : 'Nenhum exercício disponível no momento.',
+            ),
           );
         }
         return _ListaExercicios(
@@ -199,7 +221,8 @@ class _BibliotecaExerciciosAdminScreenState
     return widget.exercicios.where((exercicio) {
       final correspondeBusca =
           consulta.isEmpty || exercicio.nome.toLowerCase().contains(consulta);
-      final correspondeDificuldade = _dificuldadesSelecionadas.isEmpty ||
+      final correspondeDificuldade =
+          _dificuldadesSelecionadas.isEmpty ||
           _dificuldadesSelecionadas.contains(exercicio.dificuldade);
       return correspondeBusca && correspondeDificuldade;
     }).toList();
@@ -321,11 +344,12 @@ class _ListaExercicios extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: Colors.white,
-      child: Column(
-        children: [
-          for (var indice = 0; indice < exercicios.length; indice++) ...[
+    return SliverList.builder(
+      itemCount: exercicios.length,
+      itemBuilder: (context, indice) => Material(
+        color: Colors.white,
+        child: Column(
+          children: [
             if (indice > 0) const Divider(height: 1, color: corDivisor),
             InkWell(
               onTap: onSelecionar == null
@@ -369,7 +393,7 @@ class _ListaExercicios extends StatelessWidget {
               ),
             ),
           ],
-        ],
+        ),
       ),
     );
   }
@@ -458,14 +482,12 @@ class _NavegacaoAdmin extends StatelessWidget {
                         Container(
                           width: 28,
                           height: 3,
-                          color: indice == 3 ? Colors.white : Colors.transparent,
+                          color: indice == 3
+                              ? Colors.white
+                              : Colors.transparent,
                         ),
                         const SizedBox(height: 7),
-                        Icon(
-                          _itens[indice].$1,
-                          size: 22,
-                          color: Colors.white,
-                        ),
+                        Icon(_itens[indice].$1, size: 22, color: Colors.white),
                         const SizedBox(height: 3),
                         Text(
                           _itens[indice].$2,

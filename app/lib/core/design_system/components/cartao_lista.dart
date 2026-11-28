@@ -18,10 +18,40 @@ class CartaoLista extends StatelessWidget {
       child: Column(
         children: [
           for (var i = 0; i < itens.length; i++) ...[
-            if (i > 0) const Divider(height: 1, thickness: 1, color: corDivisor),
+            if (i > 0)
+              const Divider(height: 1, thickness: 1, color: corDivisor),
             itens[i],
           ],
         ],
+      ),
+    );
+  }
+}
+
+/// Lista com o visual de [CartaoLista] para áreas de rolagem com altura limitada.
+class CartaoListaVirtualizado extends StatelessWidget {
+  const CartaoListaVirtualizado({
+    super.key,
+    required this.quantidade,
+    required this.construirItem,
+    this.padding = EdgeInsets.zero,
+  });
+
+  final int quantidade;
+  final IndexedWidgetBuilder construirItem;
+  final EdgeInsetsGeometry padding;
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView.separated(
+      primary: false,
+      padding: padding,
+      itemCount: quantidade,
+      itemBuilder: (context, index) =>
+          Material(color: Colors.white, child: construirItem(context, index)),
+      separatorBuilder: (_, _) => const Material(
+        color: Colors.white,
+        child: Divider(height: 1, thickness: 1, color: corDivisor),
       ),
     );
   }
