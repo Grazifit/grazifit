@@ -34,14 +34,14 @@ void main() {
       expect(enviada!.headers['Content-Type'], startsWith('application/json'));
     });
 
-    test('post e postJson enviam a lista na raiz', () async {
+    test('post envia a lista na raiz', () async {
       final api = cliente();
       await api.post('/x', lista);
       expect(enviada!.method, 'POST');
       expect(enviada!.body, jsonEncode(lista));
       expect(enviada!.headers['Content-Type'], startsWith('application/json'));
 
-      await api.postJson('/x', lista);
+      await api.post('/x', lista);
       expect(enviada!.body, jsonEncode(lista));
     });
 

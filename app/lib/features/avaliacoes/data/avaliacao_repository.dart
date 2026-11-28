@@ -61,7 +61,7 @@ class AvaliacaoRepository {
     required double altura,
     required String observacao,
   }) async => MedidaAvaliacao.fromJson(
-    await api.postJson('/aluno/$id/avaliacoes/hoje', {
+    await api.post('/aluno/$id/avaliacoes/hoje', {
       'peso': peso,
       'altura': altura,
       'observacao': observacao,

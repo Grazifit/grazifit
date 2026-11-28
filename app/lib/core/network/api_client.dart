@@ -39,10 +39,6 @@ class ApiClient {
 
   /// [body] é um `Map` ou uma `List`, enviado como JSON na raiz.
   Future<Map<String, dynamic>> post(String path, Object body) =>
-      postJson(path, body);
-
-  /// [body] é um `Map` ou uma `List`, enviado como JSON na raiz.
-  Future<Map<String, dynamic>> postJson(String path, Object body) =>
       _enviar('POST', path, body: body);
   Future<Map<String, dynamic>> getJson(String path) async {
     if (baseUrl.trim().isEmpty) {
@@ -70,11 +66,6 @@ class ApiClient {
       throw const ApiException(codigo: 'RESPOSTA_INVALIDA');
     }
   }
-
-  Future<Map<String, dynamic>> postJson(
-    String path,
-    Map<String, Object?> body,
-  ) => _enviar('POST', path, body: body);
 
   /// [body] é um `Map` ou uma `List`, enviado como JSON na raiz.
   Future<Map<String, dynamic>> patch(String path, Object body) =>
