@@ -19,7 +19,7 @@ class HttpAuthRepository implements AuthRepository {
     required String email,
     required String senha,
   }) async {
-    final resposta = await _apiClient.postJson('/auth/login', {
+    final resposta = await _apiClient.post('/auth/login', {
       'email': email,
       'senha': senha,
     });

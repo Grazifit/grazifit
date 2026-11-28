@@ -26,6 +26,7 @@ String mensagemDoErro(ApiException erro) {
     CodigoErro.avaliacaoJaRegistrada => 'Avaliação já registrada.',
     CodigoErro.cpfEmUso => 'CPF já cadastrado.',
     CodigoErro.emailEmUso => 'E-mail já cadastrado.',
+    CodigoErro.nomeEmUso => 'Já existe um registro com este nome.',
     CodigoErro.cpfInvalido => 'CPF inválido.',
     CodigoErro.emailInvalido => 'E-mail inválido.',
     CodigoErro.dataNascimentoInvalida => 'Data de nascimento inválida.',
