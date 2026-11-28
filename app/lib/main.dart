@@ -10,19 +10,27 @@ void main() {
   runApp(const ProviderScope(child: GraziFitApp()));
 }
 
-class GraziFitApp extends ConsumerWidget {
+class GraziFitApp extends ConsumerStatefulWidget {
   const GraziFitApp({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<GraziFitApp> createState() => _GraziFitAppState();
+}
+
+class _GraziFitAppState extends ConsumerState<GraziFitApp> {
+  @override
+  void initState() {
+    super.initState();
     // Liga os repositórios das telas ao ApiClient (token da sessão).
     Repositorios.inicializar(
       ref.read(apiClientProvider),
       idUsuario: () => ref.read(authControllerProvider).sessao?.id,
-      aoSair: () =>
-          ref.read(authControllerProvider.notifier).encerrarSessao(),
+      aoSair: () => ref.read(authControllerProvider.notifier).encerrarSessao(),
     );
+  }
 
+  @override
+  Widget build(BuildContext context) {
     return MaterialApp.router(
       title: 'GraziFit',
       debugShowCheckedModeBanner: false,

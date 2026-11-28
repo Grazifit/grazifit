@@ -7,7 +7,7 @@ import '../data/auth_repository.dart';
 import 'auth_state.dart';
 
 final authRepositoryProvider = Provider<AuthRepository>(
-  (ref) => HttpAuthRepository(ApiClient()),
+  (ref) => HttpAuthRepository(ref.watch(apiClientProvider)),
 );
 
 final authControllerProvider = NotifierProvider<AuthController, AuthState>(
